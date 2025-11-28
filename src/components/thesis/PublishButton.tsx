@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExternalLink, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,20 +7,58 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useFounderAuth } from "@/contexts/FounderAuthContext";
+import { getRoundCode } from "@/hooks/useRounds";
 
 interface PublishButtonProps {
   roundSlug?: string;
+  roundType?: string;
+  roundNumber?: number;
+  variantSlug?: string;
   isPublished?: boolean;
 }
 
-export default function PublishButton({ roundSlug, isPublished = false }: PublishButtonProps) {
+export default function PublishButton({ 
+  roundSlug, 
+  roundType = 's',
+  roundNumber = 1,
+  variantSlug,
+  isPublished = false 
+}: PublishButtonProps) {
   const { toast } = useToast();
+  const { user } = useFounderAuth();
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [companySlug, setCompanySlug] = useState<string | null>(null);
 
-  // Generate the published URL based on round
-  const publishedUrl = `${roundSlug}.thesis.run`;
+  // Fetch company slug from profile
+  useEffect(() => {
+    const fetchCompanySlug = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from("profiles")
+        .select("company_slug")
+        .eq("id", user.id)
+        .maybeSingle();
+      
+      if (data?.company_slug) {
+        setCompanySlug(data.company_slug);
+      }
+    };
+
+    fetchCompanySlug();
+  }, [user]);
+
+  // Generate the public URL based on company slug and round code
+  const roundCode = getRoundCode({ round_type: roundType as any, round_number: roundNumber });
+  const isGlobal = !variantSlug || variantSlug === "global";
+  
+  const publishedUrl = companySlug 
+    ? `thesis.run/${companySlug}/${roundCode}/memo${isGlobal ? "" : `/${variantSlug}`}`
+    : null;
 
   const handlePublish = async () => {
     setIsPublishing(true);
@@ -54,16 +92,22 @@ export default function PublishButton({ roundSlug, isPublished = false }: Publis
           Publish
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-72 p-0">
-        <a
-          href={`https://${publishedUrl}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-between px-4 py-3 text-sm hover:bg-muted transition-colors border-b border-border"
-        >
-          <span className="text-muted-foreground truncate">{publishedUrl}</span>
-          <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-2" />
-        </a>
+      <PopoverContent align="end" className="w-80 p-0">
+        {publishedUrl ? (
+          <a
+            href={`https://${publishedUrl}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-4 py-3 text-sm hover:bg-muted transition-colors border-b border-border"
+          >
+            <span className="text-muted-foreground truncate font-mono text-xs">{publishedUrl}</span>
+            <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-2" />
+          </a>
+        ) : (
+          <div className="px-4 py-3 text-sm text-muted-foreground border-b border-border">
+            Set your company slug in settings to enable publishing
+          </div>
+        )}
         
         <div className="px-4 py-3 border-b border-border">
           <button
@@ -81,7 +125,7 @@ export default function PublishButton({ roundSlug, isPublished = false }: Publis
             size="sm"
             className="w-full"
             onClick={handlePublish}
-            disabled={isPublishing || publishSuccess}
+            disabled={isPublishing || publishSuccess || !publishedUrl}
           >
             {isPublishing ? (
               <>

@@ -34,6 +34,8 @@ interface Round {
   slug: string;
   name: string;
   state: string;
+  round_type?: string;
+  round_number?: number;
 }
 
 interface Investor {
@@ -275,8 +277,23 @@ export default function ThesisLayout({
 
         {/* Right side - Share + Publish */}
         <div className="flex items-center gap-2">
-          <ShareButton roundSlug={roundSlug} variantSlug={activeVariant} />
-          <PublishButton roundSlug={roundSlug} isPublished={false} />
+          <ShareButton 
+            roundId={activeRound?.id}
+            roundSlug={roundSlug}
+            roundType={activeRound?.round_type}
+            roundNumber={activeRound?.round_number}
+            investorId={activeInvestor?.id}
+            investorSlug={activeInvestor?.slug}
+            investorName={activeInvestor?.name}
+            tool={activeTool as 'memo' | 'docket'}
+          />
+          <PublishButton 
+            roundSlug={roundSlug}
+            roundType={activeRound?.round_type}
+            roundNumber={activeRound?.round_number}
+            variantSlug={activeVariant}
+            isPublished={false} 
+          />
         </div>
       </header>
 
