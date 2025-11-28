@@ -36,16 +36,21 @@ export default function FounderSettings() {
   // Fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       try {
         const { data, error } = await supabase
           .from('profiles')
           .select('company_name, company_slug, description, website')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching profile:', error);
+        }
 
         if (data) {
           setCompanyName(data.company_name || "");
@@ -54,6 +59,7 @@ export default function FounderSettings() {
           setDescription(data.description || "");
           setWebsite(data.website || "");
         }
+        // If no profile exists, that's okay - user can fill in the form
       } catch (error) {
         console.error('Error fetching profile:', error);
       } finally {
@@ -132,15 +138,16 @@ export default function FounderSettings() {
 
     setSaving(true);
     try {
+      // Use upsert to handle case where profile doesn't exist
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
           company_name: companyName,
           company_slug: companySlug,
           description,
           website,
-        })
-        .eq('id', user.id);
+        }, { onConflict: 'id' });
 
       if (error) throw error;
 
