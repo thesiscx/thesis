@@ -44,10 +44,7 @@ Deno.serve(async (req) => {
       .select(`
         *,
         investor:investors(*),
-        round:rounds(
-          *,
-          profile:profiles!rounds_created_by_fkey(company_slug, company_name)
-        )
+        round:rounds(*)
       `)
       .eq('key', key.toLowerCase())
       .maybeSingle();
@@ -81,6 +78,23 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Access key has expired' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Fetch the profile for company info
+    let companySlug = null;
+    let companyName = null;
+    
+    if (accessKey.round?.created_by) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_slug, company_name')
+        .eq('id', accessKey.round.created_by)
+        .maybeSingle();
+      
+      if (profile) {
+        companySlug = profile.company_slug;
+        companyName = profile.company_name;
+      }
     }
 
     // Update last_used_at
@@ -125,8 +139,8 @@ Deno.serve(async (req) => {
           roundNumber: accessKey.round?.round_number
         },
         workspace: {
-          companySlug: accessKey.round?.profile?.company_slug,
-          companyName: accessKey.round?.profile?.company_name
+          companySlug,
+          companyName
         },
         tool: accessKey.tool,
         accessKeyId: accessKey.id

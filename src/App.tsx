@@ -18,8 +18,12 @@ import ThesisDocket from "./pages/thesis/ThesisDocket";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
+import InvestorAccess from "./pages/public/InvestorAccess";
+import PublicMemoViewer from "./pages/public/PublicMemoViewer";
+import PublicDocketViewer from "./pages/public/PublicDocketViewer";
 import { FounderAuthProvider, useFounderAuth } from "./contexts/FounderAuthContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { InvestorAuthProvider } from "./contexts/InvestorAuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const queryClient = new QueryClient({
@@ -93,55 +97,59 @@ const App = () => (
           {/* Admin Routes - separate auth context */}
           <Route path="/admin/*" element={<AdminRoutes />} />
           
-          {/* Main App Routes */}
-          <Route path="/*" element={
+          {/* Founder App Routes */}
+          <Route path="/auth" element={<FounderAuthProvider><Auth /></FounderAuthProvider>} />
+          <Route path="/auth/invite" element={<FounderAuthProvider><InviteCode /></FounderAuthProvider>} />
+          <Route path="/auth/email" element={<FounderAuthProvider><EmailAuth /></FounderAuthProvider>} />
+          
+          {/* Legal & Info */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/pricing" element={<Pricing />} />
+          
+          {/* Thesis Routes (protected) */}
+          <Route path="/thesis" element={
             <FounderAuthProvider>
-              <Routes>
-                {/* Auth */}
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/auth/invite" element={<InviteCode />} />
-                <Route path="/auth/email" element={<EmailAuth />} />
-                
-                {/* Legal & Info */}
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/pricing" element={<Pricing />} />
-                
-                {/* Thesis Routes */}
-                <Route
-                  path="/thesis"
-                  element={
-                    <ProtectedRoute>
-                      <Onboarding />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/thesis/:roundSlug/memo/:variantSlug"
-                  element={
-                    <ProtectedRoute>
-                      <ThesisMemo />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/thesis/:roundSlug/docket/:variantSlug"
-                  element={
-                    <ProtectedRoute>
-                      <ThesisDocket />
-                    </ProtectedRoute>
-                  }
-                />
-                
-                {/* Redirects */}
-                <Route path="/" element={<Navigate to="/thesis" replace />} />
-                <Route path="/login" element={<Navigate to="/auth" replace />} />
-                
-                {/* 404 */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <ProtectedRoute><Onboarding /></ProtectedRoute>
             </FounderAuthProvider>
           } />
+          <Route path="/thesis/:roundSlug/memo/:variantSlug" element={
+            <FounderAuthProvider>
+              <ProtectedRoute><ThesisMemo /></ProtectedRoute>
+            </FounderAuthProvider>
+          } />
+          <Route path="/thesis/:roundSlug/docket/:variantSlug" element={
+            <FounderAuthProvider>
+              <ProtectedRoute><ThesisDocket /></ProtectedRoute>
+            </FounderAuthProvider>
+          } />
+          
+          {/* Public Investor Routes */}
+          <Route path="/:companySlug/:roundCode/memo" element={
+            <InvestorAuthProvider><InvestorAccess tool="memo" /></InvestorAuthProvider>
+          } />
+          <Route path="/:companySlug/:roundCode/memo/:investorSlug" element={
+            <InvestorAuthProvider><InvestorAccess tool="memo" /></InvestorAuthProvider>
+          } />
+          <Route path="/:companySlug/:roundCode/memo/:investorSlug/view" element={
+            <InvestorAuthProvider><PublicMemoViewer /></InvestorAuthProvider>
+          } />
+          <Route path="/:companySlug/:roundCode/docket" element={
+            <InvestorAuthProvider><InvestorAccess tool="docket" /></InvestorAuthProvider>
+          } />
+          <Route path="/:companySlug/:roundCode/docket/:investorSlug" element={
+            <InvestorAuthProvider><InvestorAccess tool="docket" /></InvestorAuthProvider>
+          } />
+          <Route path="/:companySlug/:roundCode/docket/:investorSlug/view" element={
+            <InvestorAuthProvider><PublicDocketViewer /></InvestorAuthProvider>
+          } />
+          
+          {/* Redirects */}
+          <Route path="/" element={<Navigate to="/thesis" replace />} />
+          <Route path="/login" element={<Navigate to="/auth" replace />} />
+          
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
