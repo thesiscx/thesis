@@ -24,10 +24,12 @@ export function FeatureStream() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
+    // Start with first item
+    setVisibleItems([0]);
+    setCurrentIndex(1);
+
     const interval = setInterval(() => {
       setCurrentIndex((prev) => {
-        const next = (prev + 1) % features.length;
-        
         setVisibleItems((items) => {
           const newItems = [...items, prev];
           // Keep only the last 6 visible items
@@ -37,12 +39,9 @@ export function FeatureStream() {
           return newItems;
         });
         
-        return next;
+        return (prev + 1) % features.length;
       });
     }, 800);
-
-    // Start with first item
-    setVisibleItems([0]);
 
     return () => clearInterval(interval);
   }, []);
