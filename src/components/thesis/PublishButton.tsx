@@ -154,8 +154,13 @@ export default function PublishButton({
                   readOnly 
                   className="text-xs font-mono h-9"
                 />
-                <Button size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={copyUrl}>
-                  {urlCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                <Button 
+                  size="icon" 
+                  variant="outline" 
+                  className="h-9 w-9 flex-shrink-0" 
+                  onClick={() => window.open(`https://${publishedUrl}`, '_blank')}
+                >
+                  <ExternalLink className="w-4 h-4" />
                 </Button>
               </div>
             </div>
