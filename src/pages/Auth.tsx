@@ -108,35 +108,36 @@ export default function Auth() {
             </p>
           </div>
 
-          {/* Get Access Button & Code Input */}
-          <div className="flex flex-col items-center pt-2">
-            <button
-              onClick={() => setShowCodeInput(!showCodeInput)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border rounded-md px-4 py-2 hover:border-muted-foreground/50"
-            >
-              Get Access
-            </button>
+          {/* Get Access Button & Dropdown */}
+          <div className="flex justify-center pt-2">
+            <div className="relative inline-block">
+              <button
+                onClick={() => setShowCodeInput(!showCodeInput)}
+                className={`text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border px-4 py-2 ${
+                  showCodeInput ? 'rounded-t-md border-b-0' : 'rounded-md'
+                }`}
+              >
+                Get Access
+              </button>
 
-            {/* Fixed height container to prevent layout shift */}
-            <div className="h-[140px] mt-4 flex items-start justify-center">
               {showCodeInput && (
-                <div className="w-[280px] animate-fade-in">
-                  <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+                <div className="absolute top-full left-0 right-0 animate-fade-in">
+                  <div className="border border-border border-t-0 rounded-b-md bg-card p-3 space-y-2">
                     <Input
-                      placeholder="Enter invite code"
+                      placeholder="Invite code"
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                      className="h-10 text-center text-sm tracking-widest uppercase bg-background"
+                      className="h-9 text-center text-xs tracking-widest uppercase bg-background"
                       onKeyDown={(e) => e.key === "Enter" && handleValidateCode()}
                       autoFocus
                     />
                     <Button
                       onClick={handleValidateCode}
                       disabled={!inviteCode.trim() || isValidating}
-                      className="w-full h-9 text-sm"
+                      className="w-full h-8 text-xs"
                       size="sm"
                     >
-                      {isValidating ? "Validating..." : "Continue"}
+                      {isValidating ? "..." : "Continue"}
                     </Button>
                   </div>
                 </div>
