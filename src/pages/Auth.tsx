@@ -124,7 +124,7 @@ export default function Auth() {
                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 border-l border-t border-border bg-card" />
                   <div className="w-[220px] border border-border rounded-md bg-card p-4 space-y-3 relative">
                     <Input
-                      placeholder="Code"
+                      placeholder="Invite code"
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                       className="h-10 text-center text-[10px] tracking-[0.25em] uppercase bg-background placeholder:text-[10px]"
