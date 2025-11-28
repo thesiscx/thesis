@@ -77,6 +77,18 @@ const AdminRoutes = () => (
   </AuthProvider>
 );
 
+// Thesis routes wrapped in shared provider
+const ThesisRoutes = () => (
+  <FounderAuthProvider>
+    <Routes>
+      <Route path="" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+      <Route path="settings" element={<ProtectedRoute><FounderSettings /></ProtectedRoute>} />
+      <Route path=":roundSlug/memo/:variantSlug" element={<ProtectedRoute><ThesisMemo /></ProtectedRoute>} />
+      <Route path=":roundSlug/docket/:variantSlug" element={<ProtectedRoute><ThesisDocket /></ProtectedRoute>} />
+    </Routes>
+  </FounderAuthProvider>
+);
+
 const App = () => (
   <PersistQueryClientProvider
     client={queryClient}
@@ -98,7 +110,7 @@ const App = () => (
           {/* Admin Routes - separate auth context */}
           <Route path="/admin/*" element={<AdminRoutes />} />
           
-          {/* Founder App Routes */}
+          {/* Auth Routes */}
           <Route path="/auth" element={<FounderAuthProvider><Auth /></FounderAuthProvider>} />
           <Route path="/auth/invite" element={<FounderAuthProvider><InviteCode /></FounderAuthProvider>} />
           <Route path="/auth/email" element={<FounderAuthProvider><EmailAuth /></FounderAuthProvider>} />
@@ -108,27 +120,8 @@ const App = () => (
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/pricing" element={<Pricing />} />
           
-          {/* Thesis Routes (protected) */}
-          <Route path="/thesis" element={
-            <FounderAuthProvider>
-              <ProtectedRoute><Onboarding /></ProtectedRoute>
-            </FounderAuthProvider>
-          } />
-          <Route path="/thesis/settings" element={
-            <FounderAuthProvider>
-              <ProtectedRoute><FounderSettings /></ProtectedRoute>
-            </FounderAuthProvider>
-          } />
-          <Route path="/thesis/:roundSlug/memo/:variantSlug" element={
-            <FounderAuthProvider>
-              <ProtectedRoute><ThesisMemo /></ProtectedRoute>
-            </FounderAuthProvider>
-          } />
-          <Route path="/thesis/:roundSlug/docket/:variantSlug" element={
-            <FounderAuthProvider>
-              <ProtectedRoute><ThesisDocket /></ProtectedRoute>
-            </FounderAuthProvider>
-          } />
+          {/* Thesis Routes (protected, shared auth) */}
+          <Route path="/thesis/*" element={<ThesisRoutes />} />
           
           {/* Public Investor Routes */}
           <Route path="/:companySlug/:roundCode/memo" element={
