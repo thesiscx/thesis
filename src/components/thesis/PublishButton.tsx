@@ -102,12 +102,12 @@ export default function PublishButton({
   };
 
   const generateAccessKey = async () => {
-    if (!investorId || !roundId) return;
+    if (!roundId) return;
 
     setIsGeneratingKey(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-access-key', {
-        body: { investorId, roundId, tool }
+        body: { investorId: isGlobal ? null : investorId, roundId, tool }
       });
 
       if (error) throw error;
@@ -160,53 +160,45 @@ export default function PublishButton({
               </div>
             </div>
 
-            {/* Access Key Section - only for investor variants */}
-            {!isGlobal && (
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Access Key</Label>
-                {accessKey ? (
-                  <div className="flex gap-2">
-                    <Input 
-                      value={accessKey} 
-                      readOnly 
-                      className="text-xs font-mono tracking-wider h-9"
-                    />
-                    <Button size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={copyKey}>
-                      {keyCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="w-full" 
-                    onClick={generateAccessKey}
-                    disabled={isGeneratingKey || !investorId || !roundId}
-                  >
-                    {isGeneratingKey ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Key className="w-4 h-4 mr-2" />
-                        Generate access key
-                      </>
-                    )}
+            {/* Access Key Section */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Access Key</Label>
+              {accessKey ? (
+                <div className="flex gap-2">
+                  <Input 
+                    value={accessKey} 
+                    readOnly 
+                    className="text-xs font-mono tracking-wider h-9"
+                  />
+                  <Button size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={copyKey}>
+                    {keyCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </Button>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Share both URL and key with the investor
-                </p>
-              </div>
-            )}
-
-            {isGlobal && (
+                </div>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="w-full" 
+                  onClick={generateAccessKey}
+                  disabled={isGeneratingKey || !roundId || (!isGlobal && !investorId)}
+                >
+                  {isGeneratingKey ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="w-4 h-4 mr-2" />
+                      Generate access key
+                    </>
+                  )}
+                </Button>
+              )}
               <p className="text-xs text-muted-foreground">
-                Switch to an investor variant to generate shareable links
+                {isGlobal ? "Share URL and key with anyone" : "Share both URL and key with the investor"}
               </p>
-            )}
+            </div>
           </div>
         ) : (
           <div className="px-4 py-6 text-center">

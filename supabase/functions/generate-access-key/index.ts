@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 interface GenerateKeyRequest {
-  investorId: string;
+  investorId?: string | null;
   roundId: string;
   tool: 'memo' | 'docket';
 }
@@ -55,9 +55,9 @@ Deno.serve(async (req) => {
 
     const { investorId, roundId, tool }: GenerateKeyRequest = await req.json();
 
-    if (!investorId || !roundId || !tool) {
+    if (!roundId || !tool) {
       return new Response(
-        JSON.stringify({ error: 'investorId, roundId, and tool are required' }),
+        JSON.stringify({ error: 'roundId and tool are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -84,29 +84,40 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify investor belongs to this workspace
-    const { data: investor, error: investorError } = await supabase
-      .from('investors')
-      .select('id, name, slug')
-      .eq('id', investorId)
-      .eq('workspace_id', round.workspace_id)
-      .single();
+    let investor = null;
 
-    if (investorError || !investor) {
-      return new Response(
-        JSON.stringify({ error: 'Investor not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // If investorId provided, verify investor belongs to this workspace
+    if (investorId) {
+      const { data: investorData, error: investorError } = await supabase
+        .from('investors')
+        .select('id, name, slug')
+        .eq('id', investorId)
+        .eq('workspace_id', round.workspace_id)
+        .single();
+
+      if (investorError || !investorData) {
+        return new Response(
+          JSON.stringify({ error: 'Investor not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      investor = investorData;
     }
 
-    // Check if key already exists for this investor/round/tool combo
-    const { data: existingKey } = await supabase
+    // Check if key already exists for this investor/round/tool combo (or global if no investor)
+    let existingKeyQuery = supabase
       .from('access_keys')
       .select('*')
-      .eq('investor_id', investorId)
       .eq('round_id', roundId)
-      .eq('tool', tool)
-      .maybeSingle();
+      .eq('tool', tool);
+
+    if (investorId) {
+      existingKeyQuery = existingKeyQuery.eq('investor_id', investorId);
+    } else {
+      existingKeyQuery = existingKeyQuery.is('investor_id', null);
+    }
+
+    const { data: existingKey } = await existingKeyQuery.maybeSingle();
 
     if (existingKey) {
       // Return existing key
@@ -114,7 +125,8 @@ Deno.serve(async (req) => {
         JSON.stringify({
           key: existingKey.key,
           investor: investor,
-          isExisting: true
+          isExisting: true,
+          isGlobal: !investorId
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -155,7 +167,7 @@ Deno.serve(async (req) => {
       .from('access_keys')
       .insert({
         key,
-        investor_id: investorId,
+        investor_id: investorId || null,
         round_id: roundId,
         tool,
         workspace_id: round.workspace_id,
@@ -173,13 +185,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Generated access key for investor: ${investor.name}, round: ${roundId}, tool: ${tool}`);
+    console.log(`Generated ${investorId ? 'investor' : 'global'} access key for round: ${roundId}, tool: ${tool}`);
 
     return new Response(
       JSON.stringify({
         key: newKey.key,
         investor: investor,
-        isExisting: false
+        isExisting: false,
+        isGlobal: !investorId
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
