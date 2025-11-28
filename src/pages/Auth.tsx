@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
@@ -7,7 +7,6 @@ import { FeatureStream } from "@/components/FeatureStream";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import thesisLogo from "@/assets/thesis-logo.png";
-import { ChevronDown } from "lucide-react";
 
 export default function Auth() {
   const { user, isLoading } = useFounderAuth();
@@ -95,55 +94,64 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 -mt-16">
-      <div className="w-full max-w-sm space-y-6">
-        {/* Feature Stream */}
-        <FeatureStream />
-        
-        {/* Logo & Tagline */}
-        <div className="text-center space-y-2">
-          <img src={thesisLogo} alt="Thesis" className="h-10 mx-auto" />
-          <p className="text-muted-foreground font-medium">
-            Run Your Raise
-          </p>
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="flex-1 flex items-center justify-center px-4 -mt-12">
+        <div className="w-full max-w-sm space-y-6">
+          {/* Feature Stream */}
+          <FeatureStream />
+          
+          {/* Logo & Tagline */}
+          <div className="text-center space-y-2">
+            <img src={thesisLogo} alt="Thesis" className="h-10 mx-auto" />
+            <p className="text-muted-foreground font-medium">
+              Run Your Raise
+            </p>
+          </div>
+
+          {/* Get Access Button & Code Input */}
+          <div className="flex flex-col items-center space-y-4 pt-2">
+            <button
+              onClick={() => setShowCodeInput(!showCodeInput)}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
+            >
+              Get Access
+            </button>
+
+            {showCodeInput && (
+              <div className="w-full max-w-[280px] animate-fade-in">
+                <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+                  <Input
+                    placeholder="Enter invite code"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                    className="h-10 text-center text-sm tracking-widest uppercase bg-background"
+                    onKeyDown={(e) => e.key === "Enter" && handleValidateCode()}
+                    autoFocus
+                  />
+                  <Button
+                    onClick={handleValidateCode}
+                    disabled={!inviteCode.trim() || isValidating}
+                    className="w-full h-9 text-sm"
+                    size="sm"
+                  >
+                    {isValidating ? "Validating..." : "Continue"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Get Access Button & Code Input */}
-        <div className="space-y-3 pt-2">
-          <Button
-            onClick={() => setShowCodeInput(!showCodeInput)}
-            variant="outline"
-            className="w-full h-12 text-base gap-2"
-          >
-            Get Access
-            <ChevronDown className={`w-4 h-4 transition-transform ${showCodeInput ? 'rotate-180' : ''}`} />
-          </Button>
-
-          {showCodeInput && (
-            <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
-              <Input
-                placeholder="Enter invite code"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                className="h-12 text-center text-base tracking-widest uppercase"
-                onKeyDown={(e) => e.key === "Enter" && handleValidateCode()}
-                autoFocus
-              />
-              <Button
-                onClick={handleValidateCode}
-                disabled={!inviteCode.trim() || isValidating}
-                className="w-full h-10"
-              >
-                {isValidating ? "Validating..." : "Continue"}
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <p className="text-center text-xs text-muted-foreground">
-          By continuing, you agree to our Terms of Service and Privacy Policy
-        </p>
       </div>
+
+      {/* Footer */}
+      <footer className="py-6 text-center">
+        <p className="text-xs text-muted-foreground">
+          © 2025 Thesis.{" "}
+          <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>.{" "}
+          <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>.{" "}
+          <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>.
+        </p>
+      </footer>
     </div>
   );
 }
