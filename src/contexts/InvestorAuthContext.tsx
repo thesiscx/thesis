@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface InvestorSession {
   investorId: string;
@@ -52,36 +53,26 @@ export const InvestorAuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('[Investor Auth] Background validation starting');
       
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-access-key`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ key: session.accessKey }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('validate-access-key', {
+        body: { key: session.accessKey },
+      });
 
-      // Only clear session if explicitly invalid (401/403)
-      if (response.status === 401 || response.status === 403) {
-        console.log('[Investor Auth] Key explicitly invalid, clearing session');
-        clearInvestorSession();
+      if (error) {
+        // Only clear on auth errors, not network errors
+        if (error.message?.includes('401') || error.message?.includes('403')) {
+          console.log('[Investor Auth] Key explicitly invalid, clearing session');
+          clearInvestorSession();
+        }
         return;
       }
 
-      // For 200 responses, check if valid is explicitly false
-      if (response.ok) {
-        const data = await response.json();
-        if (data.valid === false) {
-          console.log('[Investor Auth] Key invalid per response, clearing session');
-          clearInvestorSession();
-          return;
-        }
-        console.log('[Investor Auth] Background validation successful');
+      if (data?.valid === false) {
+        console.log('[Investor Auth] Key invalid per response, clearing session');
+        clearInvestorSession();
+        return;
       }
-      // Server errors (500+) or network issues - keep session (benefit of the doubt)
+      
+      console.log('[Investor Auth] Background validation successful');
     } catch (error) {
       console.log('[Investor Auth] Background validation network error, keeping session');
     }
@@ -115,22 +106,17 @@ export const InvestorAuthProvider = ({ children }: { children: ReactNode }) => {
     session?: InvestorSession;
   }> => {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-access-key`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ key }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('validate-access-key', {
+        body: { key },
+      });
 
-      const data = await response.json();
+      if (error) {
+        console.error('Edge function error:', error);
+        return { success: false, error: 'Failed to validate key. Please try again.' };
+      }
 
-      if (!response.ok) {
-        return { success: false, error: data.error || 'Invalid access key' };
+      if (!data || data.error) {
+        return { success: false, error: data?.error || 'Invalid access key' };
       }
 
       // Handle both investor-specific and global keys
