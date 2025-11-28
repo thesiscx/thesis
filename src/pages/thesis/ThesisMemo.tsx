@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import ThesisLayout from "@/components/thesis/ThesisLayout";
 import MemoEditor from "@/components/thesis/MemoEditor";
@@ -15,7 +15,16 @@ export default function ThesisMemo() {
   
   const { rounds, isLoading: roundsLoading } = useRounds();
   const { investors, recentInvestors } = useInvestors();
-  const { memo, tocItems, updateMemo, isSaving, lastSaved } = useMemo(roundSlug, variantSlug);
+  const { 
+    memo, 
+    tocItems, 
+    updateMemo, 
+    isSaving, 
+    lastSaved,
+    versions,
+    restoreVersion,
+    isRestoringVersion,
+  } = useMemo(roundSlug, variantSlug);
 
   if (roundsLoading) {
     return (
@@ -47,6 +56,9 @@ export default function ThesisMemo() {
             tocItems={tocItems}
             lastSaved={lastSaved}
             isSaving={isSaving}
+            versions={versions}
+            onRestoreVersion={restoreVersion}
+            isRestoringVersion={isRestoringVersion}
           />
 
           {/* Main Editor */}
