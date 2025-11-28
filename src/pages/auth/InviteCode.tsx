@@ -91,8 +91,8 @@ export default function InviteCode() {
     <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
-          {/* Fixed header area */}
-          <div className="mb-8">
+          {/* Fixed header - same height on all pages */}
+          <div className="h-6 mb-6">
             <Link
               to="/auth"
               className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -102,13 +102,13 @@ export default function InviteCode() {
             </Link>
           </div>
 
-          {/* Logo - fixed position */}
-          <div className="text-center mb-8">
-            <img src={thesisLogo} alt="Thesis" className="h-10 mx-auto" />
+          {/* Logo - fixed height container */}
+          <div className="h-10 flex items-center justify-center mb-8">
+            <img src={thesisLogo} alt="Thesis" className="h-8" />
           </div>
 
-          {/* Form area */}
-          <div className="space-y-4">
+          {/* Form area - fixed min height */}
+          <div className="min-h-[140px] space-y-4">
             <Input
               placeholder="Invite code"
               value={inviteCode}
