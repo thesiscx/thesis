@@ -20,32 +20,58 @@ export type Database = {
           created_by: string | null
           expires_at: string | null
           id: string
+          investor_id: string | null
           key: string
           last_used_at: string | null
-          stakeholder_id: string
+          round_id: string | null
+          stakeholder_id: string | null
           status: string
+          tool: string | null
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
           expires_at?: string | null
           id?: string
+          investor_id?: string | null
           key: string
           last_used_at?: string | null
-          stakeholder_id: string
+          round_id?: string | null
+          stakeholder_id?: string | null
           status?: string
+          tool?: string | null
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
           expires_at?: string | null
           id?: string
+          investor_id?: string | null
           key?: string
           last_used_at?: string | null
-          stakeholder_id?: string
+          round_id?: string | null
+          stakeholder_id?: string | null
           status?: string
+          tool?: string | null
+          workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "access_keys_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_keys_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "access_keys_stakeholder_id_fkey"
             columns: ["stakeholder_id"]
@@ -485,6 +511,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           company_name: string | null
+          company_slug: string | null
           created_at: string
           description: string | null
           full_name: string | null
@@ -496,6 +523,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           company_name?: string | null
+          company_slug?: string | null
           created_at?: string
           description?: string | null
           full_name?: string | null
@@ -507,6 +535,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           company_name?: string | null
+          company_slug?: string | null
           created_at?: string
           description?: string | null
           full_name?: string | null
@@ -592,6 +621,8 @@ export type Database = {
           id: string
           instrument_type: string
           name: string
+          round_number: number
+          round_type: string
           slug: string
           state: string
           target_raise: number | null
@@ -604,6 +635,8 @@ export type Database = {
           id?: string
           instrument_type?: string
           name: string
+          round_number?: number
+          round_type?: string
           slug: string
           state?: string
           target_raise?: number | null
@@ -616,6 +649,8 @@ export type Database = {
           id?: string
           instrument_type?: string
           name?: string
+          round_number?: number
+          round_type?: string
           slug?: string
           state?: string
           target_raise?: number | null

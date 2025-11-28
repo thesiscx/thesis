@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useRounds } from "@/hooks/useRounds";
+import { useRounds, ROUND_TYPES, ROUND_TYPE_LABELS, RoundType, getRoundCode } from "@/hooks/useRounds";
 
 interface CreateRoundDialogProps {
   open: boolean;
@@ -29,9 +29,9 @@ export default function CreateRoundDialog({
   onOpenChange,
 }: CreateRoundDialogProps) {
   const navigate = useNavigate();
-  const { createRound } = useRounds();
+  const { createRound, countRoundsOfType } = useRounds();
   
-  const [name, setName] = useState("");
+  const [roundType, setRoundType] = useState<RoundType>("s");
   const [instrumentType, setInstrumentType] = useState<"safe" | "note">("safe");
   const [targetRaise, setTargetRaise] = useState("");
 
@@ -42,23 +42,29 @@ export default function CreateRoundDialog({
       .replace(/(^-|-$)/g, "");
   };
 
-  const handleCreate = async () => {
-    if (!name.trim()) return;
+  // Calculate what the round number will be
+  const existingCount = countRoundsOfType(roundType);
+  const roundNumber = existingCount + 1;
+  const publicCode = roundNumber > 1 ? `${roundType}${roundNumber}` : roundType;
 
-    const slug = slugify(name);
+  const handleCreate = async () => {
+    const roundLabel = ROUND_TYPE_LABELS[roundType];
+    const displayName = roundNumber > 1 ? `${roundLabel} ${roundNumber}` : roundLabel;
+    const slug = slugify(displayName);
     
     await createRound.mutateAsync({
-      name: name.trim(),
+      name: displayName,
       slug,
       instrument_type: instrumentType,
       target_raise: targetRaise ? parseFloat(targetRaise) : undefined,
+      round_type: roundType,
     });
 
     onOpenChange(false);
     navigate(`/thesis/${slug}/memo/global`);
     
     // Reset form
-    setName("");
+    setRoundType("s");
     setInstrumentType("safe");
     setTargetRaise("");
   };
@@ -75,18 +81,33 @@ export default function CreateRoundDialog({
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Round name</Label>
-            <Input
-              id="name"
-              placeholder="e.g., Seed, Pre-seed, Series A"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            {name && (
-              <p className="text-xs text-muted-foreground">
-                URL: /thesis/{slugify(name)}/...
-              </p>
-            )}
+            <Label>Round type *</Label>
+            <Select value={roundType} onValueChange={(v: RoundType) => setRoundType(v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROUND_TYPES.map((type) => {
+                  const count = countRoundsOfType(type);
+                  return (
+                    <SelectItem key={type} value={type}>
+                      {ROUND_TYPE_LABELS[type]}
+                      {count > 0 && (
+                        <span className="text-muted-foreground ml-2">
+                          ({count} existing)
+                        </span>
+                      )}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <div className="text-xs text-muted-foreground space-y-1">
+              {roundNumber > 1 && (
+                <p>This will be your <strong>{ROUND_TYPE_LABELS[roundType]} #{roundNumber}</strong></p>
+              )}
+              <p>URL code: <span className="font-mono">{publicCode}</span></p>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -124,7 +145,7 @@ export default function CreateRoundDialog({
           </Button>
           <Button 
             onClick={handleCreate} 
-            disabled={!name.trim() || createRound.isPending}
+            disabled={createRound.isPending}
           >
             {createRound.isPending ? "Creating..." : "Create round"}
           </Button>

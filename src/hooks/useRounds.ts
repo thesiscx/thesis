@@ -3,7 +3,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-interface Round {
+export type RoundType = 'ff' | 'ps' | 's' | 'br' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f';
+
+export const ROUND_TYPE_LABELS: Record<RoundType, string> = {
+  ff: 'Family & Friends',
+  ps: 'Pre-Seed',
+  s: 'Seed',
+  br: 'Bridge',
+  a: 'Series A',
+  b: 'Series B',
+  c: 'Series C',
+  d: 'Series D',
+  e: 'Series E',
+  f: 'Series F',
+};
+
+export const ROUND_TYPES: RoundType[] = ['ff', 'ps', 's', 'br', 'a', 'b', 'c', 'd', 'e', 'f'];
+
+export interface Round {
   id: string;
   slug: string;
   name: string;
@@ -11,6 +28,15 @@ interface Round {
   state: string;
   target_raise: number | null;
   created_at: string;
+  round_type: RoundType;
+  round_number: number;
+}
+
+// Helper to get the public URL code for a round
+export function getRoundCode(round: Pick<Round, 'round_type' | 'round_number'>): string {
+  return round.round_number > 1 
+    ? `${round.round_type}${round.round_number}` 
+    : round.round_type;
 }
 
 export function useRounds() {
@@ -41,8 +67,13 @@ export function useRounds() {
       slug: string; 
       instrument_type: string;
       target_raise?: number;
+      round_type: RoundType;
     }) => {
       if (!user?.id) throw new Error("Not authenticated");
+
+      // Calculate round_number based on existing rounds of same type
+      const existingOfType = rounds.filter(r => r.round_type === input.round_type);
+      const roundNumber = existingOfType.length + 1;
 
       // Create the round
       const { data: round, error: roundError } = await supabase
@@ -52,8 +83,10 @@ export function useRounds() {
           slug: input.slug,
           instrument_type: input.instrument_type,
           target_raise: input.target_raise || null,
-          workspace_id: user.id, // Using user_id as workspace_id for now
+          workspace_id: user.id,
           created_by: user.id,
+          round_type: input.round_type,
+          round_number: roundNumber,
         })
         .select()
         .single();
@@ -123,10 +156,16 @@ export function useRounds() {
     },
   });
 
+  // Helper to count rounds of a specific type
+  const countRoundsOfType = (roundType: RoundType) => {
+    return rounds.filter(r => r.round_type === roundType).length;
+  };
+
   return {
     rounds,
     isLoading,
     createRound,
     archiveRound,
+    countRoundsOfType,
   };
 }

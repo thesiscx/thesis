@@ -29,24 +29,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate access key format
-    const keyRegex = /^robo-[a-z]{4}-[a-z]{4}-[a-z]{4}$/i;
-    if (!keyRegex.test(key)) {
+    // Validate access key format: xxxx-xxxx-xxxx-xxxx (all lowercase alpha)
+    const keyRegex = /^[a-z]{4}-[a-z]{4}-[a-z]{4}-[a-z]{4}$/;
+    if (!keyRegex.test(key.toLowerCase())) {
       return new Response(
         JSON.stringify({ error: 'Invalid access key format' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Look up access key
+    // Look up access key with investor and round info
     const { data: accessKey, error: keyError } = await supabase
       .from('access_keys')
-      .select('*, stakeholder:stakeholders(*)')
-      .eq('key', key)
-      .single();
+      .select(`
+        *,
+        investor:investors(*),
+        round:rounds(
+          *,
+          profile:profiles!rounds_created_by_fkey(company_slug, company_name)
+        )
+      `)
+      .eq('key', key.toLowerCase())
+      .maybeSingle();
 
-    if (keyError || !accessKey) {
-      console.log('Key lookup error:', keyError);
+    if (keyError) {
+      console.error('Key lookup error:', keyError);
+      return new Response(
+        JSON.stringify({ error: 'Error looking up key' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!accessKey) {
       return new Response(
         JSON.stringify({ error: 'Invalid access key' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -82,23 +96,39 @@ Deno.serve(async (req) => {
     await supabase
       .from('access_logs')
       .insert({
-        stakeholder_id: accessKey.stakeholder_id,
         access_key_id: accessKey.id,
         ip_address: ipAddress,
         user_agent: userAgent,
-        action: 'login'
+        action: 'investor_access'
       });
 
-    console.log(`Access granted for stakeholder: ${accessKey.stakeholder.name}`);
+    // Calculate public round code
+    const roundCode = accessKey.round?.round_number > 1 
+      ? `${accessKey.round.round_type}${accessKey.round.round_number}`
+      : accessKey.round?.round_type;
+
+    console.log(`Access granted for investor: ${accessKey.investor?.name}, tool: ${accessKey.tool}`);
 
     return new Response(
       JSON.stringify({
         valid: true,
-        stakeholder: {
-          id: accessKey.stakeholder.id,
-          name: accessKey.stakeholder.name,
-          organization: accessKey.stakeholder.organization
+        investor: {
+          id: accessKey.investor?.id,
+          name: accessKey.investor?.name,
+          slug: accessKey.investor?.slug
         },
+        round: {
+          id: accessKey.round?.id,
+          name: accessKey.round?.name,
+          roundCode,
+          roundType: accessKey.round?.round_type,
+          roundNumber: accessKey.round?.round_number
+        },
+        workspace: {
+          companySlug: accessKey.round?.profile?.company_slug,
+          companyName: accessKey.round?.profile?.company_name
+        },
+        tool: accessKey.tool,
         accessKeyId: accessKey.id
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

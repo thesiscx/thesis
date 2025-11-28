@@ -6,11 +6,12 @@ const corsHeaders = {
 };
 
 interface GenerateKeyRequest {
-  stakeholderId: string;
-  expiresAt?: string;
+  investorId: string;
+  roundId: string;
+  tool: 'memo' | 'docket';
 }
 
-function generateAccessKey(shortCode: string): string {
+function generateAccessKey(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz';
   const generateSegment = () => {
     let segment = '';
@@ -20,7 +21,7 @@ function generateAccessKey(shortCode: string): string {
     return segment;
   };
   
-  return `robo-${shortCode}-${generateSegment()}-${generateSegment()}`;
+  return `${generateSegment()}-${generateSegment()}-${generateSegment()}-${generateSegment()}`;
 }
 
 Deno.serve(async (req) => {
@@ -43,7 +44,7 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Verify user is admin
+    // Verify user is authenticated
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return new Response(
@@ -52,52 +53,75 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data: roleData, error: roleError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
+    const { investorId, roundId, tool }: GenerateKeyRequest = await req.json();
+
+    if (!investorId || !roundId || !tool) {
+      return new Response(
+        JSON.stringify({ error: 'investorId, roundId, and tool are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!['memo', 'docket'].includes(tool)) {
+      return new Response(
+        JSON.stringify({ error: 'Tool must be "memo" or "docket"' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify user owns the round
+    const { data: round, error: roundError } = await supabase
+      .from('rounds')
+      .select('id, workspace_id, created_by')
+      .eq('id', roundId)
+      .eq('created_by', user.id)
       .single();
 
-    if (roleError || !roleData) {
+    if (roundError || !round) {
       return new Response(
-        JSON.stringify({ error: 'Admin access required' }),
+        JSON.stringify({ error: 'Round not found or access denied' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { stakeholderId, expiresAt }: GenerateKeyRequest = await req.json();
-
-    if (!stakeholderId) {
-      return new Response(
-        JSON.stringify({ error: 'Stakeholder ID is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get stakeholder to retrieve short_code
-    const { data: stakeholder, error: stakeholderError } = await supabase
-      .from('stakeholders')
-      .select('short_code')
-      .eq('id', stakeholderId)
+    // Verify investor belongs to this workspace
+    const { data: investor, error: investorError } = await supabase
+      .from('investors')
+      .select('id, name, slug')
+      .eq('id', investorId)
+      .eq('workspace_id', round.workspace_id)
       .single();
 
-    if (stakeholderError || !stakeholder) {
+    if (investorError || !investor) {
       return new Response(
-        JSON.stringify({ error: 'Stakeholder not found' }),
+        JSON.stringify({ error: 'Investor not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!stakeholder.short_code) {
+    // Check if key already exists for this investor/round/tool combo
+    const { data: existingKey } = await supabase
+      .from('access_keys')
+      .select('*')
+      .eq('investor_id', investorId)
+      .eq('round_id', roundId)
+      .eq('tool', tool)
+      .maybeSingle();
+
+    if (existingKey) {
+      // Return existing key
       return new Response(
-        JSON.stringify({ error: 'Stakeholder must have a short code before generating access key' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          key: existingKey.key,
+          investor: investor,
+          isExisting: true
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Generate unique key
-    let key = generateAccessKey(stakeholder.short_code);
+    let key = generateAccessKey();
     let attempts = 0;
     const maxAttempts = 10;
 
@@ -106,11 +130,11 @@ Deno.serve(async (req) => {
         .from('access_keys')
         .select('id')
         .eq('key', key)
-        .single();
+        .maybeSingle();
 
       if (!existing) break;
       
-      key = generateAccessKey(stakeholder.short_code);
+      key = generateAccessKey();
       attempts++;
     }
 
@@ -121,17 +145,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create access key
-    const { data: newKey, error: insertError } = await supabase
+    // Create access key using service role to bypass RLS
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: newKey, error: insertError } = await supabaseAdmin
       .from('access_keys')
       .insert({
         key,
-        stakeholder_id: stakeholderId,
+        investor_id: investorId,
+        round_id: roundId,
+        tool,
+        workspace_id: round.workspace_id,
         status: 'active',
-        expires_at: expiresAt || null,
         created_by: user.id
       })
-      .select('*, stakeholder:stakeholders(*)')
+      .select()
       .single();
 
     if (insertError) {
@@ -142,13 +173,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Generated access key for stakeholder: ${newKey.stakeholder.name}`);
+    console.log(`Generated access key for investor: ${investor.name}, round: ${roundId}, tool: ${tool}`);
 
     return new Response(
       JSON.stringify({
         key: newKey.key,
-        stakeholder: newKey.stakeholder,
-        expiresAt: newKey.expires_at
+        investor: investor,
+        isExisting: false
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

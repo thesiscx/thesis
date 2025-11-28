@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,12 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useRounds } from "@/hooks/useRounds";
+import { useRounds, ROUND_TYPES, ROUND_TYPE_LABELS, RoundType } from "@/hooks/useRounds";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, X, FileText, Loader2 } from "lucide-react";
+import { Upload, X, FileText, Loader2, Check, AlertCircle } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type OnboardingStep = "company" | "round";
 
@@ -30,15 +31,71 @@ export default function Onboarding() {
   
   // Company details
   const [companyName, setCompanyName] = useState("");
+  const [companySlug, setCompanySlug] = useState("");
+  const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [website, setWebsite] = useState("");
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   
   // Round details
-  const [roundName, setRoundName] = useState("");
+  const [roundType, setRoundType] = useState<RoundType>("s");
   const [instrumentType, setInstrumentType] = useState<"safe" | "note">("safe");
   const [targetRaise, setTargetRaise] = useState("");
+
+  const debouncedSlug = useDebounce(companySlug, 500);
+
+  // Auto-generate slug from company name
+  const slugify = useCallback((text: string) => {
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 20);
+  }, []);
+
+  // Update slug when company name changes (if user hasn't manually edited)
+  useEffect(() => {
+    if (companyName && slugStatus === "idle") {
+      setCompanySlug(slugify(companyName));
+    }
+  }, [companyName, slugify, slugStatus]);
+
+  // Check slug availability
+  useEffect(() => {
+    const checkSlugAvailability = async () => {
+      if (!debouncedSlug || debouncedSlug.length < 3) {
+        setSlugStatus("idle");
+        return;
+      }
+
+      // Validate format
+      const slugRegex = /^[a-z0-9][a-z0-9-]{1,18}[a-z0-9]$/;
+      if (!slugRegex.test(debouncedSlug) || debouncedSlug.includes('--')) {
+        setSlugStatus("taken"); // Invalid format
+        return;
+      }
+
+      setSlugStatus("checking");
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("company_slug", debouncedSlug)
+        .neq("id", user?.id || "")
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking slug:", error);
+        setSlugStatus("idle");
+        return;
+      }
+
+      setSlugStatus(data ? "taken" : "available");
+    };
+
+    checkSlugAvailability();
+  }, [debouncedSlug, user?.id]);
 
   // Check if user has completed onboarding
   useEffect(() => {
@@ -47,12 +104,11 @@ export default function Onboarding() {
       
       const { data: profile } = await supabase
         .from("profiles")
-        .select("onboarding_completed, company_name")
+        .select("onboarding_completed, company_name, company_slug")
         .eq("id", user.id)
         .maybeSingle();
       
       if (profile?.onboarding_completed && profile?.company_name) {
-        // User has completed onboarding, skip to round step or redirect
         if (rounds.length > 0) {
           navigate(`/thesis/${rounds[0].slug}/memo/global`, { replace: true });
         } else {
@@ -81,11 +137,10 @@ export default function Onboarding() {
     }
   }, [user, authLoading, navigate]);
 
-  const slugify = (text: string) => {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
+  const handleSlugChange = (value: string) => {
+    const cleanSlug = value.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 20);
+    setCompanySlug(cleanSlug);
+    setSlugStatus("idle");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +172,7 @@ export default function Onboarding() {
   };
 
   const handleCompanySubmit = async () => {
-    if (!companyName.trim()) return;
+    if (!companyName.trim() || !companySlug || slugStatus !== "available") return;
     if (!user) return;
 
     setIsUploading(true);
@@ -136,20 +191,18 @@ export default function Onboarding() {
         }
       }
 
-      // Update profile with company details
+      // Update profile with company details including slug
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
           company_name: companyName.trim(),
+          company_slug: companySlug,
           website: website.trim() || null,
           description: description.trim() || null,
         })
         .eq("id", user.id);
 
       if (profileError) throw profileError;
-
-      // TODO: Trigger AI to parse uploaded files and generate memo draft
-      // This will be implemented with an edge function
 
       setStep("round");
     } catch (error) {
@@ -165,9 +218,10 @@ export default function Onboarding() {
   };
 
   const handleCreateRound = async () => {
-    if (!roundName.trim() || !user) return;
+    if (!user) return;
 
-    const slug = slugify(roundName);
+    const roundLabel = ROUND_TYPE_LABELS[roundType];
+    const slug = slugify(roundLabel);
     
     try {
       // Mark onboarding as complete
@@ -177,10 +231,11 @@ export default function Onboarding() {
         .eq("id", user.id);
 
       await createRound.mutateAsync({
-        name: roundName.trim(),
+        name: roundLabel,
         slug,
         instrument_type: instrumentType,
         target_raise: targetRaise ? parseFloat(targetRaise) : undefined,
+        round_type: roundType,
       });
 
       navigate(`/thesis/${slug}/memo/global`);
@@ -230,6 +285,41 @@ export default function Onboarding() {
                   onChange={(e) => setCompanyName(e.target.value)}
                   autoFocus
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="companySlug">URL slug *</Label>
+                <div className="relative">
+                  <Input
+                    id="companySlug"
+                    placeholder="acme"
+                    value={companySlug}
+                    onChange={(e) => handleSlugChange(e.target.value)}
+                    className={
+                      slugStatus === "taken" ? "border-destructive pr-10" :
+                      slugStatus === "available" ? "border-green-500 pr-10" : "pr-10"
+                    }
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {slugStatus === "checking" && (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    )}
+                    {slugStatus === "available" && (
+                      <Check className="w-4 h-4 text-green-500" />
+                    )}
+                    {slugStatus === "taken" && (
+                      <AlertCircle className="w-4 h-4 text-destructive" />
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Your memos will be at: <span className="font-mono">thesis.run/{companySlug || "your-slug"}/...</span>
+                </p>
+                {slugStatus === "taken" && (
+                  <p className="text-xs text-destructive">
+                    This slug is taken or invalid. Try another.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -305,7 +395,7 @@ export default function Onboarding() {
               <Button 
                 className="w-full" 
                 onClick={handleCompanySubmit}
-                disabled={!companyName.trim() || isUploading}
+                disabled={!companyName.trim() || !companySlug || slugStatus !== "available" || isUploading}
               >
                 {isUploading ? (
                   <>
@@ -332,19 +422,22 @@ export default function Onboarding() {
 
             <div className="space-y-6 bg-card border border-border rounded-lg p-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Round name</Label>
-                <Input
-                  id="name"
-                  placeholder="e.g., Seed, Pre-seed, Series A"
-                  value={roundName}
-                  onChange={(e) => setRoundName(e.target.value)}
-                  autoFocus
-                />
-                {roundName && (
-                  <p className="text-xs text-muted-foreground">
-                    Your memo will be at: /thesis/{slugify(roundName)}/memo/global
-                  </p>
-                )}
+                <Label>Round type *</Label>
+                <Select value={roundType} onValueChange={(v: RoundType) => setRoundType(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROUND_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {ROUND_TYPE_LABELS[type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  URL code: <span className="font-mono">{roundType}</span>
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -378,7 +471,7 @@ export default function Onboarding() {
               <Button 
                 className="w-full" 
                 onClick={handleCreateRound}
-                disabled={!roundName.trim() || createRound.isPending}
+                disabled={createRound.isPending}
               >
                 {createRound.isPending ? "Creating..." : "Create your raise"}
               </Button>
