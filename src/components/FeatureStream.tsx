@@ -41,7 +41,7 @@ export function FeatureStream() {
         
         return (prev + 1) % features.length;
       });
-    }, 800);
+    }, 1200);
 
     return () => clearInterval(interval);
   }, []);
