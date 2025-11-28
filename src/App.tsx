@@ -15,8 +15,11 @@ import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/thesis/Onboarding";
 import ThesisMemo from "./pages/thesis/ThesisMemo";
 import ThesisDocket from "./pages/thesis/ThesisDocket";
+import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
 import { FounderAuthProvider, useFounderAuth } from "./contexts/FounderAuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const queryClient = new QueryClient({
@@ -59,6 +62,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Admin routes wrapper with AuthProvider
+const AdminRoutes = () => (
+  <AuthProvider>
+    <Routes>
+      <Route path="login" element={<AdminLogin />} />
+      <Route path="" element={<Admin />} />
+    </Routes>
+  </AuthProvider>
+);
+
 const App = () => (
   <PersistQueryClientProvider
     client={queryClient}
@@ -76,52 +89,60 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <FounderAuthProvider>
-          <Routes>
-            {/* Auth */}
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/auth/invite" element={<InviteCode />} />
-            <Route path="/auth/email" element={<EmailAuth />} />
-            
-            {/* Legal & Info */}
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/pricing" element={<Pricing />} />
-            
-            {/* Thesis Routes */}
-            <Route
-              path="/thesis"
-              element={
-                <ProtectedRoute>
-                  <Onboarding />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/thesis/:roundSlug/memo/:variantSlug"
-              element={
-                <ProtectedRoute>
-                  <ThesisMemo />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/thesis/:roundSlug/docket/:variantSlug"
-              element={
-                <ProtectedRoute>
-                  <ThesisDocket />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Redirects */}
-            <Route path="/" element={<Navigate to="/thesis" replace />} />
-            <Route path="/login" element={<Navigate to="/auth" replace />} />
-            
-            {/* 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </FounderAuthProvider>
+        <Routes>
+          {/* Admin Routes - separate auth context */}
+          <Route path="/admin/*" element={<AdminRoutes />} />
+          
+          {/* Main App Routes */}
+          <Route path="/*" element={
+            <FounderAuthProvider>
+              <Routes>
+                {/* Auth */}
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/invite" element={<InviteCode />} />
+                <Route path="/auth/email" element={<EmailAuth />} />
+                
+                {/* Legal & Info */}
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/pricing" element={<Pricing />} />
+                
+                {/* Thesis Routes */}
+                <Route
+                  path="/thesis"
+                  element={
+                    <ProtectedRoute>
+                      <Onboarding />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/thesis/:roundSlug/memo/:variantSlug"
+                  element={
+                    <ProtectedRoute>
+                      <ThesisMemo />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/thesis/:roundSlug/docket/:variantSlug"
+                  element={
+                    <ProtectedRoute>
+                      <ThesisDocket />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* Redirects */}
+                <Route path="/" element={<Navigate to="/thesis" replace />} />
+                <Route path="/login" element={<Navigate to="/auth" replace />} />
+                
+                {/* 404 */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </FounderAuthProvider>
+          } />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </PersistQueryClientProvider>

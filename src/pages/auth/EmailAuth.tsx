@@ -103,22 +103,8 @@ export default function EmailAuth() {
 
     try {
       const inviteCode = sessionStorage.getItem("validated_invite_code");
-      if (inviteCode) {
-        await supabase
-          .from("invite_codes")
-          .update({ used_count: 1 })
-          .eq("code", inviteCode)
-          .select()
-          .then(async ({ data }) => {
-            if (data && data[0]) {
-              await supabase
-                .from("invite_codes")
-                .update({ used_count: (data[0].used_count || 0) + 1 })
-                .eq("code", inviteCode);
-            }
-          });
-      }
-
+      
+      // Sign up first
       const { error } = await signUpWithEmail(email.trim(), password);
 
       if (error) {
@@ -127,7 +113,35 @@ export default function EmailAuth() {
           description: error.message,
           variant: "destructive",
         });
-      } else {
+        return;
+      }
+
+      // Track invite code usage after successful signup
+      if (inviteCode) {
+        // Get the invite code ID
+        const { data: codeData } = await supabase
+          .from("invite_codes")
+          .select("id")
+          .eq("code", inviteCode)
+          .single();
+
+        if (codeData) {
+          // Increment usage count using RPC
+          await supabase.rpc("increment_invite_code_usage", { code_value: inviteCode });
+
+          // Get the newly created user
+          const { data: { user: newUser } } = await supabase.auth.getUser();
+
+          // Record the usage with IP and user agent
+          await supabase.from("invite_code_uses").insert({
+            invite_code_id: codeData.id,
+            used_by: newUser?.id,
+            ip_address: null, // Will be captured server-side if needed
+            user_agent: navigator.userAgent,
+            location: null,
+          });
+        }
+
         sessionStorage.removeItem("validated_invite_code");
       }
     } finally {

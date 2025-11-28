@@ -247,6 +247,44 @@ export type Database = {
         }
         Relationships: []
       }
+      invite_code_uses: {
+        Row: {
+          id: string
+          invite_code_id: string
+          ip_address: string | null
+          location: Json | null
+          used_at: string
+          used_by: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          id?: string
+          invite_code_id: string
+          ip_address?: string | null
+          location?: Json | null
+          used_at?: string
+          used_by?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          id?: string
+          invite_code_id?: string
+          ip_address?: string | null
+          location?: Json | null
+          used_at?: string
+          used_by?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_code_uses_invite_code_id_fkey"
+            columns: ["invite_code_id"]
+            isOneToOne: false
+            referencedRelation: "invite_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invite_codes: {
         Row: {
           code: string
@@ -256,6 +294,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           max_uses: number | null
+          owner_id: string | null
           used_count: number | null
         }
         Insert: {
@@ -266,6 +305,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           max_uses?: number | null
+          owner_id?: string | null
           used_count?: number | null
         }
         Update: {
@@ -276,6 +316,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           max_uses?: number | null
+          owner_id?: string | null
           used_count?: number | null
         }
         Relationships: []
@@ -696,6 +737,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_user_invite_codes: {
+        Args: { count?: number; user_id: string }
+        Returns: undefined
+      }
+      generate_invite_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
