@@ -6,9 +6,12 @@ interface FounderAuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  companySlug: string | null;
+  companyName: string | null;
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const FounderAuthContext = createContext<FounderAuthContextType | undefined>(undefined);
@@ -17,21 +20,56 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [companySlug, setCompanySlug] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState<string | null>(null);
+
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("company_slug, company_name")
+      .eq("id", userId)
+      .maybeSingle();
+    
+    if (data) {
+      setCompanySlug(data.company_slug);
+      setCompanyName(data.company_name);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Defer profile fetch to avoid blocking
+          setTimeout(() => fetchProfile(session.user.id), 0);
+        } else {
+          setCompanySlug(null);
+          setCompanyName(null);
+        }
+        
         setIsLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await fetchProfile(session.user.id);
+      }
+      
       setIsLoading(false);
     });
 
@@ -63,6 +101,8 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    setCompanySlug(null);
+    setCompanyName(null);
   };
 
   return (
@@ -71,9 +111,12 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         isLoading,
+        companySlug,
+        companyName,
         signInWithEmail,
         signUpWithEmail,
         signOut,
+        refreshProfile,
       }}
     >
       {children}

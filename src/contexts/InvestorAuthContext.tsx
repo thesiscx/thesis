@@ -105,10 +105,17 @@ export const InvestorAuthProvider = ({ children }: { children: ReactNode }) => {
     error?: string;
     session?: InvestorSession;
   }> => {
+    // Create timeout for 10 seconds
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), 10000);
+    });
+
     try {
-      const { data, error } = await supabase.functions.invoke('validate-access-key', {
+      const fetchPromise = supabase.functions.invoke('validate-access-key', {
         body: { key },
       });
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
       if (error) {
         console.error('Edge function error:', error);
@@ -147,7 +154,10 @@ export const InvestorAuthProvider = ({ children }: { children: ReactNode }) => {
       return { success: false, error: 'Invalid response from server' };
     } catch (error) {
       console.error('Error validating access key:', error);
-      return { success: false, error: 'Network error. Please try again.' };
+      const message = error instanceof Error && error.message === 'Request timeout' 
+        ? 'Request timed out. Please try again.'
+        : 'Network error. Please try again.';
+      return { success: false, error: message };
     }
   };
 
