@@ -1,0 +1,187 @@
+/* TipTap Editor Styles - matches documentation layout */
+
+.tiptap-editor {
+  @apply max-w-none;
+}
+
+.tiptap-editor:focus {
+  @apply outline-none;
+}
+
+/* Headings */
+.tiptap-editor h1 {
+  @apply text-3xl font-bold text-foreground mb-6 mt-8 first:mt-0;
+}
+
+.tiptap-editor h2 {
+  @apply text-2xl font-semibold text-foreground mb-4 mt-6;
+}
+
+.tiptap-editor h3 {
+  @apply text-xl font-medium text-foreground mb-3 mt-4;
+}
+
+/* Paragraphs */
+.tiptap-editor p {
+  @apply text-base text-foreground leading-relaxed mb-4;
+}
+
+/* Lists */
+.tiptap-editor ul {
+  @apply list-disc list-inside mb-4 space-y-1;
+}
+
+.tiptap-editor ol {
+  @apply list-decimal list-inside mb-4 space-y-1;
+}
+
+.tiptap-editor li {
+  @apply text-foreground;
+}
+
+/* Links */
+.tiptap-editor a {
+  @apply text-primary underline hover:text-primary/80;
+}
+
+/* Blockquotes */
+.tiptap-editor blockquote {
+  @apply border-l-4 border-primary/30 pl-4 italic my-4 text-muted-foreground;
+}
+
+/* Code */
+.tiptap-editor code {
+  @apply bg-muted px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.tiptap-editor pre {
+  @apply bg-muted p-4 rounded-lg overflow-x-auto mb-4;
+}
+
+.tiptap-editor pre code {
+  @apply bg-transparent p-0;
+}
+
+/* Tables */
+.tiptap-editor table {
+  @apply w-full border-collapse mb-6;
+}
+
+.tiptap-editor th {
+  @apply bg-muted text-left p-3 border border-border font-medium text-sm;
+}
+
+.tiptap-editor td {
+  @apply p-3 border border-border text-sm;
+}
+
+.tiptap-editor tr:hover td {
+  @apply bg-muted/50;
+}
+
+/* Images */
+.tiptap-editor img {
+  @apply max-w-full h-auto rounded-lg;
+}
+
+.tiptap-editor img.ProseMirror-selectednode {
+  @apply ring-2 ring-primary ring-offset-2;
+}
+
+/* Resizable Image Extension Styles */
+.tiptap-editor .resizable-image-wrapper {
+  @apply relative my-4 block;
+}
+
+.tiptap-editor .resizable-image-figure {
+  @apply m-0;
+}
+
+.tiptap-editor .resizable-image-container {
+  @apply relative inline-block w-full;
+}
+
+.tiptap-editor .resizable-image-wrapper img {
+  @apply block max-w-full cursor-pointer rounded-lg;
+}
+
+.tiptap-editor .resizable-image-wrapper.selected img {
+  @apply ring-2 ring-primary ring-offset-2;
+}
+
+.tiptap-editor .resizable-image-wrapper img.resizing {
+  @apply opacity-80;
+}
+
+/* Resize handles */
+.tiptap-editor .resizable-image-container .resize-handle {
+  @apply absolute w-3 h-3 bg-primary border-2 border-background rounded-sm z-10;
+}
+
+.tiptap-editor .resize-handle-nw {
+  @apply top-0 left-0 cursor-nw-resize -translate-x-1/2 -translate-y-1/2;
+}
+
+.tiptap-editor .resize-handle-ne {
+  @apply top-0 right-0 cursor-ne-resize translate-x-1/2 -translate-y-1/2;
+}
+
+.tiptap-editor .resize-handle-sw {
+  @apply bottom-0 left-0 cursor-sw-resize -translate-x-1/2 translate-y-1/2;
+}
+
+.tiptap-editor .resize-handle-se {
+  @apply bottom-0 right-0 cursor-se-resize translate-x-1/2 translate-y-1/2;
+}
+
+/* Image Caption Styles */
+.tiptap-editor .image-caption-container {
+  @apply mt-2 text-center;
+}
+
+.tiptap-editor .image-caption-input {
+  @apply w-full text-sm text-center bg-transparent border-b border-primary/30 py-1 px-2 outline-none focus:border-primary text-muted-foreground;
+}
+
+.tiptap-editor .image-caption-text {
+  @apply text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors inline-block min-h-[1.5em] italic;
+}
+
+.tiptap-editor .image-caption-text.placeholder {
+  @apply text-muted-foreground/50;
+}
+
+/* Placeholder */
+.tiptap-editor p.is-editor-empty:first-child::before {
+  @apply text-muted-foreground pointer-events-none float-left h-0;
+  content: attr(data-placeholder);
+}
+
+/* Selection */
+.tiptap-editor ::selection {
+  @apply bg-primary/20;
+}
+
+/* Horizontal rule */
+.tiptap-editor hr {
+  @apply border-t border-border my-8;
+}
+
+/* Strong and emphasis */
+.tiptap-editor strong {
+  @apply font-semibold;
+}
+
+.tiptap-editor em {
+  @apply italic;
+}
+
+/* Drag handle for images */
+.tiptap-editor .ProseMirror-widget {
+  @apply cursor-move;
+}
+
+/* Citation mark */
+.tiptap-editor .citation-mark {
+  @apply border-b border-dotted border-muted-foreground cursor-help;
+}
