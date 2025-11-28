@@ -6,44 +6,39 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import Petition from "./pages/compliance/Petition";
-import ProfileSettings from "./pages/ProfileSettings";
-import Login from "./pages/Login";
+import Auth from "./pages/Auth";
+import Onboarding from "./pages/thesis/Onboarding";
+import ThesisMemo from "./pages/thesis/ThesisMemo";
+import ThesisDocket from "./pages/thesis/ThesisDocket";
 import NotFound from "./pages/NotFound";
-import { AuthProvider } from "./contexts/AuthContext";
-import { StakeholderAuthProvider, useStakeholderAuth } from "./contexts/StakeholderAuthContext";
+import { FounderAuthProvider, useFounderAuth } from "./contexts/FounderAuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
-import AdminLogin from "./pages/AdminLogin";
-import Admin from "./pages/Admin";
-import Editor from "./pages/Editor";
-import EditorLogin from "./pages/EditorLogin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      gcTime: 1000 * 60 * 60 * 24, // 24 hours
-      staleTime: 1000 * 60 * 5, // 5 minutes default
+      gcTime: 1000 * 60 * 60 * 24,
+      staleTime: 1000 * 60 * 5,
     },
   },
 });
 
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
-  key: 'robomart-query-cache',
+  key: 'thesis-query-cache',
 });
 
-// FIX: Simplified ProtectedRoute - single redirect pattern, no useEffect
+// Protected route wrapper for founders
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { stakeholderSession, isLoading: stakeholderLoading } = useStakeholderAuth();
+  const { user, isLoading } = useFounderAuth();
 
-  if (stakeholderLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Skeleton className="h-14 w-full" />
         <div className="flex-1 flex">
           <div className="flex-1 p-12 space-y-4">
             <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-3/4" />
           </div>
@@ -52,8 +47,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!stakeholderSession) {
-    return <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;
@@ -64,10 +59,9 @@ const App = () => (
     client={queryClient}
     persistOptions={{
       persister,
-      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+      maxAge: 1000 * 60 * 60 * 24,
       dehydrateOptions: {
         shouldDehydrateQuery: (query) => {
-          // Don't persist auth-related queries
           return query.meta?.persist !== false;
         },
       },
@@ -77,27 +71,45 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <StakeholderAuthProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/editor/login" element={<EditorLogin />} />
-              <Route path="/editor" element={<Editor />} />
-              <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Petition />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </StakeholderAuthProvider>
-        </AuthProvider>
+        <FounderAuthProvider>
+          <Routes>
+            {/* Auth */}
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Thesis Routes */}
+            <Route
+              path="/thesis"
+              element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/thesis/:roundSlug/memo/:variantSlug"
+              element={
+                <ProtectedRoute>
+                  <ThesisMemo />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/thesis/:roundSlug/docket/:variantSlug"
+              element={
+                <ProtectedRoute>
+                  <ThesisDocket />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Redirects */}
+            <Route path="/" element={<Navigate to="/thesis" replace />} />
+            <Route path="/login" element={<Navigate to="/auth" replace />} />
+            
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </FounderAuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </PersistQueryClientProvider>

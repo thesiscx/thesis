@@ -100,6 +100,63 @@ export type Database = {
           },
         ]
       }
+      dockets: {
+        Row: {
+          amount: number | null
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          investor_id: string | null
+          is_global: boolean
+          round_id: string
+          status: string
+          updated_at: string
+          wire_received: boolean | null
+        }
+        Insert: {
+          amount?: number | null
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          investor_id?: string | null
+          is_global?: boolean
+          round_id: string
+          status?: string
+          updated_at?: string
+          wire_received?: boolean | null
+        }
+        Update: {
+          amount?: number | null
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          investor_id?: string | null
+          is_global?: boolean
+          round_id?: string
+          status?: string
+          updated_at?: string
+          wire_received?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dockets_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dockets_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           category: string
@@ -150,6 +207,93 @@ export type Database = {
           uploaded_at?: string | null
         }
         Relationships: []
+      }
+      investors: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          entity_name: string | null
+          entity_type: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          entity_name?: string | null
+          entity_type?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          entity_name?: string | null
+          entity_type?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      memos: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          investor_id: string | null
+          is_global: boolean
+          round_id: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          investor_id?: string | null
+          is_global?: boolean
+          round_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          investor_id?: string | null
+          is_global?: boolean
+          round_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memos_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memos_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       petition_content: {
         Row: {
@@ -248,6 +392,205 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      round_terms: {
+        Row: {
+          company_name: string | null
+          countersign_expiry_hours: number | null
+          created_at: string
+          discount_rate: number | null
+          entity_type: string | null
+          id: string
+          jurisdiction: string | null
+          mfn_enabled: boolean | null
+          minimum_ticket: number | null
+          pro_rata_enabled: boolean | null
+          registered_address: string | null
+          round_id: string
+          signatory_name: string | null
+          signatory_title: string | null
+          updated_at: string
+          valuation_cap: number | null
+          wire_instructions: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          countersign_expiry_hours?: number | null
+          created_at?: string
+          discount_rate?: number | null
+          entity_type?: string | null
+          id?: string
+          jurisdiction?: string | null
+          mfn_enabled?: boolean | null
+          minimum_ticket?: number | null
+          pro_rata_enabled?: boolean | null
+          registered_address?: string | null
+          round_id: string
+          signatory_name?: string | null
+          signatory_title?: string | null
+          updated_at?: string
+          valuation_cap?: number | null
+          wire_instructions?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          countersign_expiry_hours?: number | null
+          created_at?: string
+          discount_rate?: number | null
+          entity_type?: string | null
+          id?: string
+          jurisdiction?: string | null
+          mfn_enabled?: boolean | null
+          minimum_ticket?: number | null
+          pro_rata_enabled?: boolean | null
+          registered_address?: string | null
+          round_id?: string
+          signatory_name?: string | null
+          signatory_title?: string | null
+          updated_at?: string
+          valuation_cap?: number | null
+          wire_instructions?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_terms_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: true
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rounds: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          instrument_type: string
+          name: string
+          slug: string
+          state: string
+          target_raise: number | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instrument_type?: string
+          name: string
+          slug: string
+          state?: string
+          target_raise?: number | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instrument_type?: string
+          name?: string
+          slug?: string
+          state?: string
+          target_raise?: number | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      share_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          docket_id: string | null
+          expires_at: string | null
+          id: string
+          memo_id: string | null
+          permissions: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          docket_id?: string | null
+          expires_at?: string | null
+          id?: string
+          memo_id?: string | null
+          permissions?: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          docket_id?: string | null
+          expires_at?: string | null
+          id?: string
+          memo_id?: string | null
+          permissions?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_links_docket_id_fkey"
+            columns: ["docket_id"]
+            isOneToOne: false
+            referencedRelation: "dockets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "share_links_memo_id_fkey"
+            columns: ["memo_id"]
+            isOneToOne: false
+            referencedRelation: "memos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signatures: {
+        Row: {
+          docket_id: string
+          id: string
+          ip_address: string | null
+          signature_data: string | null
+          signed_at: string
+          signer_email: string | null
+          signer_name: string
+          signer_title: string | null
+          signer_type: string
+        }
+        Insert: {
+          docket_id: string
+          id?: string
+          ip_address?: string | null
+          signature_data?: string | null
+          signed_at?: string
+          signer_email?: string | null
+          signer_name: string
+          signer_title?: string | null
+          signer_type: string
+        }
+        Update: {
+          docket_id?: string
+          id?: string
+          ip_address?: string | null
+          signature_data?: string | null
+          signed_at?: string
+          signer_email?: string | null
+          signer_name?: string
+          signer_title?: string | null
+          signer_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signatures_docket_id_fkey"
+            columns: ["docket_id"]
+            isOneToOne: false
+            referencedRelation: "dockets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stakeholders: {
         Row: {

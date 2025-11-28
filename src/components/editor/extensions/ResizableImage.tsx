@@ -236,10 +236,4 @@ export const ResizableImage = Node.create({
   },
 });
 
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    image: {
-      setImage: (options: ImageAttributes) => ReturnType;
-    };
-  }
-}
+// Commands are already declared by the base Image extension
