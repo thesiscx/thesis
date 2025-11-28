@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +34,8 @@ interface Signature {
 
 export default function PublicDocketViewer() {
   const navigate = useNavigate();
-  const { investorSession, clearInvestorSession } = useInvestorAuth();
+  const { companySlug, roundCode } = useParams();
+  const { investorSession, clearInvestorSession, isLoading: isAuthLoading } = useInvestorAuth();
   
   const [docket, setDocket] = useState<DocketData | null>(null);
   const [roundTerms, setRoundTerms] = useState<RoundTerms | null>(null);
@@ -42,12 +43,13 @@ export default function PublicDocketViewer() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if no session
+  // Redirect if no session - WAIT for auth to finish loading first
   useEffect(() => {
-    if (!investorSession) {
-      navigate('/', { replace: true });
+    if (!isAuthLoading && !investorSession) {
+      // Redirect to access key page, NOT root (which goes to founder routes)
+      navigate(`/${companySlug}/${roundCode}/docket`, { replace: true });
     }
-  }, [investorSession, navigate]);
+  }, [isAuthLoading, investorSession, companySlug, roundCode, navigate]);
 
   // Fetch docket data
   useEffect(() => {
@@ -101,7 +103,8 @@ export default function PublicDocketViewer() {
 
   const handleLogout = () => {
     clearInvestorSession();
-    navigate('/', { replace: true });
+    // Redirect to access key page, NOT root
+    navigate(`/${companySlug}/${roundCode}/docket`, { replace: true });
   };
 
   const getStatusBadge = (status: string) => {
@@ -122,7 +125,8 @@ export default function PublicDocketViewer() {
   const investorSignature = signatures.find(s => s.signer_type === 'investor');
   const companySignature = signatures.find(s => s.signer_type === 'company');
 
-  if (!investorSession) {
+  // Show nothing while auth is loading or no session
+  if (isAuthLoading || !investorSession) {
     return null;
   }
 

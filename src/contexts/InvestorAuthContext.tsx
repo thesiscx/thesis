@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface InvestorSession {
@@ -79,13 +79,13 @@ export const InvestorAuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Immediately load from localStorage (no blocking)
+    // Check localStorage synchronously
     const stored = localStorage.getItem(INVESTOR_SESSION_KEY);
     
     if (stored) {
       try {
         const session = JSON.parse(stored);
-        console.log('[Investor Auth] Loaded session from localStorage immediately');
+        console.log('[Investor Auth] Loaded session from localStorage');
         setInvestorSession(session);
         
         // Validate in background (non-blocking)
@@ -96,7 +96,8 @@ export const InvestorAuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     
-    // Set loading to false immediately - don't block UI
+    // CRITICAL: Set loading to false AFTER checking localStorage
+    // This prevents race conditions where components redirect before session is loaded
     setIsLoading(false);
   }, []);
 

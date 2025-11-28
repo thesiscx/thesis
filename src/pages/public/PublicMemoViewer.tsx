@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
 import TipTapRenderer from "@/components/TipTapRenderer";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,8 @@ interface TocItem {
 
 export default function PublicMemoViewer() {
   const navigate = useNavigate();
-  const { investorSession, clearInvestorSession } = useInvestorAuth();
+  const { companySlug, roundCode } = useParams();
+  const { investorSession, clearInvestorSession, isLoading: isAuthLoading } = useInvestorAuth();
   
   const [memoContent, setMemoContent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,12 +24,13 @@ export default function PublicMemoViewer() {
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [activeHeading, setActiveHeading] = useState<string | null>(null);
 
-  // Redirect if no session
+  // Redirect if no session - WAIT for auth to finish loading first
   useEffect(() => {
-    if (!investorSession) {
-      navigate('/', { replace: true });
+    if (!isAuthLoading && !investorSession) {
+      // Redirect to access key page, NOT root (which goes to founder routes)
+      navigate(`/${companySlug}/${roundCode}/memo`, { replace: true });
     }
-  }, [investorSession, navigate]);
+  }, [isAuthLoading, investorSession, companySlug, roundCode, navigate]);
 
   // Fetch memo content
   useEffect(() => {
@@ -151,10 +153,12 @@ export default function PublicMemoViewer() {
 
   const handleLogout = () => {
     clearInvestorSession();
-    navigate('/', { replace: true });
+    // Redirect to access key page, NOT root
+    navigate(`/${companySlug}/${roundCode}/memo`, { replace: true });
   };
 
-  if (!investorSession) {
+  // Show nothing while auth is loading or no session
+  if (isAuthLoading || !investorSession) {
     return null;
   }
 
