@@ -34,6 +34,20 @@ export default function MemoEditor({
 }: MemoEditorProps) {
   const isInitialMount = useRef(true);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  const prevContentRef = useRef<string | null>(null);
+
+  // CRITICAL: Reset isInitialMount when content prop changes significantly (new memo loaded)
+  useEffect(() => {
+    const contentStr = content ? JSON.stringify(content) : null;
+    
+    // If we had previous content and it's completely different, allow re-initialization
+    if (prevContentRef.current !== null && contentStr !== prevContentRef.current) {
+      console.log('[MemoEditor] Content changed externally, allowing re-initialization');
+      isInitialMount.current = true;
+    }
+    
+    prevContentRef.current = contentStr;
+  }, [content]);
 
   const extractHeadings = useCallback((editor: any) => {
     const headings: TocItem[] = [];
