@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
+import { User, Session, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 interface FounderAuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -37,17 +38,25 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithEmail = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  };
+
+  const signUpWithEmail = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/thesis`;
     
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
       options: {
-        redirectTo: redirectUrl,
+        emailRedirectTo: redirectUrl,
       },
     });
-    
-    return { error: error as Error | null };
+    return { error };
   };
 
   const signOut = async () => {
@@ -62,7 +71,8 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         isLoading,
-        signInWithGoogle,
+        signInWithEmail,
+        signUpWithEmail,
         signOut,
       }}
     >
