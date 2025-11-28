@@ -157,8 +157,8 @@ export default function EmailAuth() {
     <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
-          {/* Fixed header area */}
-          <div className="mb-8">
+          {/* Fixed header - same height on all pages */}
+          <div className="h-6 mb-6">
             <button
               onClick={handleBack}
               className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -168,16 +168,16 @@ export default function EmailAuth() {
             </button>
           </div>
 
-          {/* Logo - fixed position */}
-          <div className="text-center mb-8">
-            <img src={thesisLogo} alt="Thesis" className="h-10 mx-auto" />
+          {/* Logo - fixed height container */}
+          <div className="h-10 flex items-center justify-center mb-8">
+            <img src={thesisLogo} alt="Thesis" className="h-8" />
           </div>
 
-          {/* Form area - content changes but position stays */}
-          <div className="space-y-4">
+          {/* Form area - fixed min height to prevent shift */}
+          <div className="min-h-[200px]">
             {/* Email Step */}
             {step === "email" && (
-              <>
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -205,12 +205,12 @@ export default function EmailAuth() {
                     "Continue"
                   )}
                 </Button>
-              </>
+              </div>
             )}
 
             {/* Sign In Step */}
             {step === "password" && (
-              <>
+              <div className="space-y-4">
                 <p className="text-sm text-muted-foreground text-center">
                   Welcome back! Enter your password.
                 </p>
@@ -241,12 +241,12 @@ export default function EmailAuth() {
                     "Sign In"
                   )}
                 </Button>
-              </>
+              </div>
             )}
 
             {/* Create Account Step */}
             {step === "create-password" && (
-              <>
+              <div className="space-y-4">
                 <p className="text-sm text-muted-foreground text-center">
                   Create a password for your account.
                 </p>
@@ -291,7 +291,7 @@ export default function EmailAuth() {
                     "Create Account"
                   )}
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </div>

@@ -32,7 +32,7 @@ export default function Auth() {
           
           {/* Logo & Tagline */}
           <div className="text-center space-y-2">
-            <img src={thesisLogo} alt="Thesis" className="h-10 mx-auto" />
+            <img src={thesisLogo} alt="Thesis" className="h-7 mx-auto" />
             <p className="text-muted-foreground font-medium">
               Run Your Raise
             </p>
