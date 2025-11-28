@@ -11,6 +11,7 @@ import { StakeholdersTab } from "@/components/admin/StakeholdersTab";
 import { AccessKeysTab } from "@/components/admin/AccessKeysTab";
 import { AnalyticsTab } from "@/components/admin/AnalyticsTab";
 import { DocumentsTab } from "@/components/admin/DocumentsTab";
+import { InviteCodesTab } from "@/components/admin/InviteCodesTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -155,13 +156,18 @@ export default function Admin() {
           </Card>
         </div>
 
-        <Tabs defaultValue="stakeholders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="invite-codes" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="invite-codes">Invite Codes</TabsTrigger>
             <TabsTrigger value="stakeholders">Stakeholders</TabsTrigger>
             <TabsTrigger value="access-codes">Access Codes</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="invite-codes">
+            <InviteCodesTab onUpdate={handleStatsUpdate} />
+          </TabsContent>
 
           <TabsContent value="stakeholders">
             <StakeholdersTab onUpdate={handleStatsUpdate} />
