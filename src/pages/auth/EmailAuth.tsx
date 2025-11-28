@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import thesisLogo from "@/assets/thesis-logo.png";
+import thesisLogo from "@/assets/thesis-logo-2.png";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 type AuthStep = "email" | "password" | "create-password";
