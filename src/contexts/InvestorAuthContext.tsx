@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef, ReactNode } fro
 import { supabase } from "@/integrations/supabase/client";
 
 interface InvestorSession {
-  investorId: string;
+  investorId: string | null;  // null for global keys (not 'global' string to avoid UUID errors)
   investorName: string;
   investorSlug: string;
   roundId: string;
@@ -132,7 +132,8 @@ export const InvestorAuthProvider = ({ children }: { children: ReactNode }) => {
         const isGlobal = !data.investor || !data.investor.id;
         
         const session: InvestorSession = {
-          investorId: isGlobal ? 'global' : data.investor.id,
+          // Use null for global keys to avoid UUID query errors
+          investorId: isGlobal ? null : data.investor.id,
           investorName: isGlobal ? 'Investor' : data.investor.name,
           investorSlug: isGlobal ? 'global' : data.investor.slug,
           roundId: data.round.id,

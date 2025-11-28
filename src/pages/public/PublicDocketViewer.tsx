@@ -59,15 +59,37 @@ export default function PublicDocketViewer() {
       try {
         setIsLoading(true);
 
-        // Fetch docket
-        const { data: docketData, error: docketError } = await supabase
-          .from('dockets')
-          .select('*')
-          .eq('round_id', investorSession.roundId)
-          .eq('investor_id', investorSession.investorId)
-          .maybeSingle();
+        let docketData = null;
 
-        if (docketError) throw docketError;
+        // Only fetch investor-specific docket if we have an actual investorId (not null/global)
+        if (investorSession.investorId) {
+          const { data, error: docketError } = await supabase
+            .from('dockets')
+            .select('*')
+            .eq('round_id', investorSession.roundId)
+            .eq('investor_id', investorSession.investorId)
+            .maybeSingle();
+
+          if (docketError) {
+            console.error('Error fetching investor docket:', docketError);
+          }
+          docketData = data;
+        }
+
+        // If no investor-specific docket (or global key), try global docket
+        if (!docketData) {
+          const { data: globalDocket, error: globalError } = await supabase
+            .from('dockets')
+            .select('*')
+            .eq('round_id', investorSession.roundId)
+            .eq('is_global', true)
+            .maybeSingle();
+
+          if (globalError) {
+            console.error('Error fetching global docket:', globalError);
+          }
+          docketData = globalDocket;
+        }
 
         if (docketData) {
           setDocket(docketData);
