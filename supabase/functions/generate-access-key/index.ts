@@ -207,6 +207,48 @@ Deno.serve(async (req) => {
       );
     }
 
+    // If this is a memo key, also create a share_link for RLS access
+    if (tool === 'memo') {
+      console.log(`[generate-access-key] Creating share_link for memo... (${Date.now() - startTime}ms)`);
+      
+      // Find the memo for this round/investor
+      let memoQuery = supabaseAdmin
+        .from('memos')
+        .select('id')
+        .eq('round_id', roundId);
+      
+      if (investorId) {
+        memoQuery = memoQuery.eq('investor_id', investorId);
+      } else {
+        memoQuery = memoQuery.eq('is_global', true);
+      }
+      
+      const { data: memo } = await memoQuery.maybeSingle();
+      
+      if (memo) {
+        // Generate a token for the share link (use the access key as token for simplicity)
+        const { error: shareLinkError } = await supabaseAdmin
+          .from('share_links')
+          .upsert({
+            memo_id: memo.id,
+            token: key,
+            permissions: 'view',
+            created_by: user.id
+          }, {
+            onConflict: 'token'
+          });
+        
+        if (shareLinkError) {
+          console.error('[generate-access-key] Error creating share_link:', shareLinkError);
+          // Don't fail the whole request, access key was still created
+        } else {
+          console.log(`[generate-access-key] Share link created for memo ${memo.id}`);
+        }
+      } else {
+        console.log('[generate-access-key] No memo found for this round/investor, skipping share_link');
+      }
+    }
+
     console.log(`[generate-access-key] SUCCESS - Generated ${investorId ? 'investor' : 'global'} key for round: ${roundId}, tool: ${tool} (${Date.now() - startTime}ms total)`);
 
     return new Response(
