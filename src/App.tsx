@@ -7,6 +7,7 @@ import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persist
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Auth from "./pages/Auth";
+import InviteCode from "./pages/auth/InviteCode";
 import EmailAuth from "./pages/auth/EmailAuth";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -79,6 +80,7 @@ const App = () => (
           <Routes>
             {/* Auth */}
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/invite" element={<InviteCode />} />
             <Route path="/auth/email" element={<EmailAuth />} />
             
             {/* Legal & Info */}
