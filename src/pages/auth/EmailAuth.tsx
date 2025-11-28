@@ -112,10 +112,20 @@ export default function EmailAuth() {
       // Increment invite code usage
       const inviteCode = sessionStorage.getItem("validated_invite_code");
       if (inviteCode) {
+        // Use raw update since types may not be regenerated yet
         await supabase
           .from("invite_codes")
-          .update({ used_count: supabase.rpc ? 1 : 1 }) // Will be updated via trigger
-          .eq("code", inviteCode);
+          .update({ used_count: 1 })
+          .eq("code", inviteCode)
+          .select()
+          .then(async ({ data }) => {
+            if (data && data[0]) {
+              await supabase
+                .from("invite_codes")
+                .update({ used_count: (data[0].used_count || 0) + 1 })
+                .eq("code", inviteCode);
+            }
+          });
       }
 
       const { error } = await signUpWithEmail(email.trim(), password);
