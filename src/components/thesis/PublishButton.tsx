@@ -40,6 +40,7 @@ export default function PublishButton({
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [companySlug, setCompanySlug] = useState<string | null>(null);
+  const [isLoadingSlug, setIsLoadingSlug] = useState(true);
   const [accessKey, setAccessKey] = useState<string | null>(null);
   const [accessKeyId, setAccessKeyId] = useState<string | null>(null);
   const [isGeneratingKey, setIsGeneratingKey] = useState(false);
@@ -51,7 +52,12 @@ export default function PublishButton({
   // Fetch company slug from profile
   useEffect(() => {
     const fetchCompanySlug = async () => {
-      if (authLoading || !user) return;
+      if (authLoading) return;
+      
+      if (!user) {
+        setIsLoadingSlug(false);
+        return;
+      }
       
       const { data } = await supabase
         .from("profiles")
@@ -62,6 +68,7 @@ export default function PublishButton({
       if (data?.company_slug) {
         setCompanySlug(data.company_slug);
       }
+      setIsLoadingSlug(false);
     };
 
     fetchCompanySlug();
@@ -199,7 +206,11 @@ export default function PublishButton({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        {publishedUrl ? (
+        {isLoadingSlug ? (
+          <div className="p-6 flex justify-center">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : publishedUrl ? (
           <div className="p-4 space-y-4">
             {/* URL Section */}
             <div className="space-y-2">
