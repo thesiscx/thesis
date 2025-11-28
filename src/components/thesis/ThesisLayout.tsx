@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut
 } from "lucide-react";
+import thesisIcon from "@/assets/thesis-icon.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -102,9 +103,10 @@ export default function ThesisLayout({
           {/* Segment 1: Thesis Logo/Settings */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="font-heading text-lg font-semibold px-3">
+              <Button variant="ghost" className="font-heading text-lg font-semibold px-3 gap-2">
+                <img src={thesisIcon} alt="Thesis" className="h-5 w-5" />
                 Thesis
-                <ChevronDown className="w-4 h-4 ml-1 opacity-50" />
+                <ChevronDown className="w-4 h-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
