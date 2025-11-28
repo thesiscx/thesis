@@ -15,6 +15,7 @@ import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/thesis/Onboarding";
 import ThesisMemo from "./pages/thesis/ThesisMemo";
 import ThesisDocket from "./pages/thesis/ThesisDocket";
+import FounderSettings from "./pages/thesis/FounderSettings";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
@@ -111,6 +112,11 @@ const App = () => (
           <Route path="/thesis" element={
             <FounderAuthProvider>
               <ProtectedRoute><Onboarding /></ProtectedRoute>
+            </FounderAuthProvider>
+          } />
+          <Route path="/thesis/settings" element={
+            <FounderAuthProvider>
+              <ProtectedRoute><FounderSettings /></ProtectedRoute>
             </FounderAuthProvider>
           } />
           <Route path="/thesis/:roundSlug/memo/:variantSlug" element={
