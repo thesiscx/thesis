@@ -35,7 +35,7 @@ export default function PublishButton({
   isPublished = false 
 }: PublishButtonProps) {
   const { toast } = useToast();
-  const { companySlug, isLoading: authLoading } = useFounderAuth();
+  const { companySlug, profileLoaded } = useFounderAuth();
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -50,7 +50,7 @@ export default function PublishButton({
   // Fetch existing access key
   useEffect(() => {
     const fetchExistingKey = async () => {
-      if (!roundId || authLoading) return;
+      if (!roundId || !profileLoaded) return;
 
       let query = supabase
         .from("access_keys")
@@ -79,7 +79,7 @@ export default function PublishButton({
     };
 
     fetchExistingKey();
-  }, [roundId, investorId, tool, isGlobal, authLoading]);
+  }, [roundId, investorId, tool, isGlobal, profileLoaded]);
 
   // Generate the public URL based on company slug and round code
   const roundCode = getRoundCode({ round_type: roundType as any, round_number: roundNumber });
@@ -179,7 +179,7 @@ export default function PublishButton({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        {authLoading ? (
+        {!profileLoaded ? (
           <div className="p-6 flex justify-center">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>

@@ -6,6 +6,7 @@ interface FounderAuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  profileLoaded: boolean;
   companySlug: string | null;
   companyName: string | null;
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
@@ -20,6 +21,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [companySlug, setCompanySlug] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
 
@@ -34,6 +36,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
       setCompanySlug(data.company_slug);
       setCompanyName(data.company_name);
     }
+    setProfileLoaded(true);
   };
 
   const refreshProfile = async () => {
@@ -50,11 +53,11 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetch to avoid blocking
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          await fetchProfile(session.user.id);
         } else {
           setCompanySlug(null);
           setCompanyName(null);
+          setProfileLoaded(true);
         }
         
         setIsLoading(false);
@@ -68,6 +71,8 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.user) {
         await fetchProfile(session.user.id);
+      } else {
+        setProfileLoaded(true);
       }
       
       setIsLoading(false);
@@ -103,6 +108,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setCompanySlug(null);
     setCompanyName(null);
+    setProfileLoaded(false);
   };
 
   return (
@@ -111,6 +117,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         isLoading,
+        profileLoaded,
         companySlug,
         companyName,
         signInWithEmail,
