@@ -1,18 +1,22 @@
-import { useCallback, useEffect } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
-import Placeholder from "@tiptap/extension-placeholder";
-import TextAlign from "@tiptap/extension-text-align";
-import { Table } from "@tiptap/extension-table";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableCell } from "@tiptap/extension-table-cell";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { EditorToolbar } from "@/components/editor/EditorToolbar";
-import ShareButton from "@/components/thesis/ShareButton";
-import { Json } from "@/integrations/supabase/types";
-import "@/components/editor/EditorStyles.css";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { ResizableImage } from '@/components/editor/extensions/ResizableImage';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import Link from '@tiptap/extension-link';
+import Placeholder from '@tiptap/extension-placeholder';
+import TextAlign from '@tiptap/extension-text-align';
+import TextStyle from '@tiptap/extension-text-style';
+import { FontSize } from '@/components/editor/extensions/FontSize';
+import { Citation } from '@/components/editor/extensions/Citation';
+import { EditorToolbar } from '@/components/editor/EditorToolbar';
+import '@/components/editor/EditorStyles.css';
+import { useEffect, useCallback, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import ShareButton from '@/components/thesis/ShareButton';
+import { Json } from '@/integrations/supabase/types';
 
 interface TocItem {
   id: string;
@@ -33,6 +37,57 @@ export default function MemoEditor({
   roundSlug,
   variantSlug,
 }: MemoEditorProps) {
+  const isInitialMount = useRef(true);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+
+  const extractHeadings = useCallback((editor: any) => {
+    const headings: TocItem[] = [];
+    const doc = editor.state.doc;
+    let h1Index = 0;
+    
+    doc.descendants((node: any) => {
+      if (node.type.name === 'heading' && node.attrs.level === 1) {
+        const text = node.textContent;
+        if (text.trim()) {
+          headings.push({
+            id: `h1-${h1Index}`,
+            label: text,
+            level: 1,
+          });
+          h1Index++;
+        }
+      }
+    });
+    
+    return headings;
+  }, []);
+
+  const uploadImage = useCallback(async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('memo-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('memo-images')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  }, []);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -40,56 +95,112 @@ export default function MemoEditor({
           levels: [1, 2, 3],
         },
       }),
-      Image.configure({
-        inline: false,
-        allowBase64: true,
-      }),
-      Link.configure({
-        openOnClick: false,
-      }),
-      Placeholder.configure({
-        placeholder: "Start writing your memo...",
-      }),
-      TextAlign.configure({
-        types: ["heading", "paragraph"],
-      }),
+      TextStyle,
+      FontSize,
+      ResizableImage,
       Table.configure({
         resizable: true,
       }),
       TableRow,
       TableCell,
       TableHeader,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'editor-link',
+        },
+      }),
+      Placeholder.configure({
+        placeholder: 'Start writing your memo...',
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Citation,
     ],
-    content: content as any,
-    onUpdate: ({ editor }) => {
-      const json = editor.getJSON();
-      const tocItems = extractTocItems(editor.getHTML());
-      onChange(json as Json, tocItems);
-    },
+    content: (content as any) || '',
     editorProps: {
       attributes: {
-        class: "prose prose-lg max-w-none focus:outline-none min-h-[calc(100vh-12rem)] px-16 py-8",
+        class: 'tiptap-editor min-h-[500px] focus:outline-none',
       },
+      handleDrop: (view, event, slice, moved) => {
+        if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+          const file = event.dataTransfer.files[0];
+          if (file.type.startsWith('image/')) {
+            event.preventDefault();
+            
+            uploadImage(file).then((url) => {
+              if (url && editor) {
+                editor.chain().focus().setImage({ src: url }).run();
+              }
+            });
+            
+            return true;
+          }
+        }
+        return false;
+      },
+      handlePaste: (view, event, slice) => {
+        const items = event.clipboardData?.items;
+        if (items) {
+          for (let i = 0; i < items.length; i++) {
+            if (items[i].type.startsWith('image/')) {
+              const file = items[i].getAsFile();
+              if (file) {
+                event.preventDefault();
+                
+                uploadImage(file).then((url) => {
+                  if (url && editor) {
+                    editor.chain().focus().setImage({ src: url }).run();
+                  }
+                });
+                
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      },
+    },
+    onUpdate: ({ editor }) => {
+      const json = editor.getJSON();
+      const headings = extractHeadings(editor);
+      onChange(json as Json, headings);
     },
   });
 
-  // Update editor content when prop changes
   useEffect(() => {
-    if (editor && content && JSON.stringify(editor.getJSON()) !== JSON.stringify(content)) {
+    if (editor && content && isInitialMount.current) {
+      isInitialMount.current = false;
       editor.commands.setContent(content as any);
+      
+      const headings = extractHeadings(editor);
+      onChange(content, headings);
+    }
+  }, [editor, content, extractHeadings, onChange]);
+
+  // Handle content updates from outside (e.g., version restore)
+  useEffect(() => {
+    if (editor && content && !isInitialMount.current) {
+      const currentContent = JSON.stringify(editor.getJSON());
+      const newContent = JSON.stringify(content);
+      if (currentContent !== newContent) {
+        editor.commands.setContent(content as any);
+      }
     }
   }, [editor, content]);
 
-  const extractTocItems = useCallback((html: string): TocItem[] => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    const headings = doc.querySelectorAll("h1");
-    
-    return Array.from(headings).map((heading, index) => ({
-      id: `h1-${index}`,
-      label: heading.textContent || `Section ${index + 1}`,
-      level: 1,
-    }));
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer?.files?.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   }, []);
 
   if (!editor) {
@@ -97,18 +208,21 @@ export default function MemoEditor({
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
+    <div 
+      className="flex flex-col h-full overflow-y-auto"
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       <div className="sticky top-0 z-40 bg-background border-b border-border">
         <div className="flex items-center justify-between px-4 py-2">
           <EditorToolbar editor={editor} />
           <ShareButton roundSlug={roundSlug} variantSlug={variantSlug} />
         </div>
       </div>
-
-      {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto">
-        <EditorContent editor={editor} />
+      <div className="flex-1 px-16 py-12 bg-background">
+        <div className="max-w-4xl mx-auto">
+          <EditorContent editor={editor} />
+        </div>
       </div>
     </div>
   );

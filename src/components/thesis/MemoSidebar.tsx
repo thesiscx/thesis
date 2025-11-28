@@ -1,7 +1,15 @@
 import { useState, useRef } from "react";
-import { Check } from "lucide-react";
+import { Check, History } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TocItem {
   id: string;
@@ -9,16 +17,28 @@ interface TocItem {
   level: number;
 }
 
+interface MemoVersion {
+  id: string;
+  version: number;
+  created_at: string;
+}
+
 interface MemoSidebarProps {
   tocItems: TocItem[];
   lastSaved: Date | null;
   isSaving: boolean;
+  versions?: MemoVersion[];
+  onRestoreVersion?: (versionId: string) => void;
+  isRestoringVersion?: boolean;
 }
 
 export default function MemoSidebar({
   tocItems,
   lastSaved,
   isSaving,
+  versions = [],
+  onRestoreVersion,
+  isRestoringVersion,
 }: MemoSidebarProps) {
   const [activeSection, setActiveSection] = useState<string>("");
   const isScrollingRef = useRef(false);
@@ -71,18 +91,49 @@ export default function MemoSidebar({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Contents
           </h3>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {isSaving ? (
-              <>
-                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse" />
-                <span>Saving...</span>
-              </>
-            ) : lastSaved ? (
-              <>
-                <Check className="w-3 h-3" />
-                <span>{format(lastSaved, 'h:mm a')}</span>
-              </>
-            ) : null}
+          <div className="flex items-center gap-2">
+            {versions.length > 0 && onRestoreVersion && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 px-1.5">
+                    <History className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    Version History
+                  </div>
+                  <ScrollArea className="max-h-64">
+                    {versions.map((version) => (
+                      <DropdownMenuItem
+                        key={version.id}
+                        onClick={() => onRestoreVersion(version.id)}
+                        disabled={isRestoringVersion}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-sm">Version {version.version}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(version.created_at), "MMM d, h:mm a")}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </ScrollArea>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {isSaving ? (
+                <>
+                  <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse" />
+                  <span>Saving...</span>
+                </>
+              ) : lastSaved ? (
+                <>
+                  <Check className="w-3 h-3" />
+                  <span>{format(lastSaved, 'h:mm a')}</span>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
         

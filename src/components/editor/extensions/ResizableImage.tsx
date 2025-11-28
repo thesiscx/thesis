@@ -12,6 +12,14 @@ interface ImageAttributes {
   align?: 'left' | 'center' | 'right';
 }
 
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    image: {
+      setImage: (options: ImageAttributes) => ReturnType;
+    };
+  }
+}
+
 const ResizableImageComponent = ({ node, updateAttributes, selected }: any) => {
   const { src, alt, title, caption, width, align = 'center' } = node.attrs as ImageAttributes;
   const [isResizing, setIsResizing] = useState(false);

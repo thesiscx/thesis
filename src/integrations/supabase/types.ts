@@ -321,6 +321,41 @@ export type Database = {
         }
         Relationships: []
       }
+      memo_versions: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          memo_id: string
+          version: number
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          memo_id: string
+          version: number
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          memo_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memo_versions_memo_id_fkey"
+            columns: ["memo_id"]
+            isOneToOne: false
+            referencedRelation: "memos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memos: {
         Row: {
           content: Json
@@ -331,6 +366,7 @@ export type Database = {
           is_global: boolean
           round_id: string
           updated_at: string
+          version: number
         }
         Insert: {
           content?: Json
@@ -341,6 +377,7 @@ export type Database = {
           is_global?: boolean
           round_id: string
           updated_at?: string
+          version?: number
         }
         Update: {
           content?: Json
@@ -351,6 +388,7 @@ export type Database = {
           is_global?: boolean
           round_id?: string
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
