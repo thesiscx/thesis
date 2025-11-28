@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { FeatureStream } from "@/components/FeatureStream";
 import thesisLogo from "@/assets/thesis-logo.png";
 
 export default function Auth() {
@@ -38,15 +39,20 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="text-center space-y-4">
+      <div className="w-full max-w-sm space-y-6">
+        {/* Feature Stream */}
+        <FeatureStream />
+        
+        {/* Logo & Tagline */}
+        <div className="text-center space-y-2">
           <img src={thesisLogo} alt="Thesis" className="h-10 mx-auto" />
-          <p className="text-muted-foreground">
-            Manage your fundraising rounds with clarity
+          <p className="text-muted-foreground font-medium">
+            Run Your Raise
           </p>
         </div>
 
-        <div className="space-y-4">
+        {/* Auth Button */}
+        <div className="space-y-4 pt-2">
           <Button
             onClick={handleGoogleLogin}
             variant="outline"
