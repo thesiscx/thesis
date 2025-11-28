@@ -25,6 +25,9 @@ function generateAccessKey(): string {
 }
 
 Deno.serve(async (req) => {
+  const startTime = Date.now();
+  console.log('[generate-access-key] Starting request...');
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -32,6 +35,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.log('[generate-access-key] Missing auth header');
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -45,8 +49,12 @@ Deno.serve(async (req) => {
     );
 
     // Verify user is authenticated
+    console.log(`[generate-access-key] Auth check starting... (${Date.now() - startTime}ms)`);
     const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log(`[generate-access-key] Auth check complete (${Date.now() - startTime}ms)`);
+    
     if (userError || !user) {
+      console.log('[generate-access-key] Unauthorized:', userError?.message);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -54,6 +62,7 @@ Deno.serve(async (req) => {
     }
 
     const { investorId, roundId, tool }: GenerateKeyRequest = await req.json();
+    console.log(`[generate-access-key] Request params: roundId=${roundId}, tool=${tool}, investorId=${investorId || 'null'}`);
 
     if (!roundId || !tool) {
       return new Response(
@@ -70,14 +79,17 @@ Deno.serve(async (req) => {
     }
 
     // Verify user owns the round
+    console.log(`[generate-access-key] Verifying round ownership... (${Date.now() - startTime}ms)`);
     const { data: round, error: roundError } = await supabase
       .from('rounds')
       .select('id, workspace_id, created_by')
       .eq('id', roundId)
       .eq('created_by', user.id)
       .single();
+    console.log(`[generate-access-key] Round verification complete (${Date.now() - startTime}ms)`);
 
     if (roundError || !round) {
+      console.log('[generate-access-key] Round not found or access denied:', roundError?.message);
       return new Response(
         JSON.stringify({ error: 'Round not found or access denied' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -88,14 +100,17 @@ Deno.serve(async (req) => {
 
     // If investorId provided, verify investor belongs to this workspace
     if (investorId) {
+      console.log(`[generate-access-key] Verifying investor... (${Date.now() - startTime}ms)`);
       const { data: investorData, error: investorError } = await supabase
         .from('investors')
         .select('id, name, slug')
         .eq('id', investorId)
         .eq('workspace_id', round.workspace_id)
         .single();
+      console.log(`[generate-access-key] Investor verification complete (${Date.now() - startTime}ms)`);
 
       if (investorError || !investorData) {
+        console.log('[generate-access-key] Investor not found:', investorError?.message);
         return new Response(
           JSON.stringify({ error: 'Investor not found' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -105,6 +120,7 @@ Deno.serve(async (req) => {
     }
 
     // Check if key already exists for this investor/round/tool combo (or global if no investor)
+    console.log(`[generate-access-key] Checking existing keys... (${Date.now() - startTime}ms)`);
     let existingKeyQuery = supabase
       .from('access_keys')
       .select('*')
@@ -118,9 +134,10 @@ Deno.serve(async (req) => {
     }
 
     const { data: existingKey } = await existingKeyQuery.maybeSingle();
+    console.log(`[generate-access-key] Existing key check complete (${Date.now() - startTime}ms)`);
 
     if (existingKey) {
-      // Return existing key
+      console.log(`[generate-access-key] Returning existing key (${Date.now() - startTime}ms total)`);
       return new Response(
         JSON.stringify({
           id: existingKey.id,
@@ -134,6 +151,7 @@ Deno.serve(async (req) => {
     }
 
     // Generate unique key
+    console.log(`[generate-access-key] Generating new key... (${Date.now() - startTime}ms)`);
     let key = generateAccessKey();
     let attempts = 0;
     const maxAttempts = 10;
@@ -152,13 +170,16 @@ Deno.serve(async (req) => {
     }
 
     if (attempts >= maxAttempts) {
+      console.log('[generate-access-key] Failed to generate unique key after max attempts');
       return new Response(
         JSON.stringify({ error: 'Failed to generate unique key' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    console.log(`[generate-access-key] Key generated in ${attempts} attempts (${Date.now() - startTime}ms)`);
 
     // Create access key using service role to bypass RLS
+    console.log(`[generate-access-key] Inserting key... (${Date.now() - startTime}ms)`);
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -179,14 +200,14 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) {
-      console.error('Error creating access key:', insertError);
+      console.error('[generate-access-key] Error creating access key:', insertError);
       return new Response(
         JSON.stringify({ error: 'Failed to create access key' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Generated ${investorId ? 'investor' : 'global'} access key for round: ${roundId}, tool: ${tool}`);
+    console.log(`[generate-access-key] SUCCESS - Generated ${investorId ? 'investor' : 'global'} key for round: ${roundId}, tool: ${tool} (${Date.now() - startTime}ms total)`);
 
     return new Response(
       JSON.stringify({
@@ -200,7 +221,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error generating access key:', error);
+    console.error(`[generate-access-key] Error after ${Date.now() - startTime}ms:`, error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
