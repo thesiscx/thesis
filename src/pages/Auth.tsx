@@ -109,36 +109,39 @@ export default function Auth() {
           </div>
 
           {/* Get Access Button & Code Input */}
-          <div className="flex flex-col items-center space-y-4 pt-2">
+          <div className="flex flex-col items-center pt-2">
             <button
               onClick={() => setShowCodeInput(!showCodeInput)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border rounded-md px-4 py-2 hover:border-muted-foreground/50"
             >
               Get Access
             </button>
 
-            {showCodeInput && (
-              <div className="w-full max-w-[280px] animate-fade-in">
-                <div className="bg-card border border-border rounded-lg p-4 space-y-3">
-                  <Input
-                    placeholder="Enter invite code"
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                    className="h-10 text-center text-sm tracking-widest uppercase bg-background"
-                    onKeyDown={(e) => e.key === "Enter" && handleValidateCode()}
-                    autoFocus
-                  />
-                  <Button
-                    onClick={handleValidateCode}
-                    disabled={!inviteCode.trim() || isValidating}
-                    className="w-full h-9 text-sm"
-                    size="sm"
-                  >
-                    {isValidating ? "Validating..." : "Continue"}
-                  </Button>
+            {/* Fixed height container to prevent layout shift */}
+            <div className="h-[140px] mt-4 flex items-start justify-center">
+              {showCodeInput && (
+                <div className="w-[280px] animate-fade-in">
+                  <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+                    <Input
+                      placeholder="Enter invite code"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                      className="h-10 text-center text-sm tracking-widest uppercase bg-background"
+                      onKeyDown={(e) => e.key === "Enter" && handleValidateCode()}
+                      autoFocus
+                    />
+                    <Button
+                      onClick={handleValidateCode}
+                      disabled={!inviteCode.trim() || isValidating}
+                      className="w-full h-9 text-sm"
+                      size="sm"
+                    >
+                      {isValidating ? "Validating..." : "Continue"}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
