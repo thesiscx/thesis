@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import thesisLogo from "@/assets/thesis-logo.png";
+import thesisLogo from "@/assets/thesis-logo-2.png";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 export default function InviteCode() {
@@ -107,8 +107,8 @@ export default function InviteCode() {
             <img src={thesisLogo} alt="Thesis" className="h-8" />
           </div>
 
-          {/* Form area - fixed min height */}
-          <div className="min-h-[140px] space-y-4">
+          {/* Form area - fixed min height to prevent shift */}
+          <div className="min-h-[200px] space-y-4">
             <Input
               placeholder="Invite code"
               value={inviteCode}

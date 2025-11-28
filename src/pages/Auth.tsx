@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { FeatureStream } from "@/components/FeatureStream";
-import thesisLogo from "@/assets/thesis-logo.png";
+import thesisLogo from "@/assets/thesis-logo-2.png";
 
 export default function Auth() {
   const { user, isLoading } = useFounderAuth();
