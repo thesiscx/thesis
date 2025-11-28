@@ -83,10 +83,7 @@ export default function PublishButton({
 
   // Generate the public URL based on company slug and round code
   const roundCode = getRoundCode({ round_type: roundType as any, round_number: roundNumber });
-  
-  const publishedUrl = companySlug 
-    ? `thesis.run/${companySlug}/${roundCode}/${tool}${isGlobal ? "" : `/${variantSlug}`}`
-    : null;
+  const publishedUrl = `thesis.run/${companySlug}/${roundCode}/${tool}${isGlobal ? "" : `/${variantSlug}`}`;
 
   const handlePublish = async () => {
     setIsPublishing(true);
@@ -183,104 +180,86 @@ export default function PublishButton({
           <div className="p-6 flex justify-center">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
-        ) : publishedUrl ? (
-          <div className="p-4 space-y-4">
-            {/* URL Section */}
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Public URL</Label>
-              <div className="flex gap-2">
-                <Input 
-                  value={`https://${publishedUrl}`} 
-                  readOnly 
-                  className="text-xs font-mono h-9"
-                />
-                <Button 
-                  size="icon" 
-                  variant="outline" 
-                  className="h-9 w-9 flex-shrink-0" 
-                  onClick={() => window.open(`https://${publishedUrl}`, '_blank')}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
+        ) : (
+          <>
+            <div className="p-4 space-y-4">
+              {/* URL Section */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Public URL</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={`https://${publishedUrl}`} 
+                    readOnly 
+                    className="text-xs font-mono h-9"
+                  />
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className="h-9 w-9 flex-shrink-0" 
+                    onClick={() => window.open(`https://${publishedUrl}`, '_blank')}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Access Key Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Access Key</Label>
+                  {accessKey && (
+                    <button
+                      onClick={revokeAndRegenerateKey}
+                      disabled={isRevokingKey}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    >
+                      {isRevokingKey ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <RotateCcw className="w-3 h-3" />
+                      )}
+                      Regenerate
+                    </button>
+                  )}
+                </div>
+                {accessKey ? (
+                  <div className="flex gap-2">
+                    <Input 
+                      value={accessKey} 
+                      readOnly 
+                      className="text-xs font-mono tracking-wider h-9"
+                    />
+                    <Button size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={copyKey}>
+                      {keyCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="w-full" 
+                    onClick={generateAccessKey}
+                    disabled={isGeneratingKey || !roundId || (!isGlobal && !investorId)}
+                  >
+                    {isGeneratingKey ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Key className="w-4 h-4 mr-2" />
+                        Generate access key
+                      </>
+                    )}
+                  </Button>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {isGlobal ? "Share URL and key with anyone" : "Share both URL and key with the investor"}
+                </p>
               </div>
             </div>
 
-            {/* Access Key Section */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground">Access Key</Label>
-                {accessKey && (
-                  <button
-                    onClick={revokeAndRegenerateKey}
-                    disabled={isRevokingKey}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                  >
-                    {isRevokingKey ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <RotateCcw className="w-3 h-3" />
-                    )}
-                    Regenerate
-                  </button>
-                )}
-              </div>
-              {accessKey ? (
-                <div className="flex gap-2">
-                  <Input 
-                    value={accessKey} 
-                    readOnly 
-                    className="text-xs font-mono tracking-wider h-9"
-                  />
-                  <Button size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" onClick={copyKey}>
-                    {keyCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </Button>
-                </div>
-              ) : (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="w-full" 
-                  onClick={generateAccessKey}
-                  disabled={isGeneratingKey || !roundId || (!isGlobal && !investorId)}
-                >
-                  {isGeneratingKey ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Key className="w-4 h-4 mr-2" />
-                      Generate access key
-                    </>
-                  )}
-                </Button>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {isGlobal ? "Share URL and key with anyone" : "Share both URL and key with the investor"}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="px-4 py-6 text-center">
-            <p className="text-sm text-muted-foreground mb-3">
-              Set your company URL slug to enable publishing
-            </p>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => {
-                setPopoverOpen(false);
-                window.location.href = '/thesis/settings';
-              }}
-            >
-              Go to Settings
-            </Button>
-          </div>
-        )}
-        
-        {publishedUrl && (
-          <>
             <div className="px-4 py-2 border-t border-border">
               <button
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
