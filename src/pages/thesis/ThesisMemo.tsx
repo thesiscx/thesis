@@ -66,8 +66,6 @@ export default function ThesisMemo() {
             <MemoEditor
               content={memo?.content}
               onChange={updateMemo}
-              roundSlug={roundSlug}
-              variantSlug={variantSlug}
             />
           </div>
         </div>

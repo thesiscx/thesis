@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dialog";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { cn } from "@/lib/utils";
+import ShareButton from "./ShareButton";
+import PublishButton from "./PublishButton";
 
 interface Round {
   id: string;
@@ -278,11 +280,10 @@ export default function ThesisLayout({
           </DropdownMenu>
         </div>
 
-        {/* Right side - User info */}
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
-            {user?.email}
-          </span>
+        {/* Right side - Share + Publish */}
+        <div className="flex items-center gap-2">
+          <ShareButton roundSlug={roundSlug} variantSlug={activeVariant} />
+          <PublishButton roundSlug={roundSlug} isPublished={false} />
         </div>
       </header>
 

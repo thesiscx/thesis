@@ -15,7 +15,6 @@ import { EditorToolbar } from '@/components/editor/EditorToolbar';
 import '@/components/editor/EditorStyles.css';
 import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import ShareButton from '@/components/thesis/ShareButton';
 import { Json } from '@/integrations/supabase/types';
 
 interface TocItem {
@@ -27,15 +26,11 @@ interface TocItem {
 interface MemoEditorProps {
   content?: Json;
   onChange: (content: Json, tocItems: TocItem[]) => void;
-  roundSlug?: string;
-  variantSlug?: string;
 }
 
 export default function MemoEditor({
   content,
   onChange,
-  roundSlug,
-  variantSlug,
 }: MemoEditorProps) {
   const isInitialMount = useRef(true);
   const editorContainerRef = useRef<HTMLDivElement>(null);
@@ -214,9 +209,8 @@ export default function MemoEditor({
       onDrop={handleDrop}
     >
       <div className="sticky top-0 z-40 bg-background border-b border-border">
-        <div className="flex items-center justify-between px-4 py-2">
+        <div className="px-4 py-2">
           <EditorToolbar editor={editor} />
-          <ShareButton roundSlug={roundSlug} variantSlug={variantSlug} />
         </div>
       </div>
       <div className="flex-1 px-16 py-12 bg-background">
