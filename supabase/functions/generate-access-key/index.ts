@@ -123,6 +123,7 @@ Deno.serve(async (req) => {
       // Return existing key
       return new Response(
         JSON.stringify({
+          id: existingKey.id,
           key: existingKey.key,
           investor: investor,
           isExisting: true,
@@ -189,6 +190,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
+        id: newKey.id,
         key: newKey.key,
         investor: investor,
         isExisting: false,

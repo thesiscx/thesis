@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ExternalLink, Loader2, Check, Copy, Key } from "lucide-react";
+import { ExternalLink, Loader2, Check, Copy, Key, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,8 +41,9 @@ export default function PublishButton({
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [companySlug, setCompanySlug] = useState<string | null>(null);
   const [accessKey, setAccessKey] = useState<string | null>(null);
+  const [accessKeyId, setAccessKeyId] = useState<string | null>(null);
   const [isGeneratingKey, setIsGeneratingKey] = useState(false);
-  const [urlCopied, setUrlCopied] = useState(false);
+  const [isRevokingKey, setIsRevokingKey] = useState(false);
   const [keyCopied, setKeyCopied] = useState(false);
 
   const isGlobal = !variantSlug || variantSlug === "global";
@@ -65,6 +66,40 @@ export default function PublishButton({
 
     fetchCompanySlug();
   }, [user, authLoading]);
+
+  // Fetch existing access key
+  useEffect(() => {
+    const fetchExistingKey = async () => {
+      if (!roundId || authLoading) return;
+
+      let query = supabase
+        .from("access_keys")
+        .select("id, key")
+        .eq("round_id", roundId)
+        .eq("tool", tool)
+        .eq("status", "active");
+
+      if (isGlobal) {
+        query = query.is("investor_id", null);
+      } else if (investorId) {
+        query = query.eq("investor_id", investorId);
+      } else {
+        return;
+      }
+
+      const { data } = await query.maybeSingle();
+      
+      if (data) {
+        setAccessKey(data.key);
+        setAccessKeyId(data.id);
+      } else {
+        setAccessKey(null);
+        setAccessKeyId(null);
+      }
+    };
+
+    fetchExistingKey();
+  }, [roundId, investorId, tool, isGlobal, authLoading]);
 
   // Generate the public URL based on company slug and round code
   const roundCode = getRoundCode({ round_type: roundType as any, round_number: roundNumber });
@@ -112,6 +147,7 @@ export default function PublishButton({
 
       if (error) throw error;
       setAccessKey(data.key);
+      setAccessKeyId(data.id);
     } catch (error) {
       console.error("Error generating access key:", error);
     } finally {
@@ -119,12 +155,32 @@ export default function PublishButton({
     }
   };
 
-  const copyUrl = async () => {
-    if (!publishedUrl) return;
-    await navigator.clipboard.writeText(`https://${publishedUrl}`);
-    setUrlCopied(true);
-    toast({ title: "URL copied" });
-    setTimeout(() => setUrlCopied(false), 2000);
+  const revokeAndRegenerateKey = async () => {
+    if (!accessKeyId || !roundId) return;
+
+    setIsRevokingKey(true);
+    try {
+      // Delete existing key
+      await supabase
+        .from("access_keys")
+        .delete()
+        .eq("id", accessKeyId);
+
+      // Generate new key
+      const { data, error } = await supabase.functions.invoke('generate-access-key', {
+        body: { investorId: isGlobal ? null : investorId, roundId, tool }
+      });
+
+      if (error) throw error;
+      setAccessKey(data.key);
+      setAccessKeyId(data.id);
+      toast({ title: "Access key regenerated" });
+    } catch (error) {
+      console.error("Error regenerating access key:", error);
+      toast({ title: "Failed to regenerate key", variant: "destructive" });
+    } finally {
+      setIsRevokingKey(false);
+    }
   };
 
   const copyKey = async () => {
@@ -167,7 +223,23 @@ export default function PublishButton({
 
             {/* Access Key Section */}
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Access Key</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Access Key</Label>
+                {accessKey && (
+                  <button
+                    onClick={revokeAndRegenerateKey}
+                    disabled={isRevokingKey}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                  >
+                    {isRevokingKey ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <RotateCcw className="w-3 h-3" />
+                    )}
+                    Regenerate
+                  </button>
+                )}
+              </div>
               {accessKey ? (
                 <div className="flex gap-2">
                   <Input 
