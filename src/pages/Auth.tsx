@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { FeatureStream } from "@/components/FeatureStream";
-import thesisLogo from "@/assets/thesis-logo-2.png";
 
 export default function Auth() {
   const { user, isLoading } = useFounderAuth();
@@ -15,6 +14,14 @@ export default function Auth() {
     }
   }, [user, isLoading, navigate]);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4 -mt-12">
@@ -24,23 +31,21 @@ export default function Auth() {
           
           {/* Logo & Tagline */}
           <div className="text-center space-y-2">
-            <img src={thesisLogo} alt="Thesis" className="h-8 mx-auto" />
+            <img src="/thesis-logo.png" alt="Thesis" className="h-8 mx-auto" />
             <p className="text-muted-foreground font-medium">
               Run Your Raise
             </p>
           </div>
 
           {/* Get Access Button */}
-          {!isLoading && (
-            <div className="flex justify-center pt-2">
-              <Link
-                to="/auth/invite"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border px-5 py-2 rounded-md"
-              >
-                Get Access
-              </Link>
-            </div>
-          )}
+          <div className="flex justify-center pt-2">
+            <Link
+              to="/auth/invite"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border px-5 py-2 rounded-md"
+            >
+              Get Access
+            </Link>
+          </div>
         </div>
       </div>
 
