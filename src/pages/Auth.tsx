@@ -110,31 +110,31 @@ export default function Auth() {
 
           {/* Get Access Button & Dropdown */}
           <div className="flex justify-center pt-2">
-            <div className="relative">
+            <div className="relative flex flex-col items-center">
               <button
                 onClick={() => setShowCodeInput(!showCodeInput)}
-                className={`w-[200px] text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border px-6 py-2.5 ${
-                  showCodeInput ? 'rounded-t-md border-b-0' : 'rounded-md'
-                }`}
+                className={`text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border px-5 py-2 rounded-md`}
               >
                 Get Access
               </button>
 
               {showCodeInput && (
-                <div className="absolute top-full left-0 w-[200px] animate-fade-in">
-                  <div className="border border-border border-t-0 rounded-b-md bg-card p-3 space-y-3">
+                <div className="absolute top-[calc(100%+8px)] animate-fade-in">
+                  {/* Small triangle connector */}
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 border-l border-t border-border bg-card" />
+                  <div className="w-[180px] border border-border rounded-md bg-card p-3 space-y-3 relative">
                     <Input
-                      placeholder="Invite code"
+                      placeholder="Code"
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                      className="h-10 text-center text-sm tracking-widest uppercase bg-background"
+                      className="h-9 text-center text-xs tracking-[0.2em] uppercase bg-background"
                       onKeyDown={(e) => e.key === "Enter" && handleValidateCode()}
                       autoFocus
                     />
                     <Button
                       onClick={handleValidateCode}
                       disabled={!inviteCode.trim() || isValidating}
-                      className="w-full h-9 text-sm"
+                      className="w-full h-8 text-xs"
                       size="sm"
                     >
                       {isValidating ? "..." : "Continue"}
