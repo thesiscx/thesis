@@ -110,10 +110,10 @@ export default function Auth() {
 
           {/* Get Access Button & Dropdown */}
           <div className="flex justify-center pt-2">
-            <div className="relative inline-block">
+            <div className="relative">
               <button
                 onClick={() => setShowCodeInput(!showCodeInput)}
-                className={`text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border px-4 py-2 ${
+                className={`w-[200px] text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border px-6 py-2.5 ${
                   showCodeInput ? 'rounded-t-md border-b-0' : 'rounded-md'
                 }`}
               >
@@ -121,20 +121,20 @@ export default function Auth() {
               </button>
 
               {showCodeInput && (
-                <div className="absolute top-full left-0 right-0 animate-fade-in">
-                  <div className="border border-border border-t-0 rounded-b-md bg-card p-3 space-y-2">
+                <div className="absolute top-full left-0 w-[200px] animate-fade-in">
+                  <div className="border border-border border-t-0 rounded-b-md bg-card p-3 space-y-3">
                     <Input
                       placeholder="Invite code"
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                      className="h-9 text-center text-xs tracking-widest uppercase bg-background"
+                      className="h-10 text-center text-sm tracking-widest uppercase bg-background"
                       onKeyDown={(e) => e.key === "Enter" && handleValidateCode()}
                       autoFocus
                     />
                     <Button
                       onClick={handleValidateCode}
                       disabled={!inviteCode.trim() || isValidating}
-                      className="w-full h-8 text-xs"
+                      className="w-full h-9 text-sm"
                       size="sm"
                     >
                       {isValidating ? "..." : "Continue"}
