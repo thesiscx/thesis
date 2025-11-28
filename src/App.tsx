@@ -8,6 +8,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Auth from "./pages/Auth";
 import EmailAuth from "./pages/auth/EmailAuth";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/thesis/Onboarding";
 import ThesisMemo from "./pages/thesis/ThesisMemo";
 import ThesisDocket from "./pages/thesis/ThesisDocket";
@@ -77,6 +80,11 @@ const App = () => (
             {/* Auth */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/email" element={<EmailAuth />} />
+            
+            {/* Legal & Info */}
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/pricing" element={<Pricing />} />
             
             {/* Thesis Routes */}
             <Route
