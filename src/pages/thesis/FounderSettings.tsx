@@ -19,7 +19,7 @@ const companySlugSchema = z.string()
 export default function FounderSettings() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useFounderAuth();
+  const { user, isLoading: authLoading } = useFounderAuth();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,6 +36,8 @@ export default function FounderSettings() {
   // Fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
+      if (authLoading) return;
+      
       if (!user) {
         setLoading(false);
         return;
@@ -59,7 +61,6 @@ export default function FounderSettings() {
           setDescription(data.description || "");
           setWebsite(data.website || "");
         }
-        // If no profile exists, that's okay - user can fill in the form
       } catch (error) {
         console.error('Error fetching profile:', error);
       } finally {
@@ -68,7 +69,7 @@ export default function FounderSettings() {
     };
 
     fetchProfile();
-  }, [user]);
+  }, [user, authLoading]);
 
   // Check slug availability with debounce
   useEffect(() => {
@@ -168,6 +169,14 @@ export default function FounderSettings() {
     }
   };
 
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -175,14 +184,6 @@ export default function FounderSettings() {
           <p className="text-muted-foreground mb-4">Please log in to access settings</p>
           <Button onClick={() => navigate("/auth")}>Go to Login</Button>
         </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
