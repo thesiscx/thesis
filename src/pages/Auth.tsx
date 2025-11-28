@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useToast } from "@/hooks/use-toast";
+import thesisLogo from "@/assets/thesis-logo.png";
 
 export default function Auth() {
   const { signInWithGoogle, user, isLoading } = useFounderAuth();
@@ -38,8 +39,8 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="font-heading text-4xl font-bold tracking-tight">Thesis</h1>
+        <div className="text-center space-y-4">
+          <img src={thesisLogo} alt="Thesis" className="h-10 mx-auto" />
           <p className="text-muted-foreground">
             Manage your fundraising rounds with clarity
           </p>
