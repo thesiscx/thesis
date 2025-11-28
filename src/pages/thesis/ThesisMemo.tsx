@@ -8,6 +8,7 @@ import { useRounds } from "@/hooks/useRounds";
 import { useInvestors } from "@/hooks/useInvestors";
 import { useMemo } from "@/hooks/useMemo";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
 
 export default function ThesisMemo() {
   const { roundSlug, variantSlug } = useParams();
@@ -24,7 +25,10 @@ export default function ThesisMemo() {
     versions,
     restoreVersion,
     isRestoringVersion,
+    isLoading: memoLoading,
   } = useMemo(roundSlug, variantSlug);
+
+  const isLoading = memoLoading;
 
   if (roundsLoading) {
     return (
@@ -63,10 +67,17 @@ export default function ThesisMemo() {
 
           {/* Main Editor */}
           <div className="flex-1 overflow-hidden">
-            <MemoEditor
-              content={memo?.content}
-              onChange={updateMemo}
-            />
+            {isLoading ? (
+              <div className="flex-1 h-full flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <MemoEditor
+                key={`${roundSlug}-${variantSlug}`}
+                content={memo?.content}
+                onChange={updateMemo}
+              />
+            )}
           </div>
         </div>
       </ThesisLayout>
