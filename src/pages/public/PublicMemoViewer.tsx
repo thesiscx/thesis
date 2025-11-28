@@ -4,8 +4,7 @@ import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
 import TipTapRenderer from "@/components/TipTapRenderer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { LogOut, FileText, ChevronRight } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TocItem {
@@ -110,6 +109,11 @@ export default function PublicMemoViewer() {
 
     traverse(content.content);
     setTocItems(items);
+    
+    // Set first item as active by default
+    if (items.length > 0) {
+      setActiveHeading(items[0].id);
+    }
   };
 
   // Scroll to heading
@@ -120,6 +124,30 @@ export default function PublicMemoViewer() {
       setActiveHeading(id);
     }
   };
+
+  // Track scroll position to update active heading
+  useEffect(() => {
+    const handleScroll = () => {
+      const headings = tocItems.map(item => ({
+        id: item.id,
+        element: document.getElementById(item.id)
+      })).filter(h => h.element);
+
+      for (let i = headings.length - 1; i >= 0; i--) {
+        const heading = headings[i];
+        if (heading.element) {
+          const rect = heading.element.getBoundingClientRect();
+          if (rect.top <= 100) {
+            setActiveHeading(heading.id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [tocItems]);
 
   const handleLogout = () => {
     clearInvestorSession();
@@ -133,81 +161,79 @@ export default function PublicMemoViewer() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 border-b bg-background">
         <div className="flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{investorSession.companyName}</span>
-              <ChevronRight className="h-4 w-4" />
-              <span>Investment Memo</span>
-              <ChevronRight className="h-4 w-4" />
-              <span className="text-foreground">{investorSession.investorName}</span>
+            <div className="flex items-center gap-2 font-heading text-sm font-medium">
+              <span className="text-primary">{investorSession.companyName}</span>
+              <span className="text-muted-foreground">Investment Memo</span>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Exit
-          </Button>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">{investorSession.investorName}</span>
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
+              <LogOut className="h-4 w-4" />
+              Exit
+            </Button>
+          </div>
         </div>
       </header>
 
       <div className="flex">
         {/* TOC Sidebar */}
-        {tocItems.length > 0 && (
-          <aside className="hidden lg:block w-64 border-r sticky top-14 h-[calc(100vh-3.5rem)]">
-            <ScrollArea className="h-full py-6 px-4">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                Contents
-              </h3>
-              <nav className="space-y-1">
+        <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+          <nav className="py-10 pl-8 pr-6">
+            {tocItems.length > 0 && (
+              <ul className="space-y-2">
                 {tocItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => scrollToHeading(item.id)}
-                    className={`
-                      block w-full text-left text-sm py-1.5 px-2 rounded-md transition-colors
-                      ${item.level === 2 ? 'pl-4' : ''}
-                      ${activeHeading === item.id 
-                        ? 'bg-secondary text-foreground font-medium' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                      }
-                    `}
-                  >
-                    {item.text}
-                  </button>
+                  <li key={item.id}>
+                    <button
+                      onClick={() => scrollToHeading(item.id)}
+                      className={`
+                        block w-full text-left text-sm transition-colors py-1
+                        ${item.level === 2 ? 'pl-4' : ''}
+                        ${activeHeading === item.id 
+                          ? 'text-foreground font-medium' 
+                          : 'text-muted-foreground hover:text-foreground'
+                        }
+                      `}
+                    >
+                      {item.text}
+                    </button>
+                  </li>
                 ))}
-              </nav>
-            </ScrollArea>
-          </aside>
-        )}
+              </ul>
+            )}
+          </nav>
+        </aside>
 
         {/* Main Content */}
-        <main className="flex-1 max-w-4xl mx-auto px-6 py-12">
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-40 w-full mt-8" />
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-lg font-medium text-foreground mb-2">Unable to load memo</h2>
-              <p className="text-muted-foreground">{error}</p>
-            </div>
-          ) : memoContent ? (
-            <article className="prose-sm">
-              <TipTapRenderer content={memoContent} />
-            </article>
-          ) : (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-lg font-medium text-foreground mb-2">No content yet</h2>
-              <p className="text-muted-foreground">The memo is being prepared.</p>
-            </div>
-          )}
+        <main className="flex-1 min-w-0 border-l">
+          <div className="max-w-3xl py-10 px-12 lg:px-16">
+            {isLoading ? (
+              <div className="space-y-6">
+                <Skeleton className="h-10 w-3/4" />
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-48 w-full mt-8" />
+              </div>
+            ) : error ? (
+              <div className="py-12">
+                <h2 className="text-lg font-heading font-medium text-foreground mb-2">Unable to load memo</h2>
+                <p className="text-muted-foreground">{error}</p>
+              </div>
+            ) : memoContent ? (
+              <article>
+                <TipTapRenderer content={memoContent} />
+              </article>
+            ) : (
+              <div className="py-12">
+                <h2 className="text-lg font-heading font-medium text-foreground mb-2">No content yet</h2>
+                <p className="text-muted-foreground">The memo is being prepared.</p>
+              </div>
+            )}
+          </div>
         </main>
       </div>
     </div>
