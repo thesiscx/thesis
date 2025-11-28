@@ -40,16 +40,25 @@ export default function PublicMemoViewer() {
       try {
         setIsLoading(true);
         
-        // First try to get investor-specific memo
-        let { data: memo, error: memoError } = await supabase
-          .from('memos')
-          .select('content')
-          .eq('round_id', investorSession.roundId)
-          .eq('investor_id', investorSession.investorId)
-          .eq('is_global', false)
-          .maybeSingle();
+        let memo = null;
 
-        // If no investor-specific memo, get global memo
+        // Only try investor-specific memo if we have an actual investorId (not null/global)
+        if (investorSession.investorId) {
+          const { data: investorMemo, error: memoError } = await supabase
+            .from('memos')
+            .select('content')
+            .eq('round_id', investorSession.roundId)
+            .eq('investor_id', investorSession.investorId)
+            .eq('is_global', false)
+            .maybeSingle();
+
+          if (memoError) {
+            console.error('Error fetching investor memo:', memoError);
+          }
+          memo = investorMemo;
+        }
+
+        // If no investor-specific memo (or global key), get global memo
         if (!memo) {
           const { data: globalMemo, error: globalError } = await supabase
             .from('memos')

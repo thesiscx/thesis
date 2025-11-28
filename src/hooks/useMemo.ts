@@ -24,6 +24,7 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const lastVersionTime = useRef<Date>(new Date());
+  const hasInitializedContent = useRef(false);
   
   const debouncedContent = useDebounce(localContent, 1000);
 
@@ -73,6 +74,9 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
       return data;
     },
     enabled: !!user?.id && !!roundSlug,
+    // Prevent refetching which would overwrite user's unsaved changes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   // Fetch versions
@@ -93,17 +97,27 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
     enabled: !!memo?.id,
   });
 
-  // Set local content when memo loads
+  // Reset initialization flag when memo ID changes (switching rounds/variants)
   useEffect(() => {
-    if (memo?.content) {
+    hasInitializedContent.current = false;
+  }, [memo?.id]);
+
+  // Set local content ONLY on initial load, never overwrite user's work
+  useEffect(() => {
+    if (memo?.content && !hasInitializedContent.current) {
+      hasInitializedContent.current = true;
       setLocalContent(memo.content);
+      console.log('[Memo] Initialized content from DB');
     }
   }, [memo?.content]);
 
-  // Save mutation
+  // Save mutation with error handling
   const saveMutation = useMutation({
     mutationFn: async (content: Json) => {
-      if (!memo?.id) return;
+      if (!memo?.id) {
+        console.warn('[Memo] Save skipped - no memo ID');
+        return;
+      }
 
       const { error } = await supabase
         .from("memos")
@@ -114,6 +128,11 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
     },
     onSuccess: () => {
       setLastSaved(new Date());
+      console.log('[Memo] Save successful');
+    },
+    onError: (error) => {
+      console.error('[Memo] Save failed:', error);
+      // TODO: Could add toast notification here
     },
   });
 
@@ -189,7 +208,7 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
     if (debouncedContent && memo?.id && debouncedContent !== memo.content) {
       saveMutation.mutate(debouncedContent);
     }
-  }, [debouncedContent, memo?.id]);
+  }, [debouncedContent, memo?.id, memo?.content]);
 
   // Auto-create version every 5 minutes if content has changed
   useEffect(() => {
