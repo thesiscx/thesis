@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 
 import Auth from "./pages/Auth";
 import InviteCode from "./pages/auth/InviteCode";
@@ -41,7 +41,14 @@ const persister = createSyncStoragePersister({
   key: 'thesis-query-cache',
 });
 
-// Protected route wrapper for founders
+// Layout wrapper that provides FounderAuth context
+const FounderAuthLayout = () => (
+  <FounderAuthProvider>
+    <Outlet />
+  </FounderAuthProvider>
+);
+
+// Protected route wrapper for founders (must be used inside FounderAuthProvider)
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useFounderAuth();
 
@@ -67,26 +74,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Admin routes wrapper with AuthProvider
-const AdminRoutes = () => (
-  <AuthProvider>
-    <Routes>
-      <Route path="login" element={<AdminLogin />} />
-      <Route path="" element={<Admin />} />
-    </Routes>
-  </AuthProvider>
-);
-
-// Thesis routes wrapped in shared provider
-const ThesisRoutes = () => (
-  <FounderAuthProvider>
-    <Routes>
-      <Route path="" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-      <Route path="settings" element={<ProtectedRoute><FounderSettings /></ProtectedRoute>} />
-      <Route path=":roundSlug/memo/:variantSlug" element={<ProtectedRoute><ThesisMemo /></ProtectedRoute>} />
-      <Route path=":roundSlug/docket/:variantSlug" element={<ProtectedRoute><ThesisDocket /></ProtectedRoute>} />
-    </Routes>
-  </FounderAuthProvider>
+// Layout wrapper that provides InvestorAuth context
+const InvestorAuthLayout = () => (
+  <InvestorAuthProvider>
+    <Outlet />
+  </InvestorAuthProvider>
 );
 
 const App = () => (
@@ -107,45 +99,44 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Admin Routes - separate auth context */}
-          <Route path="/admin/*" element={<AdminRoutes />} />
+          {/* Redirects - must come first */}
+          <Route path="/" element={<Navigate to="/thesis" replace />} />
+          <Route path="/login" element={<Navigate to="/auth" replace />} />
           
-          {/* Auth Routes */}
-          <Route path="/auth" element={<FounderAuthProvider><Auth /></FounderAuthProvider>} />
-          <Route path="/auth/invite" element={<FounderAuthProvider><InviteCode /></FounderAuthProvider>} />
-          <Route path="/auth/email" element={<FounderAuthProvider><EmailAuth /></FounderAuthProvider>} />
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AuthProvider><Outlet /></AuthProvider>}>
+            <Route path="login" element={<AdminLogin />} />
+            <Route index element={<Admin />} />
+          </Route>
           
-          {/* Legal & Info */}
+          {/* Legal & Info - no auth needed */}
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/pricing" element={<Pricing />} />
           
-          {/* Thesis Routes (protected, shared auth) */}
-          <Route path="/thesis/*" element={<ThesisRoutes />} />
+          {/* All founder routes share one FounderAuthProvider */}
+          <Route element={<FounderAuthLayout />}>
+            {/* Auth pages (not protected) */}
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/invite" element={<InviteCode />} />
+            <Route path="/auth/email" element={<EmailAuth />} />
+            
+            {/* Thesis pages (protected) */}
+            <Route path="/thesis" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/thesis/settings" element={<ProtectedRoute><FounderSettings /></ProtectedRoute>} />
+            <Route path="/thesis/:roundSlug/memo/:variantSlug" element={<ProtectedRoute><ThesisMemo /></ProtectedRoute>} />
+            <Route path="/thesis/:roundSlug/docket/:variantSlug" element={<ProtectedRoute><ThesisDocket /></ProtectedRoute>} />
+          </Route>
           
-          {/* Public Investor Routes */}
-          <Route path="/:companySlug/:roundCode/memo" element={
-            <InvestorAuthProvider><InvestorAccess tool="memo" /></InvestorAuthProvider>
-          } />
-          <Route path="/:companySlug/:roundCode/memo/:investorSlug" element={
-            <InvestorAuthProvider><InvestorAccess tool="memo" /></InvestorAuthProvider>
-          } />
-          <Route path="/:companySlug/:roundCode/memo/:investorSlug/view" element={
-            <InvestorAuthProvider><PublicMemoViewer /></InvestorAuthProvider>
-          } />
-          <Route path="/:companySlug/:roundCode/docket" element={
-            <InvestorAuthProvider><InvestorAccess tool="docket" /></InvestorAuthProvider>
-          } />
-          <Route path="/:companySlug/:roundCode/docket/:investorSlug" element={
-            <InvestorAuthProvider><InvestorAccess tool="docket" /></InvestorAuthProvider>
-          } />
-          <Route path="/:companySlug/:roundCode/docket/:investorSlug/view" element={
-            <InvestorAuthProvider><PublicDocketViewer /></InvestorAuthProvider>
-          } />
-          
-          {/* Redirects */}
-          <Route path="/" element={<Navigate to="/thesis" replace />} />
-          <Route path="/login" element={<Navigate to="/auth" replace />} />
+          {/* Public Investor Routes - share one InvestorAuthProvider */}
+          <Route element={<InvestorAuthLayout />}>
+            <Route path="/:companySlug/:roundCode/memo" element={<InvestorAccess tool="memo" />} />
+            <Route path="/:companySlug/:roundCode/memo/:investorSlug" element={<InvestorAccess tool="memo" />} />
+            <Route path="/:companySlug/:roundCode/memo/:investorSlug/view" element={<PublicMemoViewer />} />
+            <Route path="/:companySlug/:roundCode/docket" element={<InvestorAccess tool="docket" />} />
+            <Route path="/:companySlug/:roundCode/docket/:investorSlug" element={<InvestorAccess tool="docket" />} />
+            <Route path="/:companySlug/:roundCode/docket/:investorSlug/view" element={<PublicDocketViewer />} />
+          </Route>
           
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
