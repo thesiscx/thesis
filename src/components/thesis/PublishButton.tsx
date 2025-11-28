@@ -24,6 +24,16 @@ interface PublishButtonProps {
   isPublished?: boolean;
 }
 
+// Helper to add timeout to promises
+const withTimeout = <T,>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(errorMessage)), ms);
+  });
+  return Promise.race([promise, timeout]);
+};
+
+const EDGE_FUNCTION_TIMEOUT = 15000; // 15 seconds
+
 export default function PublishButton({ 
   roundId,
   roundSlug, 
@@ -118,15 +128,31 @@ export default function PublishButton({
 
     setIsGeneratingKey(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-access-key', {
-        body: { investorId: isGlobal ? null : investorId, roundId, tool }
-      });
+      console.log('[PublishButton] Generating access key...');
+      const startTime = Date.now();
+      
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke('generate-access-key', {
+          body: { investorId: isGlobal ? null : investorId, roundId, tool }
+        }),
+        EDGE_FUNCTION_TIMEOUT,
+        'Request timed out'
+      );
+
+      console.log(`[PublishButton] Access key generated in ${Date.now() - startTime}ms`);
 
       if (error) throw error;
       setAccessKey(data.key);
       setAccessKeyId(data.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating access key:", error);
+      if (error.message === 'Request timed out') {
+        toast({ 
+          title: "Request timed out", 
+          description: "The server took too long to respond. Please try again.",
+          variant: "destructive" 
+        });
+      }
     } finally {
       setIsGeneratingKey(false);
     }
@@ -137,24 +163,41 @@ export default function PublishButton({
 
     setIsRevokingKey(true);
     try {
+      console.log('[PublishButton] Revoking and regenerating key...');
+      const startTime = Date.now();
+      
       // Delete existing key
       await supabase
         .from("access_keys")
         .delete()
         .eq("id", accessKeyId);
 
-      // Generate new key
-      const { data, error } = await supabase.functions.invoke('generate-access-key', {
-        body: { investorId: isGlobal ? null : investorId, roundId, tool }
-      });
+      // Generate new key with timeout
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke('generate-access-key', {
+          body: { investorId: isGlobal ? null : investorId, roundId, tool }
+        }),
+        EDGE_FUNCTION_TIMEOUT,
+        'Request timed out'
+      );
+
+      console.log(`[PublishButton] Key regenerated in ${Date.now() - startTime}ms`);
 
       if (error) throw error;
       setAccessKey(data.key);
       setAccessKeyId(data.id);
       toast({ title: "Access key regenerated" });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error regenerating access key:", error);
-      toast({ title: "Failed to regenerate key", variant: "destructive" });
+      if (error.message === 'Request timed out') {
+        toast({ 
+          title: "Request timed out", 
+          description: "The server took too long to respond. Please try again.",
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: "Failed to regenerate key", variant: "destructive" });
+      }
     } finally {
       setIsRevokingKey(false);
     }

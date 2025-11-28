@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { User, Session, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,13 +24,21 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [companySlug, setCompanySlug] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
+  
+  // Track if we've completed initial load to prevent race conditions
+  const initializedRef = useRef(false);
 
   const fetchProfile = async (userId: string) => {
+    console.log('[FounderAuth] Fetching profile for:', userId);
+    const startTime = Date.now();
+    
     const { data } = await supabase
       .from("profiles")
       .select("company_slug, company_name")
       .eq("id", userId)
       .maybeSingle();
+    
+    console.log(`[FounderAuth] Profile fetched in ${Date.now() - startTime}ms`);
     
     if (data) {
       setCompanySlug(data.company_slug);
@@ -46,39 +54,46 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    console.log('[FounderAuth] Setting up auth listener');
+    
+    // Set up auth state listener - this is the SINGLE source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[FounderAuth] Auth state changed:', event, session?.user?.id);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          await fetchProfile(session.user.id);
+          // Use setTimeout to prevent Supabase auth deadlock
+          setTimeout(async () => {
+            await fetchProfile(session.user.id);
+            setIsLoading(false);
+            initializedRef.current = true;
+          }, 0);
         } else {
           setCompanySlug(null);
           setCompanyName(null);
           setProfileLoaded(true);
+          setIsLoading(false);
+          initializedRef.current = true;
         }
-        
-        setIsLoading(false);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
+    // Set a maximum wait time for initial load
+    const timeout = setTimeout(() => {
+      if (!initializedRef.current) {
+        console.log('[FounderAuth] Timeout - forcing load complete');
+        setIsLoading(false);
         setProfileLoaded(true);
       }
-      
-      setIsLoading(false);
-    });
+    }, 3000);
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const signInWithEmail = async (email: string, password: string) => {
