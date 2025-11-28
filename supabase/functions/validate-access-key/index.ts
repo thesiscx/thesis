@@ -49,6 +49,8 @@ Deno.serve(async (req) => {
       .eq('key', key.toLowerCase())
       .maybeSingle();
 
+    console.log('Key lookup result:', { accessKey, keyError, searchKey: key.toLowerCase() });
+
     if (keyError) {
       console.error('Key lookup error:', keyError);
       return new Response(
@@ -58,6 +60,7 @@ Deno.serve(async (req) => {
     }
 
     if (!accessKey) {
+      console.log('No access key found for:', key.toLowerCase());
       return new Response(
         JSON.stringify({ error: 'Invalid access key' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
