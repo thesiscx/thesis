@@ -1,14 +1,14 @@
 import { ReactNode, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { 
-  ChevronDown, 
+  ChevronsUpDown, 
   Plus, 
   Archive, 
   Search,
   Settings,
   LogOut
 } from "lucide-react";
-import thesisIcon from "@/assets/thesis-icon.png";
+import thesisLogo from "@/assets/thesis-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -105,10 +105,9 @@ export default function ThesisLayout({
           {/* Segment 1: Thesis Logo/Settings */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="font-heading text-lg font-semibold px-3 gap-2">
-                <img src={thesisIcon} alt="Thesis" className="h-5 w-5" />
-                Thesis
-                <ChevronDown className="w-4 h-4 opacity-50" />
+              <Button variant="ghost" className="h-8 px-2 gap-1.5">
+                <img src={thesisLogo} alt="Thesis" className="h-4" />
+                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
@@ -129,9 +128,9 @@ export default function ThesisLayout({
           {/* Segment 2: Round Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="px-3">
+              <Button variant="ghost" className="h-8 px-2 gap-1.5">
                 {activeRound?.name || "Select Round"}
-                <ChevronDown className="w-4 h-4 ml-1 opacity-50" />
+                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
@@ -174,44 +173,38 @@ export default function ThesisLayout({
 
           <span className="text-muted-foreground/50">/</span>
 
-          {/* Segment 3: Tool Toggle (Memo / Docket) */}
-          <div className="flex items-center bg-muted rounded-lg p-1">
-            <Button
-              variant={activeTool === "memo" ? "secondary" : "ghost"}
-              size="sm"
-              className={cn(
-                "px-4 transition-all",
-                activeTool === "memo" 
-                  ? "bg-background shadow-sm" 
-                  : "hover:bg-transparent"
-              )}
-              onClick={() => handleToolChange("memo")}
-            >
-              Memo
-            </Button>
-            <Button
-              variant={activeTool === "docket" ? "secondary" : "ghost"}
-              size="sm"
-              className={cn(
-                "px-4 transition-all",
-                activeTool === "docket" 
-                  ? "bg-background shadow-sm" 
-                  : "hover:bg-transparent"
-              )}
-              onClick={() => handleToolChange("docket")}
-            >
-              Docket
-            </Button>
-          </div>
+          {/* Segment 3: Tool Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 px-2 gap-1.5 capitalize">
+                {activeTool}
+                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-32">
+              <DropdownMenuItem
+                onClick={() => handleToolChange("memo")}
+                className={cn(activeTool === "memo" && "bg-accent")}
+              >
+                Memo
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleToolChange("docket")}
+                className={cn(activeTool === "docket" && "bg-accent")}
+              >
+                Docket
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <span className="text-muted-foreground/50">/</span>
 
           {/* Segment 4: Variant Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="px-3">
+              <Button variant="ghost" className="h-8 px-2 gap-1.5">
                 {isGlobal ? "Global" : activeInvestor?.name || activeVariant}
-                <ChevronDown className="w-4 h-4 ml-1 opacity-50" />
+                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64 p-0">
