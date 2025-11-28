@@ -703,6 +703,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_invite_code_usage: {
+        Args: { code_value: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
