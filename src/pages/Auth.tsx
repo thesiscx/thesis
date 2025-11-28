@@ -15,14 +15,6 @@ export default function Auth() {
     }
   }, [user, isLoading, navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4 -mt-12">
@@ -39,14 +31,16 @@ export default function Auth() {
           </div>
 
           {/* Get Access Button */}
-          <div className="flex justify-center pt-2">
-            <Link
-              to="/auth/invite"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border px-5 py-2 rounded-md"
-            >
-              Get Access
-            </Link>
-          </div>
+          {!isLoading && (
+            <div className="flex justify-center pt-2">
+              <Link
+                to="/auth/invite"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 border border-border px-5 py-2 rounded-md"
+              >
+                Get Access
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
