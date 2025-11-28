@@ -247,6 +247,39 @@ export type Database = {
         }
         Relationships: []
       }
+      invite_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          used_count: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          used_count?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          used_count?: number | null
+        }
+        Relationships: []
+      }
       memos: {
         Row: {
           content: Json
@@ -372,24 +405,36 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          company_name: string | null
           created_at: string
+          description: string | null
           full_name: string | null
           id: string
+          onboarding_completed: boolean | null
           updated_at: string
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
+          company_name?: string | null
           created_at?: string
+          description?: string | null
           full_name?: string | null
           id: string
+          onboarding_completed?: boolean | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
+          company_name?: string | null
           created_at?: string
+          description?: string | null
           full_name?: string | null
           id?: string
+          onboarding_completed?: boolean | null
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
