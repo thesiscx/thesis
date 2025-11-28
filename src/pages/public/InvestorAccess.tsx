@@ -36,15 +36,19 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
   // Check if existing session matches the requested resource
   useEffect(() => {
     if (!isLoading && investorSession) {
+      // For global keys, investorSlug will be "global"
+      const isGlobalKey = investorSession.investorSlug === 'global';
+      
       const sessionMatches = 
         investorSession.companySlug === companySlug &&
         investorSession.roundCode === roundCode &&
         investorSession.tool === tool &&
-        (!investorSlug || investorSession.investorSlug === investorSlug);
+        (isGlobalKey || !investorSlug || investorSession.investorSlug === investorSlug);
 
       if (sessionMatches) {
         // Session matches, navigate to viewer
-        navigate(`/${companySlug}/${roundCode}/${tool}/${investorSession.investorSlug}/view`, { replace: true });
+        const viewerSlug = isGlobalKey ? 'global' : investorSession.investorSlug;
+        navigate(`/${companySlug}/${roundCode}/${tool}/${viewerSlug}/view`, { replace: true });
       }
     }
   }, [isLoading, investorSession, companySlug, roundCode, investorSlug, tool, navigate]);
@@ -84,7 +88,8 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
         }
 
         // Navigate to the viewer
-        navigate(`/${companySlug}/${roundCode}/${tool}/${result.session.investorSlug}/view`, { replace: true });
+        const viewerSlug = result.session.investorSlug || 'global';
+        navigate(`/${companySlug}/${roundCode}/${tool}/${viewerSlug}/view`, { replace: true });
       } else {
         toast({
           title: "Invalid access key",

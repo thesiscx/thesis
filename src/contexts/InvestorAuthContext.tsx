@@ -133,11 +133,14 @@ export const InvestorAuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, error: data.error || 'Invalid access key' };
       }
 
-      if (data.valid && data.investor && data.round && data.workspace) {
+      // Handle both investor-specific and global keys
+      if (data.valid && data.round && data.workspace) {
+        const isGlobal = !data.investor || !data.investor.id;
+        
         const session: InvestorSession = {
-          investorId: data.investor.id,
-          investorName: data.investor.name,
-          investorSlug: data.investor.slug,
+          investorId: isGlobal ? 'global' : data.investor.id,
+          investorName: isGlobal ? 'Investor' : data.investor.name,
+          investorSlug: isGlobal ? 'global' : data.investor.slug,
           roundId: data.round.id,
           roundCode: data.round.roundCode,
           roundType: data.round.roundType,
