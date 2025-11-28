@@ -17,18 +17,33 @@ interface MemoVersion {
   created_at: string;
 }
 
+interface PendingContent {
+  content: Json;
+  memoId: string;
+}
+
 export function useMemo(roundSlug?: string, variantSlug?: string) {
   const { user } = useFounderAuth();
   const queryClient = useQueryClient();
   const [localContent, setLocalContent] = useState<Json | null>(null);
+  const [pendingContent, setPendingContent] = useState<PendingContent | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const lastVersionTime = useRef<Date>(new Date());
   const hasInitializedContent = useRef(false);
   
-  const debouncedContent = useDebounce(localContent, 1000);
+  const debouncedPending = useDebounce(pendingContent, 1000);
 
   const isGlobal = variantSlug === "global";
+
+  // CRITICAL: Reset all state when switching rounds/variants
+  useEffect(() => {
+    console.log('[Memo] Round/variant changed, resetting state', { roundSlug, variantSlug });
+    setPendingContent(null);
+    setLocalContent(null);
+    setTocItems([]);
+    hasInitializedContent.current = false;
+  }, [roundSlug, variantSlug]);
 
   // Fetch memo
   const { data: memo, isLoading } = useQuery({
@@ -74,7 +89,6 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
       return data;
     },
     enabled: !!user?.id && !!roundSlug,
-    // Prevent refetching which would overwrite user's unsaved changes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
@@ -97,32 +111,22 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
     enabled: !!memo?.id,
   });
 
-  // Reset initialization flag when memo ID changes (switching rounds/variants)
-  useEffect(() => {
-    hasInitializedContent.current = false;
-  }, [memo?.id]);
-
-  // Set local content ONLY on initial load, never overwrite user's work
+  // Set local content ONLY on initial load for THIS memo
   useEffect(() => {
     if (memo?.content && !hasInitializedContent.current) {
       hasInitializedContent.current = true;
       setLocalContent(memo.content);
-      console.log('[Memo] Initialized content from DB');
+      console.log('[Memo] Initialized content from DB for memo:', memo.id);
     }
-  }, [memo?.content]);
+  }, [memo?.content, memo?.id]);
 
   // Save mutation with error handling
   const saveMutation = useMutation({
-    mutationFn: async (content: Json) => {
-      if (!memo?.id) {
-        console.warn('[Memo] Save skipped - no memo ID');
-        return;
-      }
-
+    mutationFn: async ({ content, memoId }: { content: Json; memoId: string }) => {
       const { error } = await supabase
         .from("memos")
         .update({ content })
-        .eq("id", memo.id);
+        .eq("id", memoId);
 
       if (error) throw error;
     },
@@ -132,7 +136,6 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
     },
     onError: (error) => {
       console.error('[Memo] Save failed:', error);
-      // TODO: Could add toast notification here
     },
   });
 
@@ -203,12 +206,20 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
     },
   });
 
-  // Auto-save when debounced content changes
+  // Auto-save with MEMO ID VALIDATION to prevent race conditions
   useEffect(() => {
-    if (debouncedContent && memo?.id && debouncedContent !== memo.content) {
-      saveMutation.mutate(debouncedContent);
+    if (debouncedPending && memo?.id) {
+      // CRITICAL: Only save if the content belongs to the current memo
+      if (debouncedPending.memoId === memo.id) {
+        saveMutation.mutate({ content: debouncedPending.content, memoId: debouncedPending.memoId });
+      } else {
+        console.warn('[Memo] Skipping stale save - memo ID mismatch', {
+          contentMemoId: debouncedPending.memoId,
+          currentMemoId: memo.id,
+        });
+      }
     }
-  }, [debouncedContent, memo?.id, memo?.content]);
+  }, [debouncedPending, memo?.id]);
 
   // Auto-create version every 5 minutes if content has changed
   useEffect(() => {
@@ -225,9 +236,13 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
   }, [localContent, memo?.id]);
 
   const updateMemo = useCallback((content: Json, items: TocItem[]) => {
+    // CRITICAL: Track memo ID with content to prevent saving to wrong memo
+    if (memo?.id) {
+      setPendingContent({ content, memoId: memo.id });
+    }
     setLocalContent(content);
     setTocItems(items);
-  }, []);
+  }, [memo?.id]);
 
   const saveVersion = useCallback(() => {
     createVersionMutation.mutate();
