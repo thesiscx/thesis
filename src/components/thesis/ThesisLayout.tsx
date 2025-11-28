@@ -288,10 +288,13 @@ export default function ThesisLayout({
             tool={activeTool as 'memo' | 'docket'}
           />
           <PublishButton 
+            roundId={activeRound?.id}
             roundSlug={roundSlug}
             roundType={activeRound?.round_type}
             roundNumber={activeRound?.round_number}
             variantSlug={activeVariant}
+            investorId={activeInvestor?.id}
+            tool={activeTool as 'memo' | 'docket'}
             isPublished={false} 
           />
         </div>
