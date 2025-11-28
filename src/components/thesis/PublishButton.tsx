@@ -35,7 +35,7 @@ export default function PublishButton({
   isPublished = false 
 }: PublishButtonProps) {
   const { toast } = useToast();
-  const { user } = useFounderAuth();
+  const { user, isLoading: authLoading } = useFounderAuth();
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -50,7 +50,7 @@ export default function PublishButton({
   // Fetch company slug from profile
   useEffect(() => {
     const fetchCompanySlug = async () => {
-      if (!user) return;
+      if (authLoading || !user) return;
       
       const { data } = await supabase
         .from("profiles")
@@ -64,7 +64,7 @@ export default function PublishButton({
     };
 
     fetchCompanySlug();
-  }, [user]);
+  }, [user, authLoading]);
 
   // Generate the public URL based on company slug and round code
   const roundCode = getRoundCode({ round_type: roundType as any, round_number: roundNumber });
