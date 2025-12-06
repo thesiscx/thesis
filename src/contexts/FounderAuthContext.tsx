@@ -153,9 +153,18 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Clear local state immediately (important for Safari)
+    setUser(null);
+    setSession(null);
     setProfile(null);
     setProfileLoaded(false);
+    
+    // Sign out with local scope to avoid server-side session issues
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      console.error("[Auth] signOut error (continuing anyway):", error);
+    }
   };
 
   return (

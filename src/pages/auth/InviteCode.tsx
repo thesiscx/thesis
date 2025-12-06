@@ -21,37 +21,22 @@ export default function InviteCode() {
     setIsValidating(true);
     
     try {
-      const { data, error } = await supabase
-        .from("invite_codes")
-        .select("*")
-        .eq("code", inviteCode.trim().toUpperCase())
-        .eq("is_active", true)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('check_invite_code_valid', {
+        p_code: inviteCode.trim().toUpperCase()
+      });
 
       if (error) throw error;
 
-      if (!data) {
+      const result = data as { valid: boolean; error?: string };
+
+      if (!result.valid) {
         toast({
           title: "Invalid code",
-          description: "This invite code is not valid.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data.max_uses && data.used_count >= data.max_uses) {
-        toast({
-          title: "Code exhausted",
-          description: "This invite code has reached its usage limit.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        toast({
-          title: "Code expired",
-          description: "This invite code has expired.",
+          description: result.error === "Code exhausted" 
+            ? "This invite code has reached its usage limit."
+            : result.error === "Code expired"
+            ? "This invite code has expired."
+            : "This invite code is not valid.",
           variant: "destructive",
         });
         return;

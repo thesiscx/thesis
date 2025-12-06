@@ -67,7 +67,8 @@ export default function CircuitHeader({
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/auth");
+    // Use full page refresh for Safari compatibility
+    window.location.href = "/auth";
   };
 
   const getToolIcon = (tool: string) => {

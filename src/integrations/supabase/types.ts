@@ -888,6 +888,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_invite_code_valid: { Args: { p_code: string }; Returns: Json }
       create_user_invite_codes: {
         Args: { count?: number; user_id: string }
         Returns: undefined
