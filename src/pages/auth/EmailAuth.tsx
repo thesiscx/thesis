@@ -289,7 +289,7 @@ export default function EmailAuth() {
       });
 
       await refreshProfile();
-      navigate("/thesis");
+      navigate("/circuit");
     } catch (error) {
       console.error("Error creating round:", error);
       toast({

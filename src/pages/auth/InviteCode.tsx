@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import thesisLogo from "@/assets/thesis-logo-2.png";
+import circuitLogo from "@/assets/circuit-logo.png";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 export default function InviteCode() {
@@ -19,7 +19,7 @@ export default function InviteCode() {
   // Redirect if already logged in
   useEffect(() => {
     if (user && !isLoading) {
-      navigate("/thesis", { replace: true });
+      navigate("/circuit", { replace: true });
     }
   }, [user, isLoading, navigate]);
 
@@ -104,7 +104,7 @@ export default function InviteCode() {
 
           {/* Logo - fixed height container */}
           <div className="h-10 flex items-center justify-center mb-8">
-            <img src={thesisLogo} alt="Thesis" className="h-8" />
+            <img src={circuitLogo} alt="Circuit" className="h-8" />
           </div>
 
           {/* Form area - fixed min height to prevent shift */}
@@ -138,7 +138,7 @@ export default function InviteCode() {
       {/* Footer */}
       <footer className="py-6 text-center">
         <p className="text-xs text-muted-foreground">
-          © 2025 Thesis.{" "}
+          © 2025 Circuit.{" "}
           <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>.{" "}
           <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>.{" "}
           <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>.

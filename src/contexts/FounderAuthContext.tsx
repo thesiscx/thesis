@@ -54,12 +54,23 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let timeoutId: NodeJS.Timeout;
 
-    // Initialize auth state immediately on mount
+    // Initialize auth state with timeout fallback
     const initializeAuth = async () => {
+      // Timeout fallback - if auth takes longer than 5 seconds, continue without auth
+      timeoutId = setTimeout(() => {
+        if (mounted && isLoading) {
+          console.warn('[Auth] Session check timed out after 5s, continuing without auth');
+          setProfileLoaded(true);
+          setIsLoading(false);
+        }
+      }, 5000);
+
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
+        clearTimeout(timeoutId);
         if (!mounted) return;
         
         setSession(initialSession);
@@ -71,6 +82,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
           setProfileLoaded(true);
         }
       } catch (error) {
+        clearTimeout(timeoutId);
         console.error('Auth initialization error:', error);
         setProfileLoaded(true);
       } finally {
@@ -107,6 +119,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);
