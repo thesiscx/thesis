@@ -1,18 +1,27 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session, AuthError } from "@supabase/supabase-js";
+import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+
+interface Profile {
+  id: string;
+  company_slug: string | null;
+  company_name: string | null;
+  full_name: string | null;
+  onboarding_completed: boolean | null;
+}
 
 interface FounderAuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
   profileLoaded: boolean;
+  profile: Profile | null;
   companySlug: string | null;
   companyName: string | null;
   fullName: string | null;
-  signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signOut: (redirectTo?: string) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -23,141 +32,78 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [profileLoaded, setProfileLoaded] = useState(false);
-  const [companySlug, setCompanySlug] = useState<string | null>(null);
-  const [companyName, setCompanyName] = useState<string | null>(null);
-  const [fullName, setFullName] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   const fetchProfile = async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("company_slug, company_name, full_name")
-        .eq("id", userId)
-        .maybeSingle();
-      
-      if (data) {
-        setCompanySlug(data.company_slug);
-        setCompanyName(data.company_name);
-        setFullName(data.full_name);
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, company_slug, company_name, full_name, onboarding_completed")
+      .eq("id", userId)
+      .single();
+
+    if (!error && data) {
+      setProfile(data);
     }
     setProfileLoaded(true);
   };
 
   const refreshProfile = async () => {
-    if (user) {
+    if (user?.id) {
       await fetchProfile(user.id);
     }
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      try {
-        // Race between getSession and a 5-second timeout - TRUE enforcement
-        const sessionResult = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<null>((_, reject) => 
-            setTimeout(() => reject(new Error('Session timeout')), 5000)
-          )
-        ]) as { data: { session: Session | null } } | null;
-        
-        if (!mounted) return;
-        
-        const initialSession = sessionResult?.data?.session ?? null;
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-        
-        if (initialSession?.user) {
-          await fetchProfile(initialSession.user.id);
-        } else {
-          setProfileLoaded(true);
-        }
-      } catch (error) {
-        // Timeout or other error - continue without auth
-        console.warn('[Auth] Session check failed or timed out:', error);
-        if (mounted) setProfileLoaded(true);
-      } finally {
-        if (mounted) setIsLoading(false);
+    // 1. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfileLoaded(true);
       }
-    };
+      setIsLoading(false);
+    });
 
-    // Set up auth state listener for subsequent changes (login/logout/token refresh)
+    // 2. Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        if (!mounted) return;
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
         
-        // Skip INITIAL_SESSION since we handle it above
-        if (event === 'INITIAL_SESSION') return;
-        
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        
-        if (newSession?.user) {
-          // Defer to prevent deadlock
-          setTimeout(() => {
-            if (mounted) fetchProfile(newSession.user.id);
-          }, 0);
+        if (session?.user) {
+          // Defer profile fetch to avoid deadlock
+          setTimeout(() => fetchProfile(session.user.id), 0);
         } else {
-          setCompanySlug(null);
-          setCompanyName(null);
-          setFullName(null);
+          setProfile(null);
           setProfileLoaded(true);
         }
       }
     );
 
-    initializeAuth();
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signInWithEmail = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/circuit`;
-    
+    const redirectUrl = `${window.location.origin}/`;
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
+      options: { emailRedirectTo: redirectUrl },
     });
     return { error };
   };
 
-  const signOut = async (redirectTo?: string) => {
-    // Clear state immediately for instant UX
-    setUser(null);
-    setSession(null);
-    setCompanySlug(null);
-    setCompanyName(null);
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setProfile(null);
     setProfileLoaded(false);
-    
-    // MUST wait for Supabase to clear localStorage session before redirect
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('SignOut error:', error);
-    }
-    
-    // Redirect AFTER signOut completes
-    if (redirectTo) {
-      window.location.href = redirectTo;
-    }
   };
 
   return (
@@ -167,9 +113,10 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         session,
         isLoading,
         profileLoaded,
-        companySlug,
-        companyName,
-        fullName,
+        profile,
+        companySlug: profile?.company_slug ?? null,
+        companyName: profile?.company_name ?? null,
+        fullName: profile?.full_name ?? null,
         signInWithEmail,
         signUpWithEmail,
         signOut,

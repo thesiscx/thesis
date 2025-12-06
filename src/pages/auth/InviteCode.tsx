@@ -1,27 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import circuitLogo from "@/assets/circuit-logo.png";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
+// NO AUTH CHECK - renders instantly
 export default function InviteCode() {
   const navigate = useNavigate();
-  const { user, isLoading } = useFounderAuth();
   const { toast } = useToast();
 
   const [inviteCode, setInviteCode] = useState("");
   const [isValidating, setIsValidating] = useState(false);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user && !isLoading) {
-      navigate("/circuit", { replace: true });
-    }
-  }, [user, isLoading, navigate]);
 
   const handleValidateCode = async () => {
     if (!inviteCode.trim()) return;
@@ -79,19 +71,10 @@ export default function InviteCode() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
-          {/* Fixed header - same height on all pages */}
           <div className="h-6 mb-6">
             <Link
               to="/auth"
@@ -102,12 +85,10 @@ export default function InviteCode() {
             </Link>
           </div>
 
-          {/* Logo - fixed height container */}
           <div className="h-10 flex items-center justify-center mb-8">
             <img src={circuitLogo} alt="Circuit" className="h-8" />
           </div>
 
-          {/* Form area - fixed min height to prevent shift */}
           <div className="min-h-[200px] space-y-4">
             <Input
               placeholder="Invite code"
@@ -135,7 +116,6 @@ export default function InviteCode() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="py-6 text-center">
         <p className="text-xs text-muted-foreground">
           © 2025 Circuit.{" "}

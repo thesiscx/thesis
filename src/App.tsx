@@ -110,16 +110,16 @@ const App = () => (
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/pricing" element={<Pricing />} />
           
-          {/* All founder + admin routes share one FounderAuthProvider */}
+          {/* Auth pages - NO AUTH CONTEXT, render instantly */}
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/auth/invite" element={<InviteCode />} />
+          <Route path="/auth/email" element={<EmailAuth />} />
+          
+          {/* Protected founder routes - WITH AUTH CONTEXT */}
           <Route element={<FounderAuthLayout />}>
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<Admin />} />
-            
-            {/* Auth pages (not protected) */}
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/auth/invite" element={<InviteCode />} />
-            <Route path="/auth/email" element={<EmailAuth />} />
             
             {/* Circuit pages (protected) */}
             <Route path="/circuit" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
