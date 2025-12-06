@@ -7,11 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogOut } from "lucide-react";
-import { StakeholdersTab } from "@/components/admin/StakeholdersTab";
-import { AccessKeysTab } from "@/components/admin/AccessKeysTab";
-import { AnalyticsTab } from "@/components/admin/AnalyticsTab";
-import { DocumentsTab } from "@/components/admin/DocumentsTab";
+import { UsersTab } from "@/components/admin/UsersTab";
 import { InviteCodesTab } from "@/components/admin/InviteCodesTab";
+import { AnalyticsTab } from "@/components/admin/AnalyticsTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,7 +19,7 @@ export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Cache admin check with React Query - returns null for unknown, false for confirmed non-admin
+  // Cache admin check with React Query
   const { data: isAdmin, isLoading: adminLoading } = useQuery({
     queryKey: ['adminCheck', user?.id],
     queryFn: async (): Promise<boolean | null> => {
@@ -51,21 +49,18 @@ export default function Admin() {
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['adminStats'],
     queryFn: async () => {
-      const [stakeholdersRes, keysRes, logsRes, documentsRes] = await Promise.all([
-        supabase.from('stakeholders').select('id', { count: 'exact', head: true }),
-        supabase.from('access_keys').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('access_logs')
-          .select('id', { count: 'exact', head: true })
-          .eq('action', 'login')
-          .gte('timestamp', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
-        supabase.from('documents').select('id', { count: 'exact', head: true }),
+      const [usersRes, roundsRes, memosRes, inviteCodesRes] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('rounds').select('id', { count: 'exact', head: true }),
+        supabase.from('memos').select('id', { count: 'exact', head: true }),
+        supabase.from('invite_codes').select('id', { count: 'exact', head: true }).eq('is_active', true),
       ]);
 
       return {
-        totalStakeholders: stakeholdersRes.count || 0,
-        activeKeys: keysRes.count || 0,
-        todayLogins: logsRes.count || 0,
-        totalDocuments: documentsRes.count || 0,
+        totalUsers: usersRes.count || 0,
+        totalRounds: roundsRes.count || 0,
+        totalMemos: memosRes.count || 0,
+        activeInviteCodes: inviteCodesRes.count || 0,
       };
     },
     enabled: isAdmin === true,
@@ -80,7 +75,7 @@ export default function Admin() {
     }
   }, [authLoading, user, navigate]);
 
-  // Only redirect when we have CONFIRMED non-admin status (isAdmin === false, not null)
+  // Only redirect when we have CONFIRMED non-admin status
   useEffect(() => {
     if (!adminLoading && isAdmin === false && user && isSessionReady) {
       toast({
@@ -124,61 +119,51 @@ export default function Admin() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader>
-              <CardDescription>Total Stakeholders</CardDescription>
+              <CardDescription>Total Users</CardDescription>
               <CardTitle className="text-3xl">
-                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.totalStakeholders ?? 0}
+                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.totalUsers ?? 0}
               </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader>
-              <CardDescription>Active Access Codes</CardDescription>
+              <CardDescription>Total Rounds</CardDescription>
               <CardTitle className="text-3xl">
-                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.activeKeys ?? 0}
+                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.totalRounds ?? 0}
               </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader>
-              <CardDescription>Documents</CardDescription>
+              <CardDescription>Total Memos</CardDescription>
               <CardTitle className="text-3xl">
-                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.totalDocuments ?? 0}
+                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.totalMemos ?? 0}
               </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader>
-              <CardDescription>Today's Logins</CardDescription>
+              <CardDescription>Active Invite Codes</CardDescription>
               <CardTitle className="text-3xl">
-                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.todayLogins ?? 0}
+                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.activeInviteCodes ?? 0}
               </CardTitle>
             </CardHeader>
           </Card>
         </div>
 
-        <Tabs defaultValue="invite-codes" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="invite-codes">Invite Codes</TabsTrigger>
-            <TabsTrigger value="stakeholders">Stakeholders</TabsTrigger>
-            <TabsTrigger value="access-codes">Access Codes</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="users">
+            <UsersTab onUpdate={handleStatsUpdate} />
+          </TabsContent>
+
           <TabsContent value="invite-codes">
             <InviteCodesTab onUpdate={handleStatsUpdate} />
-          </TabsContent>
-
-          <TabsContent value="stakeholders">
-            <StakeholdersTab onUpdate={handleStatsUpdate} />
-          </TabsContent>
-
-          <TabsContent value="access-codes">
-            <AccessKeysTab onUpdate={handleStatsUpdate} />
-          </TabsContent>
-
-          <TabsContent value="documents">
-            <DocumentsTab />
           </TabsContent>
 
           <TabsContent value="analytics">
