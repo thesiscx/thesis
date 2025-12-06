@@ -78,8 +78,9 @@ export default function Admin() {
     }
   }, [isCheckingAdmin, isAdmin, user, navigate, toast]);
 
-  const handleSignOut = () => {
-    signOut('/admin/login');
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/admin/login', { replace: true });
   };
 
   const handleStatsUpdate = () => {
