@@ -9,17 +9,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
 import CloseRoundDialog from "@/components/circuit/CloseRoundDialog";
 import AssistantSidebar from "@/components/circuit/AssistantSidebar";
+import CircuitHeader from "@/components/circuit/CircuitHeader";
 import {
   Plus,
   Users,
   FileText,
   FolderOpen,
-  Settings,
-  LogOut,
   Lock,
   Unlock,
-  ChevronsUpDown,
-  Home,
   MoreHorizontal,
   Pencil,
   ChevronRight,
@@ -56,7 +53,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, isLoading: authLoading, signOut, companyName, fullName, profileLoaded, avatarUrl } = useFounderAuth();
+  const { user, isLoading: authLoading, companyName, fullName, profileLoaded } = useFounderAuth();
   const { rounds, isLoading: roundsLoading, hasOpenRound, reopenRound } = useRounds();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
@@ -113,10 +110,6 @@ export default function Dashboard() {
     });
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
-  };
 
   const handleEditRound = (round: Round) => {
     setSelectedRound(round);
@@ -358,43 +351,7 @@ export default function Dashboard() {
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-14 border-b border-border bg-background flex items-center px-6 shrink-0">
-          <div className="flex items-center gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 px-2 gap-1.5 max-w-[180px]">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="h-5 w-5 rounded-sm object-cover" />
-                  ) : (
-                    <div className="h-5 w-5 rounded-sm bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
-                      {companyName?.charAt(0)?.toUpperCase() || "C"}
-                    </div>
-                  )}
-                  <span className="truncate font-medium">{companyName || "My Company"}</span>
-                  <ChevronsUpDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuItem onClick={() => navigate("/circuit")}>
-                  <Home className="w-4 h-4 mr-2" />
-                  Stage
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Workspace Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <span className="text-muted-foreground/50">/</span>
-            <span className="text-sm text-muted-foreground pl-1">Stage</span>
-          </div>
-        </header>
+        <CircuitHeader activeTool="stage" />
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto p-6">
