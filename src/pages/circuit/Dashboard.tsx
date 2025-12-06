@@ -105,17 +105,19 @@ export default function Dashboard() {
   if (authLoading || !profileLoaded) {
     const blockingState = authLoading ? "Checking authentication..." : "Loading profile...";
     return (
-      <div className="h-screen bg-background flex">
+      <div className="h-screen bg-[hsl(var(--canvas))] flex">
         <div className="flex-1 flex flex-col">
-          <div className="h-14 border-b border-border px-6 flex items-center">
-            <Skeleton className="h-6 w-24" />
+          <div className="px-3 pt-3">
+            <div className="h-11 flex items-center">
+              <Skeleton className="h-6 w-24" />
+            </div>
           </div>
           <div className="flex-1 flex flex-col items-center justify-center gap-3">
             <Skeleton className="h-8 w-8 rounded-full" />
             <span className="text-sm text-muted-foreground">{blockingState}</span>
           </div>
         </div>
-        <div className="w-96 border-l border-border" />
+        <div className="w-96" />
       </div>
     );
   }
@@ -213,72 +215,76 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="h-screen bg-background flex">
+    <div className="h-screen bg-[hsl(var(--canvas))] flex">
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <CircuitHeader activeTool="stage" />
+        {/* Header - on cream background */}
+        <div className="px-3 pt-3">
+          <CircuitHeader activeTool="stage" />
+        </div>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto px-8 py-8">
-          <div className="max-w-2xl">
-            {/* Greeting - aligned with header padding */}
-            <div className="mb-10">
-              <h1 className="font-heading text-2xl font-bold">Hello, {firstName}</h1>
-              {companyName && (
-                <p className="text-muted-foreground mt-1">{companyName}</p>
+        {/* White rounded content box */}
+        <div className="flex-1 overflow-hidden p-3 pt-2">
+          <main className="h-full bg-background rounded-2xl overflow-auto shadow-sm px-8 py-8">
+            <div className="max-w-2xl">
+              {/* Greeting */}
+              <div className="mb-10">
+                <h1 className="font-heading text-2xl font-bold">Hello, {firstName}</h1>
+                {companyName && (
+                  <p className="text-muted-foreground mt-1">{companyName}</p>
+                )}
+              </div>
+
+              {/* Empty State */}
+              {openRounds.length === 0 && closedRounds.length === 0 && (
+                <div className="border border-dashed border-border rounded-xl p-12 text-center">
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <FolderOpen className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-heading text-lg font-semibold mb-2">No rounds yet</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Use the "Open Round" button in Circuit to start your first fundraising round.
+                  </p>
+                </div>
+              )}
+
+              {/* Tree View */}
+              {(openRounds.length > 0 || closedRounds.length > 0) && (
+                <div className="space-y-8">
+                  {/* Open Rounds */}
+                  {openRounds.length > 0 && (
+                    <div>
+                      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2 px-4">
+                        <Unlock className="w-3.5 h-3.5" />
+                        Open Round
+                      </h2>
+                      <div className="space-y-2">
+                        {openRounds.map((round) => (
+                          <RoundTree key={round.id} round={round} isOpen />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Closed Rounds */}
+                  {closedRounds.length > 0 && (
+                    <div>
+                      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2 px-4">
+                        <Lock className="w-3.5 h-3.5" />
+                        Closed Rounds
+                      </h2>
+                      <div className="space-y-2">
+                        {closedRounds.map((round) => (
+                          <RoundTree key={round.id} round={round} isOpen={false} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-
-            {/* Empty State */}
-            {openRounds.length === 0 && closedRounds.length === 0 && (
-              <div className="border border-dashed border-border rounded-xl p-12 text-center">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                  <FolderOpen className="w-6 h-6 text-muted-foreground" />
-                </div>
-                <h3 className="font-heading text-lg font-semibold mb-2">No rounds yet</h3>
-                <p className="text-muted-foreground text-sm">
-                  Use the "Open Round" button in Circuit to start your first fundraising round.
-                </p>
-              </div>
-            )}
-
-            {/* Tree View */}
-            {(openRounds.length > 0 || closedRounds.length > 0) && (
-              <div className="space-y-8">
-                {/* Open Rounds */}
-                {openRounds.length > 0 && (
-                  <div>
-                    <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2 px-4">
-                      <Unlock className="w-3.5 h-3.5" />
-                      Open Round
-                    </h2>
-                    <div className="space-y-2">
-                      {openRounds.map((round) => (
-                        <RoundTree key={round.id} round={round} isOpen />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Closed Rounds */}
-                {closedRounds.length > 0 && (
-                  <div>
-                    <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2 px-4">
-                      <Lock className="w-3.5 h-3.5" />
-                      Closed Rounds
-                    </h2>
-                    <div className="space-y-2">
-                      {closedRounds.map((round) => (
-                        <RoundTree key={round.id} round={round} isOpen={false} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </main>
+          </main>
+        </div>
 
         <CreateRoundDialog open={createRoundOpen} onOpenChange={setCreateRoundOpen} />
 
