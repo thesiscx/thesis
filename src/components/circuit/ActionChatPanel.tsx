@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Loader2, Link2, Lock, Unlock, Check, X, Users, Globe, Eye, Key, FileText, Settings } from "lucide-react";
+import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRounds } from "@/hooks/useRounds";
+import { useInvestors } from "@/hooks/useInvestors";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -19,7 +20,7 @@ type PageKey = "stage" | "memo" | "docket" | "pipeline";
 
 interface ActionMessage {
   id: string;
-  message_type: "system" | "action" | "confirmation" | "result" | "user";
+  message_type: "system" | "action" | "confirmation" | "result" | "user" | "card";
   content: string;
   metadata?: Record<string, unknown>;
   created_at: string;
@@ -32,7 +33,7 @@ interface ActionChatPanelProps {
   onOpenRound?: () => void;
 }
 
-// Card-based flow component wrapper
+// Card-based flow component wrapper - no close button, persistent
 function FlowCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-secondary/50 rounded-xl border border-border overflow-hidden">
@@ -50,13 +51,13 @@ function FlowCard({ title, children }: { title: string; children: React.ReactNod
 function CloseRoundFlow({ 
   roundName, 
   onConfirm, 
-  onCancel,
-  isLoading
+  isLoading,
+  isComplete
 }: { 
   roundName: string; 
   onConfirm: (reason: string, notes: string) => void;
-  onCancel: () => void;
   isLoading: boolean;
+  isComplete: boolean;
 }) {
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
@@ -68,6 +69,17 @@ function CloseRoundFlow({
     { value: "merged", label: "Merged into another round" },
     { value: "other", label: "Other" },
   ];
+
+  if (isComplete) {
+    return (
+      <FlowCard title={`Close ${roundName}`}>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Check className="w-4 h-4 text-green-600" />
+          <span>Round closed successfully</span>
+        </div>
+      </FlowCard>
+    );
+  }
 
   return (
     <FlowCard title={`Close ${roundName}`}>
@@ -102,144 +114,259 @@ function CloseRoundFlow({
         />
       </div>
 
-      <div className="flex gap-2 pt-2">
-        <Button 
-          size="sm" 
-          variant="outline" 
-          onClick={onCancel} 
-          className="flex-1"
-          disabled={isLoading}
-        >
-          Cancel
-        </Button>
-        <Button 
-          size="sm" 
-          onClick={() => onConfirm(reason, notes)} 
-          disabled={!reason || isLoading}
-          className="flex-1"
-        >
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-          Close Round
-        </Button>
-      </div>
+      <Button 
+        size="sm" 
+        onClick={() => onConfirm(reason, notes)} 
+        disabled={!reason || isLoading}
+        className="w-full"
+      >
+        {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+        Close Round
+      </Button>
     </FlowCard>
   );
 }
 
-// Generate link flow card
-function GenerateLinkFlow({
-  onGenerate,
-  onCancel,
-  isLoading
-}: {
-  onGenerate: (investorName: string) => void;
-  onCancel: () => void;
-  isLoading: boolean;
-}) {
-  const [investorName, setInvestorName] = useState("");
-
-  return (
-    <FlowCard title="Generate Share Link">
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Investor Name</Label>
-        <Input
-          value={investorName}
-          onChange={(e) => setInvestorName(e.target.value)}
-          placeholder="e.g. Sequoia Capital"
-          className="bg-background"
-        />
-      </div>
-
-      <div className="flex gap-2 pt-2">
-        <Button 
-          size="sm" 
-          variant="outline" 
-          onClick={onCancel} 
-          className="flex-1" 
-          disabled={isLoading}
-        >
-          Cancel
-        </Button>
-        <Button 
-          size="sm" 
-          onClick={() => onGenerate(investorName)} 
-          disabled={!investorName.trim() || isLoading}
-          className="flex-1"
-        >
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Link2 className="w-4 h-4 mr-2" />}
-          Generate
-        </Button>
-      </div>
-    </FlowCard>
-  );
-}
-
-// Access keys list flow
-function AccessKeysFlow({
+// Published memo flow - shows generated link and investor options
+function PublishFlow({
   roundId,
-  onClose
+  roundSlug,
+  companySlug,
+  investors,
+  onGenerateInvestorLink,
+  isLoading,
+  generatedLinks
 }: {
-  roundId?: string;
-  onClose: () => void;
+  roundId: string;
+  roundSlug?: string;
+  companySlug?: string;
+  investors: { id: string; name: string; slug: string }[];
+  onGenerateInvestorLink: (investorId: string, investorName: string) => void;
+  isLoading: boolean;
+  generatedLinks: Record<string, { url: string; key: string }>;
 }) {
-  const { data: accessKeys, isLoading } = useQuery({
-    queryKey: ["access-keys", roundId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("access_keys")
-        .select(`
-          *,
-          investors(name)
-        `)
-        .eq("round_id", roundId)
-        .order("created_at", { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!roundId,
-  });
+  const { toast } = useToast();
+  const publicUrl = companySlug && roundSlug 
+    ? `${window.location.origin}/share/${companySlug}/${roundSlug}/memo`
+    : null;
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Copied to clipboard" });
+    } catch {
+      toast({ title: "Copy failed - please copy manually", variant: "destructive" });
+    }
+  };
 
   return (
-    <FlowCard title="Access Keys">
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : !accessKeys?.length ? (
-        <p className="text-sm text-muted-foreground text-center py-4">
-          No access keys generated yet.
-        </p>
-      ) : (
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {accessKeys.map((key) => (
-            <div 
-              key={key.id} 
-              className="flex items-center justify-between p-3 rounded-lg bg-background border border-border"
-            >
-              <div>
-                <p className="text-sm font-medium">{key.investors?.name || "Unknown"}</p>
-                <p className="text-xs text-muted-foreground">
-                  {key.last_used_at 
-                    ? `Last used ${format(new Date(key.last_used_at), "MMM d, h:mm a")}`
-                    : "Never used"
-                  }
-                </p>
-              </div>
-              <span className={cn(
-                "text-xs px-2 py-1 rounded-full",
-                key.status === "active" 
-                  ? "bg-green-500/10 text-green-600" 
-                  : "bg-muted text-muted-foreground"
-              )}>
-                {key.status}
-              </span>
+    <FlowCard title="Memo Published">
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Public Share Link</Label>
+          {publicUrl ? (
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs bg-background px-3 py-2 rounded border border-border break-all">
+                {publicUrl}
+              </code>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => copyToClipboard(publicUrl)}
+                className="shrink-0 h-8 w-8 p-0"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </Button>
             </div>
-          ))}
+          ) : (
+            <p className="text-xs text-muted-foreground">Complete your profile settings to enable public sharing.</p>
+          )}
         </div>
-      )}
-      <Button size="sm" variant="outline" onClick={onClose} className="w-full mt-2">
-        Close
+
+        <div className="border-t border-border pt-3 space-y-2">
+          <Label className="text-xs text-muted-foreground">Create Individual Investor Links</Label>
+          {investors.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No investors in your pipeline yet.</p>
+          ) : (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {investors.map((inv) => {
+                const linkData = generatedLinks[inv.id];
+                return (
+                  <div key={inv.id} className="p-3 rounded-lg bg-background border border-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{inv.name}</span>
+                      {!linkData && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onGenerateInvestorLink(inv.id, inv.name)}
+                          disabled={isLoading}
+                          className="h-7 text-xs"
+                        >
+                          {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate Link"}
+                        </Button>
+                      )}
+                    </div>
+                    {linkData && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-xs bg-secondary px-2 py-1.5 rounded break-all">
+                            {linkData.url}
+                          </code>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => copyToClipboard(linkData.url)}
+                            className="shrink-0 h-7 w-7 p-0"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Key className="w-3 h-3" />
+                          <span>Access Key: {linkData.key}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </FlowCard>
+  );
+}
+
+// Draft memo wizard flow
+function DraftMemoFlow({
+  step,
+  onNext,
+  isLoading,
+  isComplete
+}: {
+  step: number;
+  onNext: (data: Record<string, string>) => void;
+  isLoading: boolean;
+  isComplete: boolean;
+}) {
+  const [formData, setFormData] = useState<Record<string, string>>({});
+
+  const STEPS = [
+    {
+      title: "Company Overview",
+      fields: [
+        { key: "company_name", label: "Company Name", placeholder: "Acme Corp" },
+        { key: "one_liner", label: "One-Liner", placeholder: "What does your company do in one sentence?" },
+        { key: "founded", label: "Founded", placeholder: "2023" },
+      ]
+    },
+    {
+      title: "The Problem",
+      fields: [
+        { key: "problem", label: "Problem Statement", placeholder: "What problem are you solving?", multiline: true },
+      ]
+    },
+    {
+      title: "Your Solution",
+      fields: [
+        { key: "solution", label: "Solution", placeholder: "How does your product solve this?", multiline: true },
+      ]
+    },
+    {
+      title: "Market Opportunity",
+      fields: [
+        { key: "tam", label: "Total Addressable Market", placeholder: "$10B" },
+        { key: "market_insight", label: "Key Market Insight", placeholder: "Why now?", multiline: true },
+      ]
+    },
+    {
+      title: "Business Model",
+      fields: [
+        { key: "revenue_model", label: "Revenue Model", placeholder: "How do you make money?" },
+        { key: "pricing", label: "Pricing", placeholder: "Your pricing structure" },
+      ]
+    },
+    {
+      title: "Traction",
+      fields: [
+        { key: "key_metrics", label: "Key Metrics", placeholder: "ARR, users, growth rate, etc.", multiline: true },
+      ]
+    },
+    {
+      title: "Team",
+      fields: [
+        { key: "founders", label: "Founding Team", placeholder: "Brief background of founders", multiline: true },
+      ]
+    },
+    {
+      title: "The Ask",
+      fields: [
+        { key: "raising", label: "Amount Raising", placeholder: "$1.5M" },
+        { key: "use_of_funds", label: "Use of Funds", placeholder: "How will you use this capital?", multiline: true },
+      ]
+    },
+  ];
+
+  if (isComplete) {
+    return (
+      <FlowCard title="Memo Draft Complete">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Check className="w-4 h-4 text-green-600" />
+          <span>Your memo structure has been added to the editor.</span>
+        </div>
+      </FlowCard>
+    );
+  }
+
+  const currentStep = STEPS[step];
+  if (!currentStep) return null;
+
+  const isStepValid = currentStep.fields.every(f => formData[f.key]?.trim());
+
+  return (
+    <FlowCard title={`Draft Memo - ${currentStep.title}`}>
+      <div className="text-xs text-muted-foreground mb-3">
+        Step {step + 1} of {STEPS.length}
+      </div>
+      
+      <div className="space-y-3">
+        {currentStep.fields.map((field) => (
+          <div key={field.key} className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{field.label}</Label>
+            {field.multiline ? (
+              <Textarea
+                value={formData[field.key] || ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
+                placeholder={field.placeholder}
+                rows={3}
+                className="text-sm resize-none bg-background"
+              />
+            ) : (
+              <Input
+                value={formData[field.key] || ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
+                placeholder={field.placeholder}
+                className="bg-background"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      <Button 
+        size="sm" 
+        onClick={() => onNext(formData)} 
+        disabled={!isStepValid || isLoading}
+        className="w-full"
+      >
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        ) : step === STEPS.length - 1 ? (
+          <Check className="w-4 h-4 mr-2" />
+        ) : null}
+        {step === STEPS.length - 1 ? "Generate Memo" : "Continue"}
       </Button>
     </FlowCard>
   );
@@ -247,25 +374,29 @@ function AccessKeysFlow({
 
 // Welcome messages for each page
 const WELCOME_MESSAGES: Record<PageKey, string> = {
-  stage: "Welcome to Circuit. I'll help you manage your fundraising rounds. Use the actions below to open a new round, generate share links, or view analytics.",
-  memo: "Your investor memo editor. Use the actions below to publish, share, or track views.",
+  stage: "Welcome to Circuit. I'll help you manage your fundraising rounds. Use the actions below to open a new round or close your current one.",
+  memo: "Your investor memo editor. Use the actions below to draft, publish, and share your memo with investors.",
   docket: "Your docket contains all deal documents. Set up your terms and share with investors.",
   pipeline: "Track your investor pipeline here. Add investors and manage your fundraising relationships.",
 };
 
 export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRound }: ActionChatPanelProps) {
   const { toast } = useToast();
-  const { user, isLoading: authLoading } = useFounderAuth();
+  const { user, profile, isLoading: authLoading } = useFounderAuth();
   const queryClient = useQueryClient();
   const { hasOpenRound, openRound } = useRounds();
+  const { investors } = useInvestors();
   const scrollRef = useRef<HTMLDivElement>(null);
   
   const [activeFlow, setActiveFlow] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
+  const [flowComplete, setFlowComplete] = useState<Record<string, boolean>>({});
+  const [draftStep, setDraftStep] = useState(0);
+  const [generatedLinks, setGeneratedLinks] = useState<Record<string, { url: string; key: string }>>({});
 
   // Fetch messages from DB
-  const { data: messages = [], isLoading: messagesLoading } = useQuery({
+  const { data: messages = [] } = useQuery({
     queryKey: ["action-messages", user?.id, pageKey],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -309,7 +440,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     queryClient.invalidateQueries({ queryKey: ["action-messages", user.id, pageKey] });
   };
 
-  // Actions with loading states
+  // Actions
   const handleOpenRound = async () => {
     if (hasOpenRound) {
       await addMessage("system", "You can only have one open round at a time. Please close your current round before opening a new one.");
@@ -348,6 +479,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       if (error) throw error;
 
       await addMessage("result", `Round "${openRound.name}" has been closed successfully.`);
+      setFlowComplete(prev => ({ ...prev, "close-round": true }));
       queryClient.invalidateQueries({ queryKey: ["rounds"] });
       toast({ title: "Round closed" });
     } catch (error) {
@@ -357,27 +489,23 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
         variant: "destructive" 
       });
     } finally {
-      setActiveFlow(null);
       setIsProcessing(false);
       setProcessingAction(null);
     }
   };
 
-  const handleGenerateLink = () => {
-    setActiveFlow("generate-link");
-  };
-
-  const handleViewAccessKeys = () => {
-    setActiveFlow("access-keys");
-  };
-
   const handlePublish = async () => {
+    if (!roundId) {
+      toast({ title: "No round selected", variant: "destructive" });
+      return;
+    }
+    
     setIsProcessing(true);
     setProcessingAction("publish");
     
     try {
-      // For now, just show a success message
       await addMessage("result", "Your memo has been published to your share subdomain.");
+      setActiveFlow("publish");
       toast({ title: "Published successfully" });
     } catch (error) {
       toast({ 
@@ -391,57 +519,55 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
-  const generateShareLink = async (investorName: string) => {
-    if (!roundId) {
-      toast({ title: "No round selected", variant: "destructive" });
-      return;
+  const handleDraftMemo = () => {
+    setDraftStep(0);
+    setActiveFlow("draft-memo");
+  };
+
+  const handleDraftNext = async (data: Record<string, string>) => {
+    const totalSteps = 8;
+    
+    if (draftStep < totalSteps - 1) {
+      setDraftStep(draftStep + 1);
+    } else {
+      // Complete - generate memo content
+      setIsProcessing(true);
+      try {
+        await addMessage("result", "Your memo structure has been generated. Edit it in the memo editor.");
+        setFlowComplete(prev => ({ ...prev, "draft-memo": true }));
+        toast({ title: "Memo draft generated" });
+      } finally {
+        setIsProcessing(false);
+      }
     }
+  };
+
+  const generateInvestorLink = async (investorId: string, investorName: string) => {
+    if (!roundId) return;
     
     setIsProcessing(true);
-    setProcessingAction("generate-link");
     
     try {
-      const slug = investorName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-      
-      const { data: existingInvestor } = await supabase
-        .from("investors")
-        .select("id")
-        .eq("workspace_id", user!.id)
-        .eq("slug", slug)
-        .single();
-
-      let investorId = existingInvestor?.id;
-
-      if (!investorId) {
-        const { data: newInvestor, error: insertError } = await supabase
-          .from("investors")
-          .insert({
-            name: investorName,
-            slug,
-            workspace_id: user!.id,
-          })
-          .select("id")
-          .single();
-
-        if (insertError) throw insertError;
-        investorId = newInvestor!.id;
-      }
-
       const { data: keyData, error: keyError } = await supabase.functions.invoke("generate-access-key", {
         body: { roundId, investorId, tool: "memo" }
       });
 
       if (keyError) throw keyError;
 
-      const shareUrl = `${window.location.origin}/share/${roundSlug}/memo?key=${keyData.key}`;
+      const shareUrl = profile?.company_slug && roundSlug
+        ? `${window.location.origin}/share/${profile.company_slug}/${roundSlug}/memo?key=${keyData.key}`
+        : `${window.location.origin}/share/${roundSlug}/memo?key=${keyData.key}`;
       
-      await addMessage("result", `Share link generated for ${investorName}:\n\n${shareUrl}`);
+      setGeneratedLinks(prev => ({
+        ...prev,
+        [investorId]: { url: shareUrl, key: keyData.key }
+      }));
       
-      await navigator.clipboard.writeText(shareUrl);
-      toast({ title: "Link copied to clipboard" });
+      await addMessage("result", `Link generated for ${investorName}`);
       
       queryClient.invalidateQueries({ queryKey: ["investors"] });
       queryClient.invalidateQueries({ queryKey: ["access-keys"] });
+      toast({ title: `Link created for ${investorName}` });
     } catch (error) {
       toast({ 
         title: "Failed to generate link", 
@@ -449,13 +575,11 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
         variant: "destructive" 
       });
     } finally {
-      setActiveFlow(null);
       setIsProcessing(false);
-      setProcessingAction(null);
     }
   };
 
-  // Render active flow
+  // Render active flow - no close buttons, persistent
   const renderActiveFlow = () => {
     switch (activeFlow) {
       case "close-round":
@@ -463,23 +587,29 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
           <CloseRoundFlow
             roundName={openRound.name}
             onConfirm={confirmCloseRound}
-            onCancel={() => setActiveFlow(null)}
             isLoading={isProcessing}
+            isComplete={flowComplete["close-round"] || false}
           />
         );
-      case "generate-link":
-        return (
-          <GenerateLinkFlow
-            onGenerate={generateShareLink}
-            onCancel={() => setActiveFlow(null)}
-            isLoading={isProcessing}
-          />
-        );
-      case "access-keys":
-        return (
-          <AccessKeysFlow
+      case "publish":
+        return roundId && (
+          <PublishFlow
             roundId={roundId}
-            onClose={() => setActiveFlow(null)}
+            roundSlug={roundSlug}
+            companySlug={profile?.company_slug || undefined}
+            investors={investors}
+            onGenerateInvestorLink={generateInvestorLink}
+            isLoading={isProcessing}
+            generatedLinks={generatedLinks}
+          />
+        );
+      case "draft-memo":
+        return (
+          <DraftMemoFlow
+            step={draftStep}
+            onNext={handleDraftNext}
+            isLoading={isProcessing}
+            isComplete={flowComplete["draft-memo"] || false}
           />
         );
       default:
@@ -487,7 +617,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
-  // Action buttons per page - with processing states
+  // Action buttons per page
   const getActionButtons = () => {
     const isButtonDisabled = (actionKey: string) => {
       return isProcessing && processingAction === actionKey;
@@ -514,49 +644,28 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       case "memo":
         return [
           { 
+            key: "draft-memo",
+            label: "Draft Memo", 
+            icon: FileEdit, 
+            onClick: handleDraftMemo,
+            disabled: isButtonDisabled("draft-memo") || activeFlow === "draft-memo"
+          },
+          { 
             key: "publish",
             label: "Publish", 
             icon: Globe, 
             onClick: handlePublish,
-            disabled: isButtonDisabled("publish")
-          },
-          { 
-            key: "generate-link",
-            label: "Create Link", 
-            icon: Link2, 
-            onClick: handleGenerateLink,
-            disabled: isButtonDisabled("generate-link") || activeFlow === "generate-link"
-          },
-          { 
-            key: "access-keys",
-            label: "Access Keys", 
-            icon: Key, 
-            onClick: handleViewAccessKeys,
-            disabled: activeFlow === "access-keys"
+            disabled: isButtonDisabled("publish") || activeFlow === "publish"
           },
         ];
       case "docket":
         return [
           { 
-            key: "setup-terms",
-            label: "Setup Terms", 
-            icon: Settings, 
-            onClick: () => addMessage("system", "Terms setup wizard coming soon."),
-            disabled: false
-          },
-          { 
-            key: "generate-link",
-            label: "Create Link", 
-            icon: Link2, 
-            onClick: handleGenerateLink,
-            disabled: isButtonDisabled("generate-link") || activeFlow === "generate-link"
-          },
-          { 
-            key: "access-keys",
-            label: "Access Keys", 
-            icon: Key, 
-            onClick: handleViewAccessKeys,
-            disabled: activeFlow === "access-keys"
+            key: "publish",
+            label: "Publish", 
+            icon: Globe, 
+            onClick: handlePublish,
+            disabled: isButtonDisabled("publish")
           },
         ];
       case "pipeline":
@@ -566,13 +675,6 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             label: "Add Investor", 
             icon: Users, 
             onClick: () => addMessage("system", "Use the Add Investor button in the pipeline view."),
-            disabled: false
-          },
-          { 
-            key: "track-views",
-            label: "Track Views", 
-            icon: Eye, 
-            onClick: () => addMessage("system", "View tracking analytics coming soon."),
             disabled: false
           },
         ];
@@ -640,7 +742,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             </div>
           ))}
           
-          {/* Active flow cards */}
+          {/* Active flow cards - persistent, no close */}
           {activeFlow && (
             <div className="pt-2">
               {renderActiveFlow()}
