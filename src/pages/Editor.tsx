@@ -22,7 +22,7 @@ interface Version {
 
 const Editor = () => {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading, isAdmin } = useFounderAuth();
+  const { user, isLoading: authLoading } = useFounderAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -38,7 +38,21 @@ const Editor = () => {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastVersionSaveRef = useRef<Date>(new Date());
 
-  // isAdmin comes from FounderAuthContext now - no need for separate query
+  // Check admin role directly in Editor page
+  const { data: isAdmin, isLoading: isCheckingAdmin } = useQuery({
+    queryKey: ['adminRole', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user!.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
+  });
 
   // Cache content with React Query - fetch ONLY the draft (not published)
   const { data: contentData, isLoading: contentLoading } = useQuery({
@@ -87,7 +101,7 @@ const Editor = () => {
 
       return null;
     },
-    enabled: !!isAdmin,
+    enabled: isAdmin === true,
     staleTime: Infinity,
     gcTime: 1000 * 60 * 30,
   });
@@ -104,7 +118,7 @@ const Editor = () => {
         .maybeSingle();
       return data;
     },
-    enabled: !!isAdmin,
+    enabled: isAdmin === true,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -170,9 +184,9 @@ const Editor = () => {
     }
   }, [authLoading, user, navigate]);
 
-  // Only redirect when we have CONFIRMED non-admin status (isAdmin === false, not null)
+  // Only redirect when we have CONFIRMED non-admin status
   useEffect(() => {
-    if (!authLoading && isAdmin === false && user) {
+    if (!isCheckingAdmin && isAdmin === false && user) {
       toast({
         title: 'Access denied',
         description: 'You need admin privileges to access the editor.',
@@ -180,7 +194,7 @@ const Editor = () => {
       });
       navigate('/editor/login', { replace: true });
     }
-  }, [authLoading, isAdmin, user, navigate, toast]);
+  }, [isCheckingAdmin, isAdmin, user, navigate, toast]);
 
   const saveContent = useCallback(async (newContent: any, createVersion = false) => {
     if (!contentId || !user) return;
@@ -368,7 +382,7 @@ const Editor = () => {
   }, [queryClient]);
 
   // Show nothing while loading or redirecting
-  if (authLoading || !user || isAdmin === false || contentLoading || content === null) {
+  if (authLoading || isCheckingAdmin || !user || isAdmin === false || contentLoading || content === null) {
     return null;
   }
 
