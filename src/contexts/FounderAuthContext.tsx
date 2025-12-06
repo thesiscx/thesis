@@ -123,11 +123,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetch to avoid deadlock
-          setTimeout(() => {
-            console.log(`[Auth] Deferred fetchProfile for user: ${session.user.id.slice(0, 8)}...`);
-            fetchProfile(session.user.id);
-          }, 0);
+          fetchProfile(session.user.id);
         } else {
           setProfile(null);
           setProfileLoaded(true);
