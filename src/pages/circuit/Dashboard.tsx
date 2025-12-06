@@ -56,7 +56,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, isLoading: authLoading, signOut, companyName } = useFounderAuth();
+  const { user, isLoading: authLoading, signOut, companyName, fullName, profileLoaded } = useFounderAuth();
   const { rounds, isLoading: roundsLoading, hasOpenRound, reopenRound } = useRounds();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
@@ -65,21 +65,6 @@ export default function Dashboard() {
   const [editTargetRaise, setEditTargetRaise] = useState("");
   const [editInstrumentType, setEditInstrumentType] = useState("");
   const [expandedRounds, setExpandedRounds] = useState<Set<string>>(new Set());
-
-  // Fetch profile for full name
-  const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data } = await supabase
-        .from("profiles")
-        .select("full_name, company_name")
-        .eq("id", user.id)
-        .single();
-      return data;
-    },
-    enabled: !!user?.id,
-  });
 
   // Fetch memo and docket counts per round
   const { data: roundStats } = useQuery({
@@ -218,7 +203,7 @@ export default function Dashboard() {
     setCreateRoundOpen(true);
   };
 
-  if (authLoading || roundsLoading) {
+  if (authLoading || !profileLoaded || roundsLoading) {
     return (
       <div className="h-screen bg-background flex">
         <div className="flex-1 flex flex-col">
@@ -242,7 +227,7 @@ export default function Dashboard() {
   const openRounds = rounds?.filter((r) => r.state === "open") || [];
   const closedRounds = rounds?.filter((r) => r.state === "closed") || [];
 
-  const firstName = profile?.full_name?.split(" ")[0] || "there";
+  const firstName = fullName?.split(" ")[0] || "there";
 
   const tools = [
     { key: "memo", label: "Memo", icon: FileText, countKey: "memoCount" as const, countLabel: "variants" },

@@ -19,7 +19,7 @@ const companySlugSchema = z.string()
 export default function FounderSettings() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoading: authLoading } = useFounderAuth();
+  const { user, isLoading: authLoading, profileLoaded } = useFounderAuth();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,7 +36,7 @@ export default function FounderSettings() {
   // Fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
-      if (authLoading) return;
+      if (authLoading || !profileLoaded) return;
       
       if (!user) {
         setLoading(false);
@@ -69,7 +69,7 @@ export default function FounderSettings() {
     };
 
     fetchProfile();
-  }, [user, authLoading]);
+  }, [user, authLoading, profileLoaded]);
 
   // Check slug availability with debounce
   useEffect(() => {
@@ -169,7 +169,7 @@ export default function FounderSettings() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || !profileLoaded || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
