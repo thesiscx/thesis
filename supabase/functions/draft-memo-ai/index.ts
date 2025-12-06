@@ -60,7 +60,7 @@ Return the modified memo as a TipTap JSON document with this exact structure:
 {
   "type": "doc",
   "content": [
-    { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "Section Title" }] },
+    { "type": "heading", "attrs": { "level": 1 }, "content": [{ "type": "text", "text": "Section Title" }] },
     { "type": "paragraph", "content": [{ "type": "text", "text": "Section content..." }] }
   ]
 }`;
@@ -84,11 +84,12 @@ Your task is to generate a complete investor memo with 15 sections based on the 
 IMPORTANT FORMATTING RULES:
 1. Return ONLY valid JSON - no markdown, no code blocks, no explanation
 2. The JSON must be a TipTap document structure
-3. Each section should have an H2 heading followed by 2-4 paragraphs of professional content
-4. Write in a confident, professional tone appropriate for sophisticated investors
-5. Use specific details from the provided information
-6. Where information is missing, write compelling placeholder content that the founder can edit
-7. Each paragraph should be substantive (3-5 sentences minimum)
+3. Each section MUST have an H1 heading (level 1) followed by 2-4 paragraphs of professional content
+4. CRITICAL: Use heading level 1 (NOT level 2) for ALL section headings
+5. Write in a confident, professional tone appropriate for sophisticated investors
+6. Use specific details from the provided information
+7. Where information is missing, write compelling placeholder content that the founder can edit
+8. Each paragraph should be substantive (3-5 sentences minimum)
 
 The 15 sections are: Vision, Problem, Solution, Product, Timing, Market, Competition, Advantages, Model, Economics, Distribution, Traction, Team, Funding, Roadmap.
 
@@ -96,7 +97,7 @@ Return the memo as a TipTap JSON document with this exact structure:
 {
   "type": "doc",
   "content": [
-    { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "Section Title" }] },
+    { "type": "heading", "attrs": { "level": 1 }, "content": [{ "type": "text", "text": "Section Title" }] },
     { "type": "paragraph", "content": [{ "type": "text", "text": "Section content..." }] }
   ]
 }`;
@@ -223,7 +224,7 @@ Generate a professional, compelling investor memo with all 15 sections. Use the 
         content: MEMO_SECTIONS.flatMap(section => [
           {
             type: 'heading',
-            attrs: { level: 2 },
+            attrs: { level: 1 },
             content: [{ type: 'text', text: section.title }]
           },
           {

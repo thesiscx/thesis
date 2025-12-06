@@ -88,9 +88,9 @@ export default function MemoSidebar({
     <aside className="w-72 flex flex-col h-full overflow-y-auto bg-background">
       <div className="flex-1 p-6 pt-8">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-sm font-medium">
+          <h1 className="font-heading text-2xl font-bold">
             Memo
-          </h3>
+          </h1>
           <div className="flex items-center gap-2">
             {versions.length > 0 && onRestoreVersion && (
               <DropdownMenu>

@@ -152,7 +152,7 @@ export default function ThesisMemo() {
           {/* Main Content Area */}
           <div className="flex-1 overflow-hidden flex flex-col">
             {/* Edit/View Toggle Button - top right of content area */}
-            <div className="flex justify-end p-4 bg-background">
+            <div className="flex justify-end p-2 bg-background shrink-0">
               <Button
                 variant="outline"
                 size="sm"
