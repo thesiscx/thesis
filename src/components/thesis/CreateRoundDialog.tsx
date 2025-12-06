@@ -29,10 +29,10 @@ export default function CreateRoundDialog({
   onOpenChange,
 }: CreateRoundDialogProps) {
   const navigate = useNavigate();
-  const { createRound, countRoundsOfType } = useRounds();
+  const { createRound, countRoundsOfType, hasOpenRound } = useRounds();
   
   const [roundType, setRoundType] = useState<RoundType>("s");
-  const [instrumentType, setInstrumentType] = useState<"safe" | "note">("safe");
+  const [instrumentType, setInstrumentType] = useState<"safe" | "note" | "equity">("safe");
   const [targetRaise, setTargetRaise] = useState("");
 
   const slugify = (text: string) => {
@@ -48,6 +48,8 @@ export default function CreateRoundDialog({
   const publicCode = roundNumber > 1 ? `${roundType}${roundNumber}` : roundType;
 
   const handleCreate = async () => {
+    if (hasOpenRound) return;
+    
     const roundLabel = ROUND_TYPE_LABELS[roundType];
     const displayName = roundNumber > 1 ? `${roundLabel} ${roundNumber}` : roundLabel;
     const slug = slugify(displayName);
@@ -73,9 +75,9 @@ export default function CreateRoundDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create your raise</DialogTitle>
+          <DialogTitle>Open New Round</DialogTitle>
           <DialogDescription>
-            Set up a new fundraising round
+            Configure your new fundraising round
           </DialogDescription>
         </DialogHeader>
 
@@ -104,13 +106,14 @@ export default function CreateRoundDialog({
 
           <div className="space-y-2">
             <Label>Instrument type</Label>
-            <Select value={instrumentType} onValueChange={(v: "safe" | "note") => setInstrumentType(v)}>
+            <Select value={instrumentType} onValueChange={(v: "safe" | "note" | "equity") => setInstrumentType(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="safe">SAFE</SelectItem>
                 <SelectItem value="note">Convertible Note</SelectItem>
+                <SelectItem value="equity">Equity</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -137,9 +140,9 @@ export default function CreateRoundDialog({
           </Button>
           <Button 
             onClick={handleCreate} 
-            disabled={createRound.isPending}
+            disabled={createRound.isPending || hasOpenRound}
           >
-            {createRound.isPending ? "Creating..." : "Create round"}
+            {createRound.isPending ? "Opening..." : "Open Round"}
           </Button>
         </div>
       </DialogContent>
