@@ -7,7 +7,8 @@ import { useRounds, Round } from "@/hooks/useRounds";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
-import circuitLogo from "@/assets/circuit-logo.png";
+import CloseRoundDialog from "@/components/circuit/CloseRoundDialog";
+import AssistantSidebar from "@/components/circuit/AssistantSidebar";
 import {
   Plus,
   Users,
@@ -29,16 +30,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -62,9 +53,9 @@ export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading, signOut, companyName } = useFounderAuth();
-  const { rounds, isLoading: roundsLoading, hasOpenRound, closeRound, reopenRound } = useRounds();
+  const { rounds, isLoading: roundsLoading, hasOpenRound, reopenRound } = useRounds();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
-  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
   const [editTargetRaise, setEditTargetRaise] = useState("");
@@ -150,13 +141,32 @@ export default function Dashboard() {
 
   const handleCloseRound = (round: Round) => {
     setSelectedRound(round);
-    setCloseConfirmOpen(true);
+    setCloseDialogOpen(true);
   };
 
-  const confirmCloseRound = async () => {
+  const confirmCloseRound = async (reason: string, notes: string) => {
     if (!selectedRound) return;
-    await closeRound.mutateAsync(selectedRound.id);
-    setCloseConfirmOpen(false);
+    
+    // Update round with closure details
+    const { error } = await supabase
+      .from("rounds")
+      .update({
+        state: "closed",
+        closure_reason: reason,
+        closure_notes: notes || null,
+        closed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", selectedRound.id);
+
+    if (error) {
+      toast({ title: "Failed to close round", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["rounds"] });
+    toast({ title: "Round closed" });
+    setCloseDialogOpen(false);
     setSelectedRound(null);
   };
 
@@ -207,43 +217,45 @@ export default function Dashboard() {
   const firstName = profile?.full_name?.split(" ")[0] || "there";
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header - Breadcrumb style matching ThesisLayout */}
-      <header className="h-14 border-b border-border bg-background sticky top-0 z-50 flex items-center px-6">
-        <div className="flex items-center gap-1">
-          {/* Thesis Logo/Settings Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 px-2 gap-1.5">
-                <img src={circuitLogo} alt="Circuit" className="h-4" />
-                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem onClick={() => navigate("/circuit")}>
-                <Home className="w-4 h-4 mr-2" />
-                Dashboard
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
-                <Settings className="w-4 h-4 mr-2" />
-                Workspace Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <div className="min-h-screen bg-background flex">
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header - Breadcrumb style */}
+        <header className="h-14 border-b border-border bg-background sticky top-0 z-50 flex items-center px-6 shrink-0">
+          <div className="flex items-center gap-1">
+            {/* Company Name/Settings Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 px-2 gap-1.5 max-w-[180px]">
+                  <span className="truncate font-medium">{companyName || "My Company"}</span>
+                  <ChevronsUpDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem onClick={() => navigate("/circuit")}>
+                  <Home className="w-4 h-4 mr-2" />
+                  Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Workspace Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <span className="text-muted-foreground/50">/</span>
+            <span className="text-muted-foreground/50">/</span>
 
-          <span className="text-sm text-muted-foreground">Dashboard</span>
-        </div>
-      </header>
+            <span className="text-sm text-muted-foreground">Dashboard</span>
+          </div>
+        </header>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-6 py-12">
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto max-w-4xl mx-auto px-6 py-12 w-full">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="font-heading text-2xl font-bold">Hello, {firstName}</h1>
@@ -417,12 +429,12 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-      </main>
+        </main>
 
-      <CreateRoundDialog open={createRoundOpen} onOpenChange={setCreateRoundOpen} />
+        <CreateRoundDialog open={createRoundOpen} onOpenChange={setCreateRoundOpen} />
 
-      {/* Edit Dialog - Target Raise & Instrument Type only */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        {/* Edit Dialog - Target Raise & Instrument Type only */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit {selectedRound?.name}</DialogTitle>
@@ -464,26 +476,20 @@ export default function Dashboard() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+        </Dialog>
 
-      {/* Close Round Confirmation */}
-      <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Close {selectedRound?.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Closing this round will mark it as complete. You can reopen it later if needed.
-              This allows you to open a new fundraising round.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmCloseRound}>
-              Close Round
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Close Round Dialog */}
+        <CloseRoundDialog
+          open={closeDialogOpen}
+          onOpenChange={setCloseDialogOpen}
+          roundName={selectedRound?.name || ""}
+          roundStats={selectedRound ? roundStats?.[selectedRound.id] : undefined}
+          onConfirm={confirmCloseRound}
+        />
+      </div>
+
+      {/* Right Sidebar */}
+      <AssistantSidebar />
     </div>
   );
 }
