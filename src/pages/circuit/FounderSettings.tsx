@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Check, X } from "lucide-react";
+import { ArrowLeft, Loader2, Check, X, Upload, ImageIcon } from "lucide-react";
 import { z } from "zod";
+import ImageCropper from "@/components/ImageCropper";
 
 const companySlugSchema = z.string()
   .min(3, "Slug must be at least 3 characters")
@@ -19,7 +20,8 @@ const companySlugSchema = z.string()
 export default function FounderSettings() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoading: authLoading, profileLoaded } = useFounderAuth();
+  const { user, isLoading: authLoading, profileLoaded, refreshProfile } = useFounderAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,10 +30,15 @@ export default function FounderSettings() {
   const [companySlug, setCompanySlug] = useState("");
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [originalSlug, setOriginalSlug] = useState("");
+  
+  // Logo upload state
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // Fetch profile data
   useEffect(() => {
@@ -46,7 +53,7 @@ export default function FounderSettings() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('company_name, company_slug, description, website')
+          .select('company_name, company_slug, description, website, avatar_url')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -60,6 +67,7 @@ export default function FounderSettings() {
           setOriginalSlug(data.company_slug || "");
           setDescription(data.description || "");
           setWebsite(data.website || "");
+          setAvatarUrl(data.avatar_url || null);
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -110,6 +118,72 @@ export default function FounderSettings() {
     // Auto-format: lowercase, replace spaces with hyphens
     const formatted = value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     setCompanySlug(formatted);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Please select an image file", variant: "destructive" });
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Image must be less than 5MB", variant: "destructive" });
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!user) return;
+    
+    setUploadingLogo(true);
+    setCropImage(null);
+    
+    try {
+      const fileName = `${user.id}/logo-${Date.now()}.jpg`;
+      
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(fileName, croppedBlob, { 
+          contentType: 'image/jpeg',
+          upsert: true 
+        });
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(fileName);
+      
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+      
+      if (updateError) throw updateError;
+      
+      setAvatarUrl(publicUrl);
+      await refreshProfile();
+      toast({ title: "Logo updated" });
+    } catch (error: any) {
+      toast({ title: "Failed to upload logo", description: error.message, variant: "destructive" });
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   const handleSave = async () => {
@@ -206,6 +280,52 @@ export default function FounderSettings() {
         </div>
 
         <div className="space-y-6">
+          {/* Logo Upload Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Company Logo</CardTitle>
+              <CardDescription>This appears in your header and shared documents</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div 
+                  className="relative w-20 h-20 rounded-lg border-2 border-dashed border-border bg-muted/50 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-muted/80 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploadingLogo ? (
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  ) : avatarUrl ? (
+                    <img src={avatarUrl} alt="Company logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingLogo}
+                    className="gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Logo
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Square image recommended. Max 5MB.
+                  </p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Company Details</CardTitle>
@@ -307,6 +427,17 @@ export default function FounderSettings() {
           </div>
         </div>
       </div>
+      
+      {/* Image Cropper Modal */}
+      {cropImage && (
+        <ImageCropper
+          image={cropImage}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setCropImage(null)}
+          cropShape="rect"
+          title="Crop Company Logo"
+        />
+      )}
     </div>
   );
 }

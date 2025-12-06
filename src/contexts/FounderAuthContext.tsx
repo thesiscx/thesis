@@ -7,6 +7,7 @@ interface Profile {
   company_slug: string | null;
   company_name: string | null;
   full_name: string | null;
+  avatar_url: string | null;
   onboarding_completed: boolean | null;
 }
 
@@ -19,6 +20,7 @@ interface FounderAuthContextType {
   companySlug: string | null;
   companyName: string | null;
   fullName: string | null;
+  avatarUrl: string | null;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -38,7 +40,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
     console.log(`[Auth] fetchProfile: querying profile for ${userId.slice(0, 8)}...`);
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, company_slug, company_name, full_name, onboarding_completed")
+      .select("id, company_slug, company_name, full_name, avatar_url, onboarding_completed")
       .eq("id", userId)
       .single();
 
@@ -144,6 +146,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         companySlug: profile?.company_slug ?? null,
         companyName: profile?.company_name ?? null,
         fullName: profile?.full_name ?? null,
+        avatarUrl: profile?.avatar_url ?? null,
         signInWithEmail,
         signUpWithEmail,
         signOut,
