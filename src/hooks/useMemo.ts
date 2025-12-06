@@ -111,14 +111,33 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
     enabled: !!memo?.id,
   });
 
-  // Set local content ONLY on initial load for THIS memo
+  // Set local content when memo loads or updates from DB
+  // Track memo ID to detect when we're loading a different memo vs same memo being updated
+  const lastMemoId = useRef<string | null>(null);
+  
   useEffect(() => {
-    if (memo?.content && !hasInitializedContent.current) {
-      hasInitializedContent.current = true;
-      setLocalContent(memo.content);
-      console.log('[Memo] Initialized content from DB for memo:', memo.id);
+    if (memo?.content) {
+      const isSameMemo = lastMemoId.current === memo.id;
+      const isFirstLoad = !hasInitializedContent.current;
+      
+      // Initialize on first load OR when memo content changes from external source (AI edit, version restore)
+      // Only skip if user is actively editing (has pending changes)
+      if (isFirstLoad || (!isSameMemo) || (!pendingContent && !isSameMemo)) {
+        hasInitializedContent.current = true;
+        lastMemoId.current = memo.id;
+        setLocalContent(memo.content);
+        console.log('[Memo] Synced content from DB for memo:', memo.id, { isFirstLoad, isSameMemo });
+      } else if (isSameMemo && !pendingContent) {
+        // Same memo, no pending edits - check if DB content is newer (e.g., AI edit)
+        const localStr = JSON.stringify(localContent);
+        const dbStr = JSON.stringify(memo.content);
+        if (localStr !== dbStr) {
+          setLocalContent(memo.content);
+          console.log('[Memo] Updated local content from DB (external change detected)');
+        }
+      }
     }
-  }, [memo?.content, memo?.id]);
+  }, [memo?.content, memo?.id, pendingContent]);
 
   // Save mutation with error handling
   const saveMutation = useMutation({
