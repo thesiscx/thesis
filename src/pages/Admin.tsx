@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,38 +14,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Admin() {
-  const { user, signOut, isLoading: authLoading, isSessionReady } = useAuth();
+  const { user, signOut, isLoading, isAdmin } = useFounderAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Cache admin check with React Query
-  const { data: isAdmin, isLoading: adminLoading } = useQuery({
-    queryKey: ['adminCheck', user?.id],
-    queryFn: async (): Promise<boolean | null> => {
-      if (!user) return null;
-      
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (error) {
-        console.error('Admin check error:', error);
-        return null;
-      }
-      
-      return !!data;
-    },
-    enabled: !!user && !authLoading && isSessionReady,
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 30,
-    meta: { persist: false },
-  });
-
-  // Cache stats with React Query
+  // Cache stats with React Query - fetch immediately when user exists
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['adminStats'],
     queryFn: async () => {
@@ -66,18 +40,19 @@ export default function Admin() {
     enabled: isAdmin === true,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
+    meta: { persist: false },
   });
 
   // Handle redirect for unauthenticated users
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!isLoading && !user) {
       navigate("/admin/login", { replace: true });
     }
-  }, [authLoading, user, navigate]);
+  }, [isLoading, user, navigate]);
 
   // Only redirect when we have CONFIRMED non-admin status
   useEffect(() => {
-    if (!adminLoading && isAdmin === false && user && isSessionReady) {
+    if (!isLoading && isAdmin === false && user) {
       toast({
         title: 'Access denied',
         description: 'You need admin privileges to access the admin dashboard.',
@@ -85,18 +60,44 @@ export default function Admin() {
       });
       navigate("/admin/login", { replace: true });
     }
-  }, [adminLoading, isAdmin, user, isSessionReady, navigate, toast]);
+  }, [isLoading, isAdmin, user, navigate, toast]);
 
-  const handleSignOut = async () => {
-    await signOut('/admin/login');
+  const handleSignOut = () => {
+    signOut('/admin/login');
   };
 
   const handleStatsUpdate = () => {
     queryClient.invalidateQueries({ queryKey: ['adminStats'] });
   };
 
-  // Show nothing while loading or redirecting
-  if (authLoading || !isSessionReady || !user || isAdmin === false) {
+  // Show skeleton while loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="border-b bg-card">
+          <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+        </div>
+        <div className="container mx-auto px-6 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map(i => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-8 w-16" />
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated or not admin
+  if (!user || isAdmin === false || isAdmin === null) {
     return null;
   }
 

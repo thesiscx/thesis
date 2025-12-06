@@ -24,7 +24,6 @@ import InvestorAccess from "./pages/public/InvestorAccess";
 import PublicMemoViewer from "./pages/public/PublicMemoViewer";
 import PublicDocketViewer from "./pages/public/PublicDocketViewer";
 import { FounderAuthProvider, useFounderAuth } from "./contexts/FounderAuthContext";
-import { AuthProvider } from "./contexts/AuthContext";
 import { InvestorAuthProvider } from "./contexts/InvestorAuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -104,19 +103,17 @@ const App = () => (
           <Route path="/" element={<Navigate to="/thesis" replace />} />
           <Route path="/login" element={<Navigate to="/auth" replace />} />
           
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AuthProvider><Outlet /></AuthProvider>}>
-            <Route path="login" element={<AdminLogin />} />
-            <Route index element={<Admin />} />
-          </Route>
-          
           {/* Legal & Info - no auth needed */}
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/pricing" element={<Pricing />} />
           
-          {/* All founder routes share one FounderAuthProvider */}
+          {/* All founder + admin routes share one FounderAuthProvider */}
           <Route element={<FounderAuthLayout />}>
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<Admin />} />
+            
             {/* Auth pages (not protected) */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/invite" element={<InviteCode />} />

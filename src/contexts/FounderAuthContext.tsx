@@ -9,9 +9,10 @@ interface FounderAuthContextType {
   profileLoaded: boolean;
   companySlug: string | null;
   companyName: string | null;
+  isAdmin: boolean | null;
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signOut: () => Promise<void>;
+  signOut: (redirectTo?: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -24,27 +25,33 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [companySlug, setCompanySlug] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   
-  // Track if we've completed initial load to prevent race conditions
   const initializedRef = useRef(false);
 
   const fetchProfile = async (userId: string) => {
-    console.log('[FounderAuth] Fetching profile for:', userId);
-    const startTime = Date.now();
-    
     const { data } = await supabase
       .from("profiles")
       .select("company_slug, company_name")
       .eq("id", userId)
       .maybeSingle();
     
-    console.log(`[FounderAuth] Profile fetched in ${Date.now() - startTime}ms`);
-    
     if (data) {
       setCompanySlug(data.company_slug);
       setCompanyName(data.company_name);
     }
     setProfileLoaded(true);
+  };
+
+  const checkAdminRole = async (userId: string) => {
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+    
+    setIsAdmin(!!data);
   };
 
   const refreshProfile = async () => {
@@ -54,45 +61,61 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    console.log('[FounderAuth] Setting up auth listener');
-    
-    // Set up auth state listener - this is the SINGLE source of truth
+    // Get session synchronously first (from localStorage cache)
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      if (existingSession) {
+        setSession(existingSession);
+        setUser(existingSession.user);
+        // Fetch profile and admin status in parallel
+        Promise.all([
+          fetchProfile(existingSession.user.id),
+          checkAdminRole(existingSession.user.id)
+        ]).then(() => {
+          setIsLoading(false);
+          initializedRef.current = true;
+        });
+      } else {
+        setIsLoading(false);
+        setProfileLoaded(true);
+        initializedRef.current = true;
+      }
+    });
+
+    // Set up auth state listener for future changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('[FounderAuth] Auth state changed:', event, session?.user?.id);
+      (event, newSession) => {
+        // Only update if session actually changed
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Use setTimeout to prevent Supabase auth deadlock
-          setTimeout(async () => {
-            await fetchProfile(session.user.id);
-            setIsLoading(false);
-            initializedRef.current = true;
+        if (newSession?.user) {
+          // Defer Supabase calls to prevent deadlock
+          setTimeout(() => {
+            Promise.all([
+              fetchProfile(newSession.user.id),
+              checkAdminRole(newSession.user.id)
+            ]).then(() => {
+              if (!initializedRef.current) {
+                setIsLoading(false);
+                initializedRef.current = true;
+              }
+            });
           }, 0);
         } else {
           setCompanySlug(null);
           setCompanyName(null);
+          setIsAdmin(null);
           setProfileLoaded(true);
-          setIsLoading(false);
-          initializedRef.current = true;
+          if (!initializedRef.current) {
+            setIsLoading(false);
+            initializedRef.current = true;
+          }
         }
       }
     );
 
-    // Set a maximum wait time for initial load
-    const timeout = setTimeout(() => {
-      if (!initializedRef.current) {
-        console.log('[FounderAuth] Timeout - forcing load complete');
-        setIsLoading(false);
-        setProfileLoaded(true);
-      }
-    }, 3000);
-
     return () => {
       subscription.unsubscribe();
-      clearTimeout(timeout);
     };
   }, []);
 
@@ -117,13 +140,22 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
+  const signOut = async (redirectTo?: string) => {
+    // Clear state immediately for instant UX
     setUser(null);
     setSession(null);
     setCompanySlug(null);
     setCompanyName(null);
+    setIsAdmin(null);
     setProfileLoaded(false);
+    
+    // Redirect immediately if path provided
+    if (redirectTo) {
+      window.location.href = redirectTo;
+    }
+    
+    // Fire and forget - let Supabase invalidate in background
+    supabase.auth.signOut().catch(console.error);
   };
 
   return (
@@ -135,6 +167,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         profileLoaded,
         companySlug,
         companyName,
+        isAdmin,
         signInWithEmail,
         signUpWithEmail,
         signOut,

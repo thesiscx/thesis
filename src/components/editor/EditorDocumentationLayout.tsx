@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, History, ChevronDown, Check, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,7 +58,7 @@ export default function EditorDocumentationLayout({
 }: EditorDocumentationLayoutProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signOut } = useAuth();
+  const { signOut } = useFounderAuth();
   const [activeSection, setActiveSection] = useState<string>("");
   const [publishPopoverOpen, setPublishPopoverOpen] = useState(false);
   const isScrollingRef = useRef(false);
