@@ -26,9 +26,12 @@ export default function PublicMemoViewer() {
 
   // Redirect if no session - WAIT for auth to finish loading first
   useEffect(() => {
+    console.log(`[PublicMemoViewer] Session check: isAuthLoading=${isAuthLoading}, hasSession=${!!investorSession}`);
+    
     if (!isAuthLoading && !investorSession) {
-      // Redirect to access key page, NOT root (which goes to founder routes)
-      navigate(`/${companySlug}/${roundCode}/memo`, { replace: true });
+      console.log(`[PublicMemoViewer] No session, redirecting to /share/${companySlug}/${roundCode}/memo`);
+      // Redirect to access key page (with /share/ prefix)
+      navigate(`/share/${companySlug}/${roundCode}/memo`, { replace: true });
     }
   }, [isAuthLoading, investorSession, companySlug, roundCode, navigate]);
 
@@ -162,8 +165,8 @@ export default function PublicMemoViewer() {
 
   const handleLogout = () => {
     clearInvestorSession();
-    // Redirect to access key page, NOT root
-    navigate(`/${companySlug}/${roundCode}/memo`, { replace: true });
+    // Redirect to access key page (with /share/ prefix)
+    navigate(`/share/${companySlug}/${roundCode}/memo`, { replace: true });
   };
 
   // Show nothing while auth is loading or no session

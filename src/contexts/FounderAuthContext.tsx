@@ -60,6 +60,15 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Safety timeout: force loading=false after 10 seconds
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        console.error("[Auth] TIMEOUT: Auth stuck loading for 10s, forcing isLoading=false");
+        setIsLoading(false);
+        setProfileLoaded(true);
+      }
+    }, 10000);
+
     const initAuth = async () => {
       const start = performance.now();
       console.log("[Auth] Starting getSession...");
@@ -111,7 +120,10 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithEmail = async (email: string, password: string) => {

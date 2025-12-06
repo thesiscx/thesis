@@ -35,6 +35,8 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
 
   // Check if existing session matches the requested resource
   useEffect(() => {
+    console.log(`[InvestorAccess] Checking session: isLoading=${isLoading}, hasSession=${!!investorSession}`);
+    
     if (!isLoading && investorSession) {
       // For global keys, investorSlug will be "global"
       const isGlobalKey = investorSession.investorSlug === 'global';
@@ -45,10 +47,12 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
         investorSession.tool === tool &&
         (isGlobalKey || !investorSlug || investorSession.investorSlug === investorSlug);
 
+      console.log(`[InvestorAccess] Session match check: matches=${sessionMatches}, companySlug=${companySlug}, roundCode=${roundCode}`);
+
       if (sessionMatches) {
-        // Session matches, navigate to viewer
+        // Session matches, navigate to viewer (with /share/ prefix)
         const viewerSlug = isGlobalKey ? 'global' : investorSession.investorSlug;
-        navigate(`/${companySlug}/${roundCode}/${tool}/${viewerSlug}/view`, { replace: true });
+        navigate(`/share/${companySlug}/${roundCode}/${tool}/${viewerSlug}/view`, { replace: true });
       }
     }
   }, [isLoading, investorSession, companySlug, roundCode, investorSlug, tool, navigate]);
@@ -87,9 +91,10 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
           return;
         }
 
-        // Navigate to the viewer
+        // Navigate to the viewer (with /share/ prefix)
         const viewerSlug = result.session.investorSlug || 'global';
-        navigate(`/${companySlug}/${roundCode}/${tool}/${viewerSlug}/view`, { replace: true });
+        console.log(`[InvestorAccess] Navigating to: /share/${companySlug}/${roundCode}/${tool}/${viewerSlug}/view`);
+        navigate(`/share/${companySlug}/${roundCode}/${tool}/${viewerSlug}/view`, { replace: true });
       } else {
         toast({
           title: "Invalid access key",
@@ -109,12 +114,15 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
   };
 
   if (isLoading) {
+    console.log("[InvestorAccess] Auth loading, showing spinner");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
+
+  console.log(`[InvestorAccess] Rendering access form for tool=${tool}`);
 
   const ToolIcon = tool === 'memo' ? FileText : FileCheck;
 
