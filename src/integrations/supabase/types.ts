@@ -633,7 +633,14 @@ export type Database = {
           signatory_title: string | null
           updated_at: string
           valuation_cap: number | null
+          wire_account_name: string | null
+          wire_account_number: string | null
+          wire_bank_address: string | null
+          wire_bank_name: string | null
           wire_instructions: string | null
+          wire_reference: string | null
+          wire_routing_number: string | null
+          wire_swift_code: string | null
         }
         Insert: {
           company_name?: string | null
@@ -652,7 +659,14 @@ export type Database = {
           signatory_title?: string | null
           updated_at?: string
           valuation_cap?: number | null
+          wire_account_name?: string | null
+          wire_account_number?: string | null
+          wire_bank_address?: string | null
+          wire_bank_name?: string | null
           wire_instructions?: string | null
+          wire_reference?: string | null
+          wire_routing_number?: string | null
+          wire_swift_code?: string | null
         }
         Update: {
           company_name?: string | null
@@ -671,7 +685,14 @@ export type Database = {
           signatory_title?: string | null
           updated_at?: string
           valuation_cap?: number | null
+          wire_account_name?: string | null
+          wire_account_number?: string | null
+          wire_bank_address?: string | null
+          wire_bank_name?: string | null
           wire_instructions?: string | null
+          wire_reference?: string | null
+          wire_routing_number?: string | null
+          wire_swift_code?: string | null
         }
         Relationships: [
           {
