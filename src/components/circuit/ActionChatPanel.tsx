@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy, Settings, UserPlus, Pencil, UserRoundSearch } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy, Settings, UserPlus, Pencil, UserRoundSearch, FolderOpen, ArrowRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -146,27 +147,28 @@ function CloseRoundFlow({
   );
 }
 
-// Published memo flow - shows generated link and investor options
+// Published memo flow - shows generated link and docket generation options
 function PublishFlow({
   roundId,
   roundSlug,
   companySlug,
   investors,
-  onGenerateInvestorLink,
+  onGenerateDocket,
   isLoading,
-  generatedLinks,
+  generatedDockets,
   isHistorical,
 }: {
   roundId: string;
   roundSlug?: string;
   companySlug?: string;
   investors: { id: string; name: string; slug: string }[];
-  onGenerateInvestorLink: (investorId: string, investorName: string) => void;
+  onGenerateDocket: (investorId: string, investorName: string) => void;
   isLoading: boolean;
-  generatedLinks: Record<string, { url: string; key: string }>;
+  generatedDockets: Record<string, boolean>;
   isHistorical?: boolean;
 }) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const publicUrl = companySlug && roundSlug 
     ? `${window.location.origin}/share/${companySlug}/${roundSlug}/memo`
     : null;
@@ -202,6 +204,12 @@ function PublishFlow({
       generatePublicKey();
     }
   }, [roundId, roundSlug, isHistorical]);
+
+  const goToDocket = () => {
+    if (roundSlug) {
+      navigate(`/circuit/${roundSlug}/docket/global`);
+    }
+  };
 
   return (
     <FlowCard title="Memo Published" isHistorical={isHistorical}>
@@ -258,52 +266,47 @@ function PublishFlow({
         {!isHistorical && (
           <div className="border-t border-border pt-3 space-y-2">
             <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <UserRoundSearch className="w-3.5 h-3.5" />
-              Individual Investor Links
+              <FolderOpen className="w-3.5 h-3.5" />
+              Generate Investor Dockets
             </Label>
             {investors.length === 0 ? (
               <p className="text-xs text-muted-foreground">No investors in your pipeline yet.</p>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {investors.map((inv) => {
-                  const linkData = generatedLinks[inv.id];
+                  const isGenerated = generatedDockets[inv.id];
                   return (
                     <div key={inv.id} className="p-3 rounded-lg bg-background border border-border space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">{inv.name}</span>
-                        {!linkData && (
+                        {!isGenerated ? (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => onGenerateInvestorLink(inv.id, inv.name)}
+                            onClick={() => onGenerateDocket(inv.id, inv.name)}
                             disabled={isLoading}
                             className="h-7 text-xs"
                           >
-                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate Link"}
+                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate Docket"}
                           </Button>
-                        )}
-                      </div>
-                      {linkData && (
-                        <div className="space-y-1.5">
+                        ) : (
                           <div className="flex items-center gap-2">
-                            <code className="flex-1 text-xs bg-secondary px-2 py-1.5 rounded break-all">
-                              {linkData.url}
-                            </code>
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              onClick={() => copyToClipboard(linkData.url)}
-                              className="shrink-0 h-7 w-7 p-0"
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Check className="w-3 h-3 text-green-600" />
+                              Generated
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={goToDocket}
+                              className="h-7 text-xs gap-1"
                             >
-                              <Copy className="w-3 h-3" />
+                              Go to Docket
+                              <ArrowRight className="w-3 h-3" />
                             </Button>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Key className="w-3 h-3" />
-                            <span>Access Key: {linkData.key}</span>
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -888,7 +891,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   const [draftData, setDraftData] = useState<DraftData>({});
   const [termsStep, setTermsStep] = useState(0);
   const [termsData, setTermsData] = useState<TermsData>({});
-  const [generatedLinks, setGeneratedLinks] = useState<Record<string, { url: string; key: string }>>({});
+  const [generatedDockets, setGeneratedDockets] = useState<Record<string, boolean>>({});
   
   // Edit memo dialog state
   const [editMemoOpen, setEditMemoOpen] = useState(false);
@@ -1363,35 +1366,24 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
-  const generateInvestorLink = async (investorId: string, investorName: string) => {
+  const generateDocket = async (investorId: string, investorName: string) => {
     if (!roundId) return;
     
     setIsProcessing(true);
     
     try {
-      const { data: keyData, error: keyError } = await supabase.functions.invoke("generate-access-key", {
-        body: { roundId, investorId, tool: "memo" }
-      });
-
-      if (keyError) throw keyError;
-
-      const shareUrl = profile?.company_slug && roundSlug
-        ? `${window.location.origin}/share/${profile.company_slug}/${roundSlug}/memo?key=${keyData.key}`
-        : `${window.location.origin}/share/${roundSlug}/memo?key=${keyData.key}`;
-      
-      setGeneratedLinks(prev => ({
+      // Mark the docket as generated
+      setGeneratedDockets(prev => ({
         ...prev,
-        [investorId]: { url: shareUrl, key: keyData.key }
+        [investorId]: true
       }));
       
-      await addMessage("result", `Link generated for ${investorName}`);
+      await addMessage("result", `Docket generated for ${investorName}`);
       
-      queryClient.invalidateQueries({ queryKey: ["investors"] });
-      queryClient.invalidateQueries({ queryKey: ["access-keys"] });
-      toast({ title: `Link created for ${investorName}` });
+      toast({ title: `Docket created for ${investorName}` });
     } catch (error) {
       toast({ 
-        title: "Failed to generate link", 
+        title: "Failed to generate docket", 
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive" 
       });
@@ -1427,9 +1419,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             roundSlug={roundSlug}
             companySlug={profile?.company_slug || undefined}
             investors={investors}
-            onGenerateInvestorLink={generateInvestorLink}
+            onGenerateDocket={generateDocket}
             isLoading={isProcessing && isActive}
-            generatedLinks={generatedLinks}
+            generatedDockets={generatedDockets}
             isHistorical={isHistorical}
           />
         ) : null;

@@ -139,20 +139,24 @@ export default function MemoSidebar({
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {isSaving ? (
-                <>
-                  <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse" />
-                  <span>Saving...</span>
-                </>
-              ) : lastSaved ? (
-                <>
-                  <Check className="w-3 h-3" />
-                  <span>{format(lastSaved, 'h:mm a')}</span>
-                </>
-              ) : null}
-            </div>
           </div>
+        </div>
+        
+        {/* Always visible timestamp section - fixed height to prevent shift */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4 h-4">
+          {isSaving ? (
+            <>
+              <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-pulse" />
+              <span>Saving...</span>
+            </>
+          ) : lastSaved ? (
+            <>
+              <Check className="w-3 h-3 shrink-0" />
+              <span>Last saved {format(lastSaved, 'h:mm a')}</span>
+            </>
+          ) : (
+            <span className="opacity-50">Not saved yet</span>
+          )}
         </div>
         
         {tocItems.length === 0 ? (
