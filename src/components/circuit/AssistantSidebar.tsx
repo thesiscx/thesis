@@ -8,13 +8,15 @@ interface AssistantSidebarProps {
   roundId?: string;
   roundSlug?: string;
   onOpenRound?: () => void;
+  onUpdateMemoContent?: (content: any) => void;
 }
 
 export default function AssistantSidebar({ 
   pageKey = "stage", 
   roundId, 
   roundSlug,
-  onOpenRound
+  onOpenRound,
+  onUpdateMemoContent,
 }: AssistantSidebarProps) {
   return (
     <aside className="w-96 h-screen border-l border-border bg-[hsl(var(--assistant-bg))] flex flex-col shrink-0">
@@ -30,6 +32,7 @@ export default function AssistantSidebar({
           roundId={roundId} 
           roundSlug={roundSlug}
           onOpenRound={onOpenRound}
+          onUpdateMemoContent={onUpdateMemoContent}
         />
       </div>
     </aside>

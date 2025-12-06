@@ -23,6 +23,7 @@ interface CircuitLayoutProps {
   rounds: Round[];
   investors: Investor[];
   onCreateRound: () => void;
+  onUpdateMemoContent?: (content: any) => void;
 }
 
 export default function CircuitLayout({
@@ -30,6 +31,7 @@ export default function CircuitLayout({
   rounds,
   investors,
   onCreateRound,
+  onUpdateMemoContent,
 }: CircuitLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -78,6 +80,7 @@ export default function CircuitLayout({
         roundId={activeRound?.id}
         roundSlug={roundSlug}
         onOpenRound={onCreateRound}
+        onUpdateMemoContent={onUpdateMemoContent}
       />
     </div>
   );

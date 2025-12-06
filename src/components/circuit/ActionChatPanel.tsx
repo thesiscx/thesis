@@ -31,6 +31,7 @@ interface ActionChatPanelProps {
   roundId?: string;
   roundSlug?: string;
   onOpenRound?: () => void;
+  onUpdateMemoContent?: (content: any) => void;
 }
 
 // Card-based flow component wrapper - no close button, persistent
@@ -239,17 +240,36 @@ function PublishFlow({
   );
 }
 
+// Accumulated draft data across steps
+interface DraftData {
+  company_name?: string;
+  one_liner?: string;
+  founded?: string;
+  problem?: string;
+  solution?: string;
+  tam?: string;
+  market_insight?: string;
+  revenue_model?: string;
+  pricing?: string;
+  key_metrics?: string;
+  founders?: string;
+  raising?: string;
+  use_of_funds?: string;
+}
+
 // Draft memo wizard flow
 function DraftMemoFlow({
   step,
   onNext,
   isLoading,
-  isComplete
+  isComplete,
+  accumulatedData,
 }: {
   step: number;
   onNext: (data: Record<string, string>) => void;
   isLoading: boolean;
   isComplete: boolean;
+  accumulatedData: DraftData;
 }) {
   const [formData, setFormData] = useState<Record<string, string>>({});
 
@@ -308,6 +328,20 @@ function DraftMemoFlow({
       ]
     },
   ];
+
+  // Pre-fill form with accumulated data when step changes
+  useEffect(() => {
+    const currentStep = STEPS[step];
+    if (currentStep) {
+      const prefilled: Record<string, string> = {};
+      currentStep.fields.forEach(f => {
+        if (accumulatedData[f.key as keyof DraftData]) {
+          prefilled[f.key] = accumulatedData[f.key as keyof DraftData] || "";
+        }
+      });
+      setFormData(prev => ({ ...prefilled, ...prev }));
+    }
+  }, [step, accumulatedData]);
 
   if (isComplete) {
     return (
@@ -372,6 +406,73 @@ function DraftMemoFlow({
   );
 }
 
+// Generate TipTap memo content from draft data
+function generateMemoContent(data: DraftData): any {
+  const content: any[] = [];
+
+  // Helper to add a section
+  const addSection = (title: string, text?: string) => {
+    // Heading
+    content.push({
+      type: "heading",
+      attrs: { level: 1 },
+      content: [{ type: "text", text: title }]
+    });
+    // Paragraph
+    if (text) {
+      content.push({
+        type: "paragraph",
+        content: [{ type: "text", text }]
+      });
+    } else {
+      content.push({
+        type: "paragraph",
+        content: [{ type: "text", text: "[Add content here]" }]
+      });
+    }
+    // Spacing
+    content.push({ type: "paragraph" });
+  };
+
+  // Company title at top
+  if (data.company_name) {
+    content.push({
+      type: "heading",
+      attrs: { level: 1 },
+      content: [{ type: "text", text: data.company_name }]
+    });
+    if (data.one_liner) {
+      content.push({
+        type: "paragraph",
+        content: [{ type: "text", text: data.one_liner }]
+      });
+    }
+    content.push({ type: "paragraph" });
+  }
+
+  // All memo sections
+  addSection("Vision", "[Describe your long-term ambition and what the company achieves at scale]");
+  addSection("Problem", data.problem);
+  addSection("Solution", data.solution);
+  addSection("Product", "[Describe what exists today, how it works, and what users do with it]");
+  addSection("Timing", data.market_insight || "[Why is this the right moment for this product?]");
+  addSection("Market", data.tam ? `Total Addressable Market: ${data.tam}` : "[Define your market opportunity]");
+  addSection("Competition", "[How is this problem solved today and why do alternatives fall short?]");
+  addSection("Advantages", "[What makes your company meaningfully better than substitutes?]");
+  addSection("Model", data.revenue_model || "[How does the business make money?]");
+  addSection("Economics", data.pricing ? `Pricing: ${data.pricing}` : "[Describe cost structure and unit economics]");
+  addSection("Distribution", "[How are customers acquired, activated, retained, and expanded?]");
+  addSection("Traction", data.key_metrics || "[List proof points: demand, usage, revenue, partnerships, growth]");
+  addSection("Team", data.founders || "[Why is this team uniquely positioned to win?]");
+  addSection("Funding", data.raising ? `Raising: ${data.raising}` : "[What has been raised and what is being raised now?]");
+  addSection("Roadmap", data.use_of_funds || "[What will be built next and what milestones will this capital achieve?]");
+
+  return {
+    type: "doc",
+    content
+  };
+}
+
 // Welcome messages for each page
 const WELCOME_MESSAGES: Record<PageKey, string> = {
   stage: "Welcome to Circuit. I'll help you manage your fundraising rounds. Use the actions below to open a new round or close your current one.",
@@ -380,7 +481,7 @@ const WELCOME_MESSAGES: Record<PageKey, string> = {
   pipeline: "Track your investor pipeline here. Add investors and manage your fundraising relationships.",
 };
 
-export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRound }: ActionChatPanelProps) {
+export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRound, onUpdateMemoContent }: ActionChatPanelProps) {
   const { toast } = useToast();
   const { user, profile, isLoading: authLoading } = useFounderAuth();
   const queryClient = useQueryClient();
@@ -393,6 +494,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [flowComplete, setFlowComplete] = useState<Record<string, boolean>>({});
   const [draftStep, setDraftStep] = useState(0);
+  const [draftData, setDraftData] = useState<DraftData>({});
   const [generatedLinks, setGeneratedLinks] = useState<Record<string, { url: string; key: string }>>({});
 
   // Fetch messages from DB
@@ -521,19 +623,31 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
 
   const handleDraftMemo = () => {
     setDraftStep(0);
+    setDraftData({});
     setActiveFlow("draft-memo");
   };
 
   const handleDraftNext = async (data: Record<string, string>) => {
     const totalSteps = 8;
     
+    // Accumulate data across steps
+    const newDraftData = { ...draftData, ...data };
+    setDraftData(newDraftData);
+    
     if (draftStep < totalSteps - 1) {
       setDraftStep(draftStep + 1);
     } else {
-      // Complete - generate memo content
+      // Complete - generate memo content and update
       setIsProcessing(true);
       try {
-        await addMessage("result", "Your memo structure has been generated. Edit it in the memo editor.");
+        const memoContent = generateMemoContent(newDraftData);
+        
+        // Call the callback to update memo content
+        if (onUpdateMemoContent) {
+          onUpdateMemoContent(memoContent);
+        }
+        
+        await addMessage("result", "Your memo structure has been generated. Click 'Edit' to customize your memo.");
         setFlowComplete(prev => ({ ...prev, "draft-memo": true }));
         toast({ title: "Memo draft generated" });
       } finally {
@@ -610,6 +724,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             onNext={handleDraftNext}
             isLoading={isProcessing}
             isComplete={flowComplete["draft-memo"] || false}
+            accumulatedData={draftData}
           />
         );
       default:
