@@ -87,19 +87,11 @@ export default function CreateRoundDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ROUND_TYPES.map((type) => {
-                  const count = countRoundsOfType(type);
-                  return (
-                    <SelectItem key={type} value={type}>
-                      {ROUND_TYPE_LABELS[type]}
-                      {count > 0 && (
-                        <span className="text-muted-foreground ml-2">
-                          ({count} existing)
-                        </span>
-                      )}
-                    </SelectItem>
-                  );
-                })}
+                {ROUND_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {ROUND_TYPE_LABELS[type]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <div className="text-xs text-muted-foreground space-y-1">
