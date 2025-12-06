@@ -71,7 +71,7 @@ export default function CircuitLayout({
   // Derive tool from pathname since it's not a route param
   const pathParts = location.pathname.split('/');
   const toolFromPath = pathParts[3]; // /circuit/:roundSlug/:tool/:variantSlug
-  const activeTool = toolFromPath && ["pipeline", "memo", "docket"].includes(toolFromPath) 
+  const activeTool = toolFromPath && ["memo", "docket", "pipeline"].includes(toolFromPath) 
     ? toolFromPath 
     : "memo";
   
@@ -108,8 +108,7 @@ export default function CircuitLayout({
   const openRounds = rounds.filter(r => r.state === "open");
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="flex flex-1 overflow-hidden">
+    <div className="h-screen bg-background flex overflow-hidden">
         {/* Main content area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header - 4 Segment Navigation */}
@@ -200,12 +199,6 @@ export default function CircuitLayout({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-32">
               <DropdownMenuItem
-                onClick={() => handleToolChange("pipeline")}
-                className={cn(activeTool === "pipeline" && "bg-accent")}
-              >
-                Pipeline
-              </DropdownMenuItem>
-              <DropdownMenuItem
                 onClick={() => handleToolChange("memo")}
                 className={cn(activeTool === "memo" && "bg-accent")}
               >
@@ -216,6 +209,16 @@ export default function CircuitLayout({
                 className={cn(activeTool === "docket" && "bg-accent")}
               >
                 Docket
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleToolChange("pipeline")}
+                className={cn(activeTool === "pipeline" && "bg-accent")}
+              >
+                Pipeline
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled className="text-muted-foreground">
+                Registry
+                <span className="ml-auto text-[10px]">Soon</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -335,7 +338,6 @@ export default function CircuitLayout({
 
         {/* Right Sidebar */}
         <AssistantSidebar />
-      </div>
 
       {/* All Investors Modal */}
       <Dialog open={investorSearchOpen} onOpenChange={setInvestorSearchOpen}>
