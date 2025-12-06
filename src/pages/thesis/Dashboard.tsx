@@ -7,7 +7,7 @@ import { useRounds, Round } from "@/hooks/useRounds";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import CreateRoundDialog from "@/components/thesis/CreateRoundDialog";
-import thesisLogo from "@/assets/thesis-logo.png";
+const thesisLogo = "/thesis-logo.png";
 import {
   Plus,
   Users,
