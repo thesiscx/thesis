@@ -75,9 +75,11 @@ export default {
           "5": "hsl(var(--chart-5))",
         },
         assistant: {
+          DEFAULT: "hsl(var(--assistant-bg))",
           accent: "hsl(var(--assistant-accent))",
           "accent-foreground": "hsl(var(--assistant-accent-foreground))",
         },
+        "card-elevated": "hsl(var(--card-elevated))",
       },
       boxShadow: {
         sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",

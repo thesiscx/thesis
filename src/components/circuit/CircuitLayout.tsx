@@ -1,8 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import CircuitHeader from "./CircuitHeader";
-import ShareButton from "./ShareButton";
-import PublishButton from "./PublishButton";
 import AssistantSidebar from "./AssistantSidebar";
 
 interface Round {
@@ -58,7 +56,7 @@ export default function CircuitLayout({
     <div className="h-screen bg-background flex overflow-hidden">
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
+        {/* Header - no action buttons, all actions through Circuit sidebar */}
         <CircuitHeader
           rounds={rounds}
           activeRoundSlug={roundSlug}
@@ -66,28 +64,6 @@ export default function CircuitLayout({
           onRoundChange={handleRoundChange}
           onToolChange={handleToolChange}
           onCreateRound={onCreateRound}
-          rightContent={
-            (activeTool === "memo" || activeTool === "docket") ? (
-              <div className="flex items-center gap-2">
-                <ShareButton 
-                  roundId={activeRound?.id}
-                  roundSlug={roundSlug}
-                  roundType={activeRound?.round_type}
-                  roundNumber={activeRound?.round_number}
-                  tool={activeTool}
-                />
-                <PublishButton 
-                  roundId={activeRound?.id}
-                  roundSlug={roundSlug}
-                  roundType={activeRound?.round_type}
-                  roundNumber={activeRound?.round_number}
-                  variantSlug="global"
-                  tool={activeTool}
-                  isPublished={false} 
-                />
-              </div>
-            ) : undefined
-          }
         />
 
         {/* Main content */}
@@ -96,11 +72,12 @@ export default function CircuitLayout({
         </main>
       </div>
 
-      {/* Right Sidebar */}
+      {/* Right Sidebar - all actions go through here */}
       <AssistantSidebar 
         pageKey={activeTool} 
         roundId={activeRound?.id}
         roundSlug={roundSlug}
+        onOpenRound={onCreateRound}
       />
     </div>
   );
