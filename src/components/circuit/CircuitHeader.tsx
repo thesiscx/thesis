@@ -5,7 +5,11 @@ import {
   Archive, 
   Settings,
   LogOut,
-  Home
+  Home,
+  Users,
+  FileText,
+  FolderOpen,
+  BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -163,21 +167,25 @@ export default function CircuitHeader({
                   onClick={() => onToolChange?.("pipeline")}
                   className={cn(activeTool === "pipeline" && "bg-accent")}
                 >
+                  <Users className="w-4 h-4 mr-2" />
                   Pipeline
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onToolChange?.("memo")}
                   className={cn(activeTool === "memo" && "bg-accent")}
                 >
+                  <FileText className="w-4 h-4 mr-2" />
                   Memo
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onToolChange?.("docket")}
                   className={cn(activeTool === "docket" && "bg-accent")}
                 >
+                  <FolderOpen className="w-4 h-4 mr-2" />
                   Docket
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled className="text-muted-foreground">
+                  <BookOpen className="w-4 h-4 mr-2" />
                   Registry
                   <span className="ml-auto text-[10px]">Soon</span>
                 </DropdownMenuItem>
