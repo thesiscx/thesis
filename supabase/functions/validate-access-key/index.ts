@@ -117,10 +117,8 @@ Deno.serve(async (req) => {
       p_action: 'investor_access'
     });
 
-    // Calculate public round code
-    const roundCode = accessKey.round?.round_number > 1 
-      ? `${accessKey.round.round_type}${accessKey.round.round_number}`
-      : accessKey.round?.round_type;
+    // Use round slug for URL matching (not the computed round_type code)
+    const roundCode = accessKey.round?.slug;
 
     console.log(`Access granted for investor: ${accessKey.investor?.name}, tool: ${accessKey.tool}`);
 
