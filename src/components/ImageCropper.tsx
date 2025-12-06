@@ -102,6 +102,10 @@ async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob> {
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
 
+  // Fill with white background first to avoid black background on transparent images
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -121,7 +125,7 @@ async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob> {
         return;
       }
       resolve(blob);
-    }, "image/jpeg");
+    }, "image/jpeg", 0.95);
   });
 }
 
