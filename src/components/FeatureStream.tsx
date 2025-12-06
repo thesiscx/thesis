@@ -9,6 +9,8 @@ const features = [
   "Create share links",
   "Control access keys",
   "Track investor views",
+  "Automated pipeline",
+  "Track conversations",
   "Send dockets",
   "Capture commitments",
   "Generate SAFE agreements",

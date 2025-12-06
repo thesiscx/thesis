@@ -346,7 +346,7 @@ export default function EmailAuth() {
 
           {/* Logo - fixed height container */}
           <div className="h-10 flex items-center justify-center mb-8">
-            <img src={thesisLogo} alt="Thesis" className="h-8" />
+            <img src={circuitLogo} alt="Thesis" className="h-8" />
           </div>
 
           {/* Form area */}
