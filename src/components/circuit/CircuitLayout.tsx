@@ -1,16 +1,14 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { 
   ChevronsUpDown,
   Plus, 
   Archive, 
-  Search,
   Settings,
   LogOut,
   Home
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,12 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { cn } from "@/lib/utils";
 import ShareButton from "./ShareButton";
@@ -49,7 +41,6 @@ interface CircuitLayoutProps {
   children: ReactNode;
   rounds: Round[];
   investors: Investor[];
-  recentInvestors?: Investor[];
   onCreateRound: () => void;
 }
 
@@ -57,16 +48,12 @@ export default function CircuitLayout({
   children,
   rounds,
   investors,
-  recentInvestors = [],
   onCreateRound,
 }: CircuitLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { roundSlug, variantSlug } = useParams();
-  const { signOut, companyName, profileLoaded } = useFounderAuth();
-  
-  const [investorSearchOpen, setInvestorSearchOpen] = useState(false);
-  const [investorSearch, setInvestorSearch] = useState("");
+  const { roundSlug } = useParams();
+  const { signOut, companyName } = useFounderAuth();
   
   // Derive tool from pathname since it's not a route param
   const pathParts = location.pathname.split('/');
@@ -76,33 +63,19 @@ export default function CircuitLayout({
     : "memo";
   
   const activeRound = rounds.find(r => r.slug === roundSlug);
-  const activeVariant = variantSlug || "global";
-  
-  const activeInvestor = investors.find(i => i.slug === activeVariant);
-  const isGlobal = activeVariant === "global";
 
   const handleRoundChange = (round: Round) => {
     navigate(`/circuit/${round.slug}/${activeTool}/global`);
   };
 
   const handleToolChange = (newTool: "pipeline" | "memo" | "docket") => {
-    navigate(`/circuit/${roundSlug}/${newTool}/${activeVariant}`);
-  };
-
-  const handleVariantChange = (investorSlug: string) => {
-    navigate(`/circuit/${roundSlug}/${activeTool}/${investorSlug}`);
-    setInvestorSearchOpen(false);
-    setInvestorSearch("");
+    navigate(`/circuit/${roundSlug}/${newTool}/global`);
   };
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
   };
-
-  const filteredInvestors = investors.filter(i => 
-    i.name.toLowerCase().includes(investorSearch.toLowerCase())
-  );
 
   const closedRounds = rounds.filter(r => r.state === "closed");
   const openRounds = rounds.filter(r => r.state === "open");
@@ -118,6 +91,7 @@ export default function CircuitLayout({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 px-2 gap-1.5 max-w-[180px]">
+                <img src="/robomart-logo-new.svg" alt="Robomart" className="h-4 mr-1" />
                 <span className="truncate font-medium">{companyName || "My Company"}</span>
                 <ChevronsUpDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
               </Button>
@@ -125,7 +99,7 @@ export default function CircuitLayout({
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuItem onClick={() => navigate("/circuit")}>
                 <Home className="w-4 h-4 mr-2" />
-                Dashboard
+                Stage
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
                 <Settings className="w-4 h-4 mr-2" />
@@ -223,84 +197,6 @@ export default function CircuitLayout({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Segment 4: Variant Selector (only show for memo/docket) */}
-          {(activeTool === "memo" || activeTool === "docket") && (
-            <>
-              <span className="text-muted-foreground/50">/</span>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 px-2 gap-1.5">
-                    {isGlobal ? "Global" : activeInvestor?.name || activeVariant}
-                    <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64 p-0">
-                  <div className="p-2 border-b border-border">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search investors..."
-                        value={investorSearch}
-                        onChange={(e) => setInvestorSearch(e.target.value)}
-                        className="pl-8 h-8"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="max-h-64 overflow-y-auto p-1">
-                    <DropdownMenuItem
-                      onClick={() => handleVariantChange("global")}
-                      className={cn(isGlobal && "bg-accent")}
-                    >
-                      Global
-                    </DropdownMenuItem>
-                    
-                    {recentInvestors.length > 0 && investorSearch === "" && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <div className="px-2 py-1 text-xs text-muted-foreground">Recent</div>
-                        {recentInvestors.slice(0, 5).map((investor) => (
-                          <DropdownMenuItem
-                            key={investor.id}
-                            onClick={() => handleVariantChange(investor.slug)}
-                            className={cn(investor.slug === activeVariant && "bg-accent")}
-                          >
-                            {investor.name}
-                          </DropdownMenuItem>
-                        ))}
-                      </>
-                    )}
-
-                    {investorSearch && (
-                      <>
-                        {filteredInvestors.map((investor) => (
-                          <DropdownMenuItem
-                            key={investor.id}
-                            onClick={() => handleVariantChange(investor.slug)}
-                            className={cn(investor.slug === activeVariant && "bg-accent")}
-                          >
-                            {investor.name}
-                          </DropdownMenuItem>
-                        ))}
-                        {filteredInvestors.length === 0 && (
-                          <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                            No investors found
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  
-                  <div className="p-1 border-t border-border">
-                    <DropdownMenuItem onClick={() => setInvestorSearchOpen(true)}>
-                      View all investors...
-                    </DropdownMenuItem>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          )}
         </div>
 
         {/* Right side - Share + Publish (only for memo/docket) */}
@@ -311,9 +207,6 @@ export default function CircuitLayout({
               roundSlug={roundSlug}
               roundType={activeRound?.round_type}
               roundNumber={activeRound?.round_number}
-              investorId={activeInvestor?.id}
-              investorSlug={activeInvestor?.slug}
-              investorName={activeInvestor?.name}
               tool={activeTool as 'memo' | 'docket'}
             />
             <PublishButton 
@@ -321,8 +214,7 @@ export default function CircuitLayout({
               roundSlug={roundSlug}
               roundType={activeRound?.round_type}
               roundNumber={activeRound?.round_number}
-              variantSlug={activeVariant}
-              investorId={activeInvestor?.id}
+              variantSlug="global"
               tool={activeTool as 'memo' | 'docket'}
               isPublished={false} 
             />
@@ -337,45 +229,11 @@ export default function CircuitLayout({
         </div>
 
         {/* Right Sidebar */}
-        <AssistantSidebar />
-
-      {/* All Investors Modal */}
-      <Dialog open={investorSearchOpen} onOpenChange={setInvestorSearchOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>All Investors</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search investors..."
-                value={investorSearch}
-                onChange={(e) => setInvestorSearch(e.target.value)}
-                className="pl-9"
-                autoFocus
-              />
-            </div>
-            <div className="max-h-80 overflow-y-auto space-y-1">
-              {filteredInvestors.map((investor) => (
-                <Button
-                  key={investor.id}
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => handleVariantChange(investor.slug)}
-                >
-                  {investor.name}
-                </Button>
-              ))}
-              {filteredInvestors.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No investors found
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        <AssistantSidebar 
+          pageKey={activeTool as "memo" | "docket" | "pipeline"} 
+          roundId={activeRound?.id}
+          roundSlug={roundSlug}
+        />
     </div>
   );
 }

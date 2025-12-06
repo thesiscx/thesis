@@ -15,7 +15,7 @@ export default function ThesisMemo() {
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
   
   const { rounds, isLoading: roundsLoading } = useRounds();
-  const { investors, recentInvestors } = useInvestors();
+  const { investors } = useInvestors();
   const { 
     memo, 
     tocItems, 
@@ -51,7 +51,6 @@ export default function ThesisMemo() {
       <CircuitLayout
         rounds={rounds}
         investors={investors}
-        recentInvestors={recentInvestors}
         onCreateRound={() => setCreateRoundOpen(true)}
       >
         <div className="flex h-[calc(100vh-3.5rem)]">

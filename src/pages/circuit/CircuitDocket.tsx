@@ -13,7 +13,7 @@ export default function ThesisDocket() {
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
   
   const { rounds, isLoading: roundsLoading } = useRounds();
-  const { investors, recentInvestors } = useInvestors();
+  const { investors } = useInvestors();
 
   const isGlobal = variantSlug === "global";
 
@@ -35,7 +35,6 @@ export default function ThesisDocket() {
       <CircuitLayout
         rounds={rounds}
         investors={investors}
-        recentInvestors={recentInvestors}
         onCreateRound={() => setCreateRoundOpen(true)}
       >
         {isGlobal ? (
