@@ -56,7 +56,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, isLoading: authLoading, signOut, companyName, fullName, profileLoaded } = useFounderAuth();
+  const { user, isLoading: authLoading, signOut, companyName, fullName, profileLoaded, avatarUrl } = useFounderAuth();
   const { rounds, isLoading: roundsLoading, hasOpenRound, reopenRound } = useRounds();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
@@ -363,7 +363,13 @@ export default function Dashboard() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 px-2 gap-1.5 max-w-[180px]">
-                  <img src="/robomart-logo-new.svg" alt="Robomart" className="h-4 mr-1.5" />
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="" className="h-5 w-5 rounded-sm object-cover" />
+                  ) : (
+                    <div className="h-5 w-5 rounded-sm bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                      {companyName?.charAt(0)?.toUpperCase() || "C"}
+                    </div>
+                  )}
                   <span className="truncate font-medium">{companyName || "My Company"}</span>
                   <ChevronsUpDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
                 </Button>

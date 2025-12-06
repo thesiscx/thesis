@@ -9,9 +9,11 @@ interface ImageCropperProps {
   image: string;
   onCropComplete: (croppedImage: Blob) => void;
   onCancel: () => void;
+  cropShape?: "rect" | "round";
+  title?: string;
 }
 
-export default function ImageCropper({ image, onCropComplete, onCancel }: ImageCropperProps) {
+export default function ImageCropper({ image, onCropComplete, onCancel, cropShape = "rect", title = "Crop Image" }: ImageCropperProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
@@ -47,7 +49,7 @@ export default function ImageCropper({ image, onCropComplete, onCancel }: ImageC
     <Dialog open={true} onOpenChange={onCancel}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Crop Profile Picture</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <div className="relative h-[400px] w-full bg-muted rounded-lg">
           <Cropper
@@ -55,7 +57,7 @@ export default function ImageCropper({ image, onCropComplete, onCancel }: ImageC
             crop={crop}
             zoom={zoom}
             aspect={1}
-            cropShape="round"
+            cropShape={cropShape}
             showGrid={false}
             onCropChange={onCropChange}
             onZoomChange={onZoomChange}
