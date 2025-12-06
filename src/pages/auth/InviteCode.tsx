@@ -62,7 +62,7 @@ export default function InviteCode() {
         <div className="w-full max-w-sm">
           <div className="h-6 mb-6">
             <Link
-              to="/auth"
+              to="/"
               className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />

@@ -7,7 +7,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 
-import Auth from "./pages/Auth";
+import Index from "./pages/Index";
 import InviteCode from "./pages/auth/InviteCode";
 import EmailAuth from "./pages/auth/EmailAuth";
 import Terms from "./pages/Terms";
@@ -87,8 +87,8 @@ const ProtectedRoute = ({ children, routeName }: { children: React.ReactNode; ro
   }
 
   if (!user) {
-    console.log(`[ProtectedRoute:${routeName}] No user, redirecting to /auth`);
-    return <Navigate to="/auth" replace />;
+    console.log(`[ProtectedRoute:${routeName}] No user, redirecting to /`);
+    return <Navigate to="/" replace />;
   }
 
   console.log(`[ProtectedRoute:${routeName}] User authenticated, rendering children`);
@@ -127,7 +127,8 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             {/* Redirects - must come first */}
-            <Route path="/login" element={<><RouteLogger name="redirect:/login" /><Navigate to="/auth" replace /></>} />
+            <Route path="/login" element={<><RouteLogger name="redirect:/login" /><Navigate to="/" replace /></>} />
+            <Route path="/auth" element={<><RouteLogger name="redirect:/auth" /><Navigate to="/" replace /></>} />
             {/* Legacy redirects for old /circuit/* URLs */}
             <Route path="/circuit" element={<><RouteLogger name="redirect:/circuit" /><Navigate to="/" replace /></>} />
             <Route path="/circuit/settings" element={<><RouteLogger name="redirect:/circuit/settings" /><Navigate to="/settings" replace /></>} />
@@ -145,8 +146,10 @@ const App = () => {
             <Route path="/privacy" element={<><RouteLogger name="privacy" /><Privacy /></>} />
             <Route path="/pricing" element={<><RouteLogger name="pricing" /><Pricing /></>} />
             
-            {/* Auth pages - NO AUTH CONTEXT, render instantly */}
-            <Route path="/auth" element={<><RouteLogger name="auth" /><Auth /></>} />
+            {/* Root - handles auth check internally, shows landing or redirects to app */}
+            <Route path="/" element={<><RouteLogger name="root" /><Index /></>} />
+            
+            {/* Auth sub-pages - still needed for invite flow */}
             <Route path="/auth/invite" element={<><RouteLogger name="auth/invite" /><InviteCode /></>} />
             <Route path="/auth/email" element={<><RouteLogger name="auth/email" /><EmailAuth /></>} />
             
@@ -155,9 +158,6 @@ const App = () => {
               {/* Admin Routes */}
               <Route path="/admin/login" element={<><RouteLogger name="admin/login" /><AdminLogin /></>} />
               <Route path="/admin" element={<><RouteLogger name="admin" /><Admin /></>} />
-              
-              {/* Root - smart redirect to active round's pipeline */}
-              <Route path="/" element={<><RouteLogger name="root" /><ProtectedRoute routeName="root"><SmartRedirect /></ProtectedRoute></>} />
               
               {/* Settings pages */}
               <Route path="/settings" element={<><RouteLogger name="settings" /><ProtectedRoute routeName="settings"><FounderSettings /></ProtectedRoute></>} />
