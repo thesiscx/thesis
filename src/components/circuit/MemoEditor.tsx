@@ -101,7 +101,7 @@ export default function MemoEditor({
     extensions: [
       StarterKit.configure({
         heading: {
-          levels: [1, 2, 3],
+          levels: [1], // Only H1 allowed for clean memo structure
         },
       }),
       TextStyle,
@@ -218,16 +218,16 @@ export default function MemoEditor({
 
   return (
     <div 
-      className="flex flex-col h-full overflow-y-auto"
+      className="flex flex-col h-full overflow-hidden"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className="sticky top-0 z-40 bg-background border-b border-border">
+      <div className="sticky top-0 z-40 bg-background border-b border-border shrink-0">
         <div className="px-4 py-2">
           <EditorToolbar editor={editor} />
         </div>
       </div>
-      <div className="flex-1 px-16 py-12 bg-background">
+      <div className="flex-1 overflow-y-auto px-16 py-6 bg-background">
         <div className="max-w-4xl mx-auto">
           <EditorContent editor={editor} />
         </div>
