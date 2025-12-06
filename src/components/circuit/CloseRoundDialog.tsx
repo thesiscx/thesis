@@ -94,7 +94,7 @@ export default function CloseRoundDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Close {roundName}</DialogTitle>
           <DialogDescription>
