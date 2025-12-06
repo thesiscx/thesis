@@ -24,7 +24,7 @@ export default function CustomDomain() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Please log in to access settings</p>
-          <Button onClick={() => navigate("/auth")}>Go to Login</Button>
+          <Button onClick={() => navigate("/")}>Go to Login</Button>
         </div>
       </div>
     );

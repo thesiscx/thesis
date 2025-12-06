@@ -6,7 +6,7 @@ export default function Privacy() {
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-6 py-16">
         <Link
-          to="/auth"
+          to="/"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-12"
         >
           <ArrowLeft className="w-4 h-4" />
