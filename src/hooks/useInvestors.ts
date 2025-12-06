@@ -2,11 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 
-interface Investor {
+export interface Investor {
   id: string;
   slug: string;
   name: string;
   email: string | null;
+  entity_name: string | null;
+  entity_type: string | null;
+  address: string | null;
 }
 
 export function useInvestors() {

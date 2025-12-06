@@ -30,6 +30,7 @@ export interface Round {
   created_at: string;
   round_type: RoundType;
   round_number: number;
+  workspace_id: string;
 }
 
 // Helper to get the public URL code for a round
