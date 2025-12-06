@@ -63,7 +63,7 @@ export default function CircuitLayout({
   const navigate = useNavigate();
   const location = useLocation();
   const { roundSlug, variantSlug } = useParams();
-  const { signOut, companyName } = useFounderAuth();
+  const { signOut, companyName, profileLoaded } = useFounderAuth();
   
   const [investorSearchOpen, setInvestorSearchOpen] = useState(false);
   const [investorSearch, setInvestorSearch] = useState("");

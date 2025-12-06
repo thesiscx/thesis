@@ -9,6 +9,7 @@ interface FounderAuthContextType {
   profileLoaded: boolean;
   companySlug: string | null;
   companyName: string | null;
+  fullName: string | null;
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: (redirectTo?: string) => Promise<void>;
@@ -24,18 +25,20 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [companySlug, setCompanySlug] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
+  const [fullName, setFullName] = useState<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
     try {
       const { data } = await supabase
         .from("profiles")
-        .select("company_slug, company_name")
+        .select("company_slug, company_name, full_name")
         .eq("id", userId)
         .maybeSingle();
       
       if (data) {
         setCompanySlug(data.company_slug);
         setCompanyName(data.company_name);
+        setFullName(data.full_name);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -80,6 +83,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         } else {
           setCompanySlug(null);
           setCompanyName(null);
+          setFullName(null);
           setProfileLoaded(true);
           setIsLoading(false);
         }
@@ -147,6 +151,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         profileLoaded,
         companySlug,
         companyName,
+        fullName,
         signInWithEmail,
         signUpWithEmail,
         signOut,
