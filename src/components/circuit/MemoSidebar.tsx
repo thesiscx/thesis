@@ -85,7 +85,7 @@ export default function MemoSidebar({
   };
 
   return (
-    <aside className="w-72 flex flex-col border-r border-border h-full overflow-y-auto bg-background">
+    <aside className="w-72 flex flex-col border-r border-border/50 h-full overflow-y-auto bg-background">
       <div className="flex-1 p-6 pt-8">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
