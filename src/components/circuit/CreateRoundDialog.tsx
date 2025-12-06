@@ -151,7 +151,7 @@ export default function CreateRoundDialog({
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate(`/circuit/${slug}/memo/global`);
+        navigate(`/${slug}/memo`);
       }
     } finally {
       setIsSubmitting(false);

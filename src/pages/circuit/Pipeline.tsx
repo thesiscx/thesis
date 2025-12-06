@@ -298,7 +298,7 @@ export default function ThesisCircuit() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() =>
-                                navigate(`/circuit/${roundSlug}/memo/${investor.slug}`)
+                                navigate(`/${roundSlug}/memo/${investor.slug}`)
                               }
                             >
                               <FileText className="w-4 h-4 mr-2" />
@@ -306,7 +306,7 @@ export default function ThesisCircuit() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() =>
-                                navigate(`/circuit/${roundSlug}/docket/${investor.slug}`)
+                                navigate(`/${roundSlug}/docket/${investor.slug}`)
                               }
                             >
                               <FolderOpen className="w-4 h-4 mr-2" />

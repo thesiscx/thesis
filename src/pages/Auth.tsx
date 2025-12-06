@@ -14,9 +14,9 @@ export default function Auth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log("[Auth Page] Session check:", !!session);
       setHasSession(!!session);
-      // If user is logged in, redirect to dashboard
+      // If user is logged in, redirect to app
       if (session) {
-        navigate("/circuit", { replace: true });
+        navigate("/", { replace: true });
       }
     });
   }, [navigate]);

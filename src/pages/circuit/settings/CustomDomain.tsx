@@ -35,11 +35,11 @@ export default function CustomDomain() {
       <div className="container mx-auto max-w-2xl py-8 px-6">
         <Button 
           variant="ghost" 
-          onClick={() => navigate("/circuit")}
+          onClick={() => navigate(-1)}
           className="mb-6 -ml-2 hover:bg-secondary"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Stage
+          Back
         </Button>
         
         <div className="mb-8">
@@ -60,7 +60,7 @@ export default function CustomDomain() {
             <CardContent>
               <div className="flex items-center gap-3">
                 <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-sm font-mono">
-                  circuit.run/{companySlug || "your-company"}
+                  circuit.cx/share/{companySlug || "your-company"}
                 </div>
                 <Badge variant="secondary">Active</Badge>
               </div>

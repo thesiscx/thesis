@@ -207,7 +207,7 @@ function PublishFlow({
 
   const goToDocket = () => {
     if (roundSlug) {
-      navigate(`/circuit/${roundSlug}/docket/global`);
+      navigate(`/${roundSlug}/docket`);
     }
   };
 

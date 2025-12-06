@@ -49,10 +49,11 @@ export default function CircuitLayout({
   
   // Derive tool from pathname since it's not a route param
   const pathParts = location.pathname.split('/');
-  const toolFromPath = pathParts[3]; // /circuit/:roundSlug/:tool/:variantSlug
+  // New URL structure: /:roundSlug/:tool or /:roundSlug/:tool/:variantSlug
+  const toolFromPath = pathParts[2]; // /:roundSlug/:tool/:variantSlug
   const activeTool = toolFromPath && ["memo", "docket", "pipeline"].includes(toolFromPath) 
     ? (toolFromPath as "memo" | "docket" | "pipeline")
-    : "memo";
+    : "pipeline";
   
   const activeRound = rounds.find(r => r.slug === roundSlug);
 
@@ -67,7 +68,7 @@ export default function CircuitLayout({
     // Only show splash if actually switching to a different round
     if (round.slug !== roundSlug) {
       setSplashRoundName(round.name);
-      setPendingNavigation(`/circuit/${round.slug}/${activeTool}/global`);
+      setPendingNavigation(`/${round.slug}/${activeTool}`);
       setShowSplash(true);
     }
   }, [roundSlug, activeTool]);
@@ -81,7 +82,7 @@ export default function CircuitLayout({
   }, [navigate, pendingNavigation]);
 
   const handleToolChange = (newTool: "pipeline" | "memo" | "docket") => {
-    navigate(`/circuit/${roundSlug}/${newTool}/global`);
+    navigate(`/${roundSlug}/${newTool}`);
   };
 
   return (
@@ -104,9 +105,9 @@ export default function CircuitLayout({
             onRoundChange={handleRoundChange}
             onToolChange={handleToolChange}
             onCreateRound={onCreateRound}
-            onEditRound={() => navigate(`/circuit/settings`)}
+            onEditRound={() => navigate(`/settings`)}
             onCloseRound={() => {
-              navigate(`/circuit/settings`);
+              navigate(`/settings`);
             }}
           />
 

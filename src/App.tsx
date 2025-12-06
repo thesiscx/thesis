@@ -13,7 +13,6 @@ import EmailAuth from "./pages/auth/EmailAuth";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Pricing from "./pages/Pricing";
-import Dashboard from "./pages/circuit/Dashboard";
 import CircuitMemo from "./pages/circuit/CircuitMemo";
 import CircuitDocket from "./pages/circuit/CircuitDocket";
 import Pipeline from "./pages/circuit/Pipeline";
@@ -27,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import InvestorAccess from "./pages/public/InvestorAccess";
 import PublicMemoViewer from "./pages/public/PublicMemoViewer";
 import PublicDocketViewer from "./pages/public/PublicDocketViewer";
+import SmartRedirect from "./components/circuit/SmartRedirect";
 import { FounderAuthProvider, useFounderAuth } from "./contexts/FounderAuthContext";
 import { InvestorAuthProvider } from "./contexts/InvestorAuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -127,10 +127,18 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             {/* Redirects - must come first */}
-            <Route path="/" element={<><RouteLogger name="redirect:/" /><Navigate to="/circuit" replace /></>} />
             <Route path="/login" element={<><RouteLogger name="redirect:/login" /><Navigate to="/auth" replace /></>} />
-            {/* Legacy redirect */}
-            <Route path="/thesis/*" element={<><RouteLogger name="redirect:/thesis" /><Navigate to="/circuit" replace /></>} />
+            {/* Legacy redirects for old /circuit/* URLs */}
+            <Route path="/circuit" element={<><RouteLogger name="redirect:/circuit" /><Navigate to="/" replace /></>} />
+            <Route path="/circuit/settings" element={<><RouteLogger name="redirect:/circuit/settings" /><Navigate to="/settings" replace /></>} />
+            <Route path="/circuit/settings/rounds" element={<><RouteLogger name="redirect:/circuit/settings/rounds" /><Navigate to="/settings/rounds" replace /></>} />
+            <Route path="/circuit/settings/domain" element={<><RouteLogger name="redirect:/circuit/settings/domain" /><Navigate to="/settings/domain" replace /></>} />
+            <Route path="/circuit/settings/profile" element={<><RouteLogger name="redirect:/circuit/settings/profile" /><Navigate to="/settings/profile" replace /></>} />
+            <Route path="/circuit/:roundSlug/pipeline/:variantSlug" element={<><RouteLogger name="redirect:/circuit/pipeline" /><Navigate to="/:roundSlug/pipeline" replace /></>} />
+            <Route path="/circuit/:roundSlug/memo/:variantSlug" element={<><RouteLogger name="redirect:/circuit/memo" /><Navigate to="/:roundSlug/memo" replace /></>} />
+            <Route path="/circuit/:roundSlug/docket/:variantSlug" element={<><RouteLogger name="redirect:/circuit/docket" /><Navigate to="/:roundSlug/docket" replace /></>} />
+            {/* Legacy redirect from thesis */}
+            <Route path="/thesis/*" element={<><RouteLogger name="redirect:/thesis" /><Navigate to="/" replace /></>} />
             
             {/* Legal & Info - no auth needed */}
             <Route path="/terms" element={<><RouteLogger name="terms" /><Terms /></>} />
@@ -148,15 +156,21 @@ const App = () => {
               <Route path="/admin/login" element={<><RouteLogger name="admin/login" /><AdminLogin /></>} />
               <Route path="/admin" element={<><RouteLogger name="admin" /><Admin /></>} />
               
-              {/* Circuit pages (protected) */}
-              <Route path="/circuit" element={<><RouteLogger name="circuit:dashboard" /><ProtectedRoute routeName="dashboard"><Dashboard /></ProtectedRoute></>} />
-              <Route path="/circuit/settings" element={<><RouteLogger name="circuit:settings" /><ProtectedRoute routeName="settings"><FounderSettings /></ProtectedRoute></>} />
-              <Route path="/circuit/settings/rounds" element={<><RouteLogger name="circuit:settings:rounds" /><ProtectedRoute routeName="rounds-overview"><RoundsOverview /></ProtectedRoute></>} />
-              <Route path="/circuit/settings/domain" element={<><RouteLogger name="circuit:settings:domain" /><ProtectedRoute routeName="custom-domain"><CustomDomain /></ProtectedRoute></>} />
-              <Route path="/circuit/settings/profile" element={<><RouteLogger name="circuit:settings:profile" /><ProtectedRoute routeName="profile-settings"><ProfileSettings /></ProtectedRoute></>} />
-              <Route path="/circuit/:roundSlug/pipeline/:variantSlug" element={<><RouteLogger name="circuit:pipeline" /><ProtectedRoute routeName="pipeline"><Pipeline /></ProtectedRoute></>} />
-              <Route path="/circuit/:roundSlug/memo/:variantSlug" element={<><RouteLogger name="circuit:memo" /><ProtectedRoute routeName="memo"><CircuitMemo /></ProtectedRoute></>} />
-              <Route path="/circuit/:roundSlug/docket/:variantSlug" element={<><RouteLogger name="circuit:docket" /><ProtectedRoute routeName="docket"><CircuitDocket /></ProtectedRoute></>} />
+              {/* Root - smart redirect to active round's pipeline */}
+              <Route path="/" element={<><RouteLogger name="root" /><ProtectedRoute routeName="root"><SmartRedirect /></ProtectedRoute></>} />
+              
+              {/* Settings pages */}
+              <Route path="/settings" element={<><RouteLogger name="settings" /><ProtectedRoute routeName="settings"><FounderSettings /></ProtectedRoute></>} />
+              <Route path="/settings/rounds" element={<><RouteLogger name="settings:rounds" /><ProtectedRoute routeName="rounds-overview"><RoundsOverview /></ProtectedRoute></>} />
+              <Route path="/settings/domain" element={<><RouteLogger name="settings:domain" /><ProtectedRoute routeName="custom-domain"><CustomDomain /></ProtectedRoute></>} />
+              <Route path="/settings/profile" element={<><RouteLogger name="settings:profile" /><ProtectedRoute routeName="profile-settings"><ProfileSettings /></ProtectedRoute></>} />
+              
+              {/* Tool pages - new clean URLs without /circuit prefix */}
+              <Route path="/:roundSlug/pipeline" element={<><RouteLogger name="pipeline" /><ProtectedRoute routeName="pipeline"><Pipeline /></ProtectedRoute></>} />
+              <Route path="/:roundSlug/memo" element={<><RouteLogger name="memo" /><ProtectedRoute routeName="memo"><CircuitMemo /></ProtectedRoute></>} />
+              <Route path="/:roundSlug/memo/:variantSlug" element={<><RouteLogger name="memo:variant" /><ProtectedRoute routeName="memo"><CircuitMemo /></ProtectedRoute></>} />
+              <Route path="/:roundSlug/docket" element={<><RouteLogger name="docket" /><ProtectedRoute routeName="docket"><CircuitDocket /></ProtectedRoute></>} />
+              <Route path="/:roundSlug/docket/:variantSlug" element={<><RouteLogger name="docket:variant" /><ProtectedRoute routeName="docket"><CircuitDocket /></ProtectedRoute></>} />
             </Route>
             
             {/* Public Investor Routes - WITH /share/ PREFIX to avoid conflicts */}
