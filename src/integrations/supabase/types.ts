@@ -892,6 +892,24 @@ export type Database = {
         Args: { code_value: string }
         Returns: undefined
       }
+      insert_access_log: {
+        Args: {
+          p_access_key_id: string
+          p_action: string
+          p_ip_address: string
+          p_user_agent: string
+        }
+        Returns: undefined
+      }
+      validate_and_use_invite_code: {
+        Args: {
+          p_code: string
+          p_ip_address?: string
+          p_user_agent?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

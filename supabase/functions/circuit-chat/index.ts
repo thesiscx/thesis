@@ -168,21 +168,34 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Get user from authorization header
+    // SECURITY: Require authentication for this endpoint
     const authHeader = req.headers.get("Authorization");
-    let userId: string | null = null;
-    
-    if (authHeader && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      const token = authHeader.replace("Bearer ", "");
-      
-      // Verify the token and get user
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      if (!error && user) {
-        userId = user.id;
-      }
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error("Supabase configuration missing");
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const token = authHeader.replace("Bearer ", "");
+    
+    // Verify the token and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = user.id;
     console.log("Circuit chat request with", messages.length, "messages, userId:", userId);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -225,11 +238,8 @@ serve(async (req) => {
       });
     }
 
-    // If we have a userId and the response is ok, we need to capture the assistant's response
-    // and save it to the database after streaming completes
-    if (userId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && response.body) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      
+    // Process stream and save assistant response
+    if (response.body) {
       // Create a transform stream with proper SSE line buffering
       let assistantContent = "";
       let toolCalls: any[] = [];
@@ -334,7 +344,7 @@ serve(async (req) => {
           }
           
           // Save assistant message to database after stream completes
-          if ((assistantContent || toolCalls.length > 0) && userId) {
+          if (assistantContent || toolCalls.length > 0) {
             try {
               const { error } = await supabase.from("circuit_chat_messages").insert({
                 user_id: userId,

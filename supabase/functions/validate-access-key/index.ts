@@ -106,18 +106,16 @@ Deno.serve(async (req) => {
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', accessKey.id);
 
-    // Log access
+    // Log access using SECURITY DEFINER function (prevents direct table manipulation)
     const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    await supabase
-      .from('access_logs')
-      .insert({
-        access_key_id: accessKey.id,
-        ip_address: ipAddress,
-        user_agent: userAgent,
-        action: 'investor_access'
-      });
+    await supabase.rpc('insert_access_log', {
+      p_access_key_id: accessKey.id,
+      p_ip_address: ipAddress,
+      p_user_agent: userAgent,
+      p_action: 'investor_access'
+    });
 
     // Calculate public round code
     const roundCode = accessKey.round?.round_number > 1 
