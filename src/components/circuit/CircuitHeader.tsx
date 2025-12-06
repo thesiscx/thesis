@@ -9,7 +9,7 @@ import {
   Users,
   FileText,
   FolderOpen,
-  BookOpen
+  Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +40,8 @@ interface CircuitHeaderProps {
   onRoundChange?: (round: Round) => void;
   onToolChange?: (tool: "pipeline" | "memo" | "docket") => void;
   onCreateRound?: () => void;
+  onEditRound?: () => void;
+  onCloseRound?: () => void;
   // Right side content
   rightContent?: React.ReactNode;
 }
@@ -51,6 +53,8 @@ export default function CircuitHeader({
   onRoundChange,
   onToolChange,
   onCreateRound,
+  onEditRound,
+  onCloseRound,
   rightContent,
 }: CircuitHeaderProps) {
   const navigate = useNavigate();
@@ -59,10 +63,20 @@ export default function CircuitHeader({
   const activeRound = rounds.find(r => r.slug === activeRoundSlug);
   const openRounds = rounds.filter(r => r.state === "open");
   const closedRounds = rounds.filter(r => r.state === "closed");
+  const isActiveRoundOpen = activeRound?.state === "open";
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
+  };
+
+  const getToolIcon = (tool: string) => {
+    switch (tool) {
+      case "pipeline": return <Users className="w-4 h-4" />;
+      case "memo": return <FileText className="w-4 h-4" />;
+      case "docket": return <FolderOpen className="w-4 h-4" />;
+      default: return null;
+    }
   };
 
   return (
@@ -102,104 +116,118 @@ export default function CircuitHeader({
 
         <span className="text-muted-foreground/50">/</span>
 
-        {/* Segment 2: Round Selector or Stage label */}
+        {/* Segment 2: Tool Selector (or Stage label) */}
         {activeTool === "stage" ? (
           <span className="text-sm text-muted-foreground pl-1">Stage</span>
         ) : (
-          <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 px-2 gap-1.5">
-                  {activeRound?.name || "Select Round"}
-                  <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                {openRounds.map((round) => (
-                  <DropdownMenuItem
-                    key={round.id}
-                    onClick={() => onRoundChange?.(round)}
-                    className={cn(round.slug === activeRoundSlug && "bg-accent")}
-                  >
-                    {round.name}
-                  </DropdownMenuItem>
-                ))}
-                
-                {closedRounds.length > 0 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                      <Archive className="w-3 h-3 mr-2" />
-                      Closed
-                    </DropdownMenuItem>
-                    {closedRounds.map((round) => (
-                      <DropdownMenuItem
-                        key={round.id}
-                        onClick={() => onRoundChange?.(round)}
-                        className="text-muted-foreground"
-                      >
-                        {round.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </>
-                )}
-                
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onCreateRound}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create new raise
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <span className="text-muted-foreground/50">/</span>
-
-            {/* Segment 3: Tool Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 px-2 gap-1.5 capitalize">
-                  {activeTool === "pipeline" && <Users className="w-4 h-4" />}
-                  {activeTool === "memo" && <FileText className="w-4 h-4" />}
-                  {activeTool === "docket" && <FolderOpen className="w-4 h-4" />}
-                  {activeTool}
-                  <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-32">
-                <DropdownMenuItem
-                  onClick={() => onToolChange?.("pipeline")}
-                  className={cn(activeTool === "pipeline" && "bg-accent")}
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Pipeline
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onToolChange?.("memo")}
-                  className={cn(activeTool === "memo" && "bg-accent")}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Memo
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onToolChange?.("docket")}
-                  className={cn(activeTool === "docket" && "bg-accent")}
-                >
-                  <FolderOpen className="w-4 h-4 mr-2" />
-                  Docket
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled className="text-muted-foreground">
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Registry
-                  <span className="ml-auto text-[10px]">Soon</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 px-2 gap-1.5 capitalize">
+                {getToolIcon(activeTool)}
+                {activeTool}
+                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuItem
+                onClick={() => onToolChange?.("pipeline")}
+                className={cn(activeTool === "pipeline" && "bg-accent")}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Pipeline
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onToolChange?.("memo")}
+                className={cn(activeTool === "memo" && "bg-accent")}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Memo
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onToolChange?.("docket")}
+                className={cn(activeTool === "docket" && "bg-accent")}
+              >
+                <FolderOpen className="w-4 h-4 mr-2" />
+                Docket
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
-      {/* Right side content */}
-      {rightContent}
+      {/* Right side: Round Context Selector + rightContent */}
+      <div className="flex items-center gap-2">
+        {activeTool !== "stage" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-8 px-3 gap-1.5 text-sm font-medium">
+                {activeRound?.name || "Select Round"}
+                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {/* Open Rounds */}
+              {openRounds.length > 0 && (
+                <>
+                  {openRounds.map((round) => (
+                    <DropdownMenuItem
+                      key={round.id}
+                      onClick={() => onRoundChange?.(round)}
+                      className={cn(round.slug === activeRoundSlug && "bg-accent")}
+                    >
+                      {round.name}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              
+              {/* Closed Rounds */}
+              {closedRounds.length > 0 && (
+                <>
+                  {openRounds.length > 0 && <DropdownMenuSeparator />}
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    <Archive className="w-3 h-3 mr-2" />
+                    Closed
+                  </DropdownMenuItem>
+                  {closedRounds.map((round) => (
+                    <DropdownMenuItem
+                      key={round.id}
+                      onClick={() => onRoundChange?.(round)}
+                      className="text-muted-foreground"
+                    >
+                      {round.name}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              
+              <DropdownMenuSeparator />
+              
+              {/* Round Actions */}
+              <DropdownMenuItem onClick={onCreateRound}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Round
+              </DropdownMenuItem>
+              
+              {activeRound && (
+                <DropdownMenuItem onClick={onEditRound}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit Round Details
+                </DropdownMenuItem>
+              )}
+              
+              {activeRound && isActiveRoundOpen && (
+                <DropdownMenuItem onClick={onCloseRound} className="text-destructive">
+                  <Archive className="w-4 h-4 mr-2" />
+                  Close Round
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        
+        {rightContent}
+      </div>
     </header>
   );
 }
