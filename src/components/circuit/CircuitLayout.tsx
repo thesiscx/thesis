@@ -199,6 +199,12 @@ export default function CircuitLayout({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-32">
               <DropdownMenuItem
+                onClick={() => handleToolChange("pipeline")}
+                className={cn(activeTool === "pipeline" && "bg-accent")}
+              >
+                Pipeline
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={() => handleToolChange("memo")}
                 className={cn(activeTool === "memo" && "bg-accent")}
               >
@@ -209,12 +215,6 @@ export default function CircuitLayout({
                 className={cn(activeTool === "docket" && "bg-accent")}
               >
                 Docket
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleToolChange("pipeline")}
-                className={cn(activeTool === "pipeline" && "bg-accent")}
-              >
-                Pipeline
               </DropdownMenuItem>
               <DropdownMenuItem disabled className="text-muted-foreground">
                 Registry
