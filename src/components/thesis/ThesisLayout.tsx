@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { 
-  ChevronsUpDown, 
+  ChevronsUpDown,
   Plus, 
   Archive, 
   Search,
@@ -61,14 +61,21 @@ export default function ThesisLayout({
   onCreateRound,
 }: ThesisLayoutProps) {
   const navigate = useNavigate();
-  const { roundSlug, tool, variantSlug } = useParams();
+  const location = useLocation();
+  const { roundSlug, variantSlug } = useParams();
   const { signOut, user } = useFounderAuth();
   
   const [investorSearchOpen, setInvestorSearchOpen] = useState(false);
   const [investorSearch, setInvestorSearch] = useState("");
   
+  // Derive tool from pathname since it's not a route param
+  const pathParts = location.pathname.split('/');
+  const toolFromPath = pathParts[3]; // /thesis/:roundSlug/:tool/:variantSlug
+  const activeTool = toolFromPath && ["circuit", "memo", "docket"].includes(toolFromPath) 
+    ? toolFromPath 
+    : "memo";
+  
   const activeRound = rounds.find(r => r.slug === roundSlug);
-  const activeTool = tool || "memo";
   const activeVariant = variantSlug || "global";
   
   const activeInvestor = investors.find(i => i.slug === activeVariant);
