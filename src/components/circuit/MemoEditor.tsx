@@ -32,22 +32,8 @@ export default function MemoEditor({
   content,
   onChange,
 }: MemoEditorProps) {
-  const isInitialMount = useRef(true);
+  const hasInitialized = useRef(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
-  const prevContentRef = useRef<string | null>(null);
-
-  // CRITICAL: Reset isInitialMount when content prop changes significantly (new memo loaded)
-  useEffect(() => {
-    const contentStr = content ? JSON.stringify(content) : null;
-    
-    // If we had previous content and it's completely different, allow re-initialization
-    if (prevContentRef.current !== null && contentStr !== prevContentRef.current) {
-      console.log('[MemoEditor] Content changed externally, allowing re-initialization');
-      isInitialMount.current = true;
-    }
-    
-    prevContentRef.current = contentStr;
-  }, [content]);
 
   const extractHeadings = useCallback((editor: any) => {
     const headings: TocItem[] = [];
@@ -179,9 +165,10 @@ export default function MemoEditor({
     },
   });
 
+  // Set content on initial mount and whenever content changes from outside
   useEffect(() => {
-    if (editor && content && isInitialMount.current) {
-      isInitialMount.current = false;
+    if (editor && content && !hasInitialized.current) {
+      hasInitialized.current = true;
       editor.commands.setContent(content as any);
       
       const headings = extractHeadings(editor);
@@ -191,7 +178,7 @@ export default function MemoEditor({
 
   // Handle content updates from outside (e.g., version restore)
   useEffect(() => {
-    if (editor && content && !isInitialMount.current) {
+    if (editor && content && hasInitialized.current) {
       const currentContent = JSON.stringify(editor.getJSON());
       const newContent = JSON.stringify(content);
       if (currentContent !== newContent) {
