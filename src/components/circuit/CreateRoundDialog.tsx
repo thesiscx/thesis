@@ -22,11 +22,14 @@ import { useRounds, ROUND_TYPES, ROUND_TYPE_LABELS, RoundType, getRoundCode } fr
 interface CreateRoundDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** If provided, called after round creation instead of navigating away */
+  onSuccess?: () => void;
 }
 
 export default function CreateRoundDialog({
   open,
   onOpenChange,
+  onSuccess,
 }: CreateRoundDialogProps) {
   const navigate = useNavigate();
   const { createRound, countRoundsOfType, hasOpenRound } = useRounds();
@@ -63,7 +66,12 @@ export default function CreateRoundDialog({
     });
 
     onOpenChange(false);
-    navigate(`/circuit/${slug}/memo/global`);
+    
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      navigate(`/circuit/${slug}/memo/global`);
+    }
     
     // Reset form
     setRoundType("s");
