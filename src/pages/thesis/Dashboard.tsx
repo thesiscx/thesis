@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
-import { useRounds } from "@/hooks/useRounds";
-import { useInvestors } from "@/hooks/useInvestors";
+import { useRounds, Round } from "@/hooks/useRounds";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import CreateRoundDialog from "@/components/thesis/CreateRoundDialog";
@@ -17,6 +16,12 @@ import {
   Settings,
   LogOut,
   Archive,
+  ChevronsUpDown,
+  Home,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  ArchiveRestore,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -25,13 +30,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { user, isLoading: authLoading, signOut, companyName } = useFounderAuth();
-  const { rounds, isLoading: roundsLoading } = useRounds();
-  const { investors } = useInvestors();
+  const { rounds, isLoading: roundsLoading, archiveRound, unarchiveRound, updateRound, deleteRound } = useRounds();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedRound, setSelectedRound] = useState<Round | null>(null);
+  const [editName, setEditName] = useState("");
 
   // Fetch profile for full name
   const { data: profile } = useQuery({
@@ -57,28 +86,16 @@ export default function Dashboard() {
       const stats: Record<string, { memoCount: number; docketCount: number; investorCount: number }> = {};
 
       for (const round of rounds) {
-        // Get memo count
-        const { count: memoCount } = await supabase
-          .from("memos")
-          .select("*", { count: "exact", head: true })
-          .eq("round_id", round.id);
-
-        // Get docket count
-        const { count: docketCount } = await supabase
-          .from("dockets")
-          .select("*", { count: "exact", head: true })
-          .eq("round_id", round.id);
-
-        // Get investor count for this workspace
-        const { count: investorCount } = await supabase
-          .from("investors")
-          .select("*", { count: "exact", head: true })
-          .eq("workspace_id", round.workspace_id);
+        const [memoRes, docketRes, investorRes] = await Promise.all([
+          supabase.from("memos").select("*", { count: "exact", head: true }).eq("round_id", round.id),
+          supabase.from("dockets").select("*", { count: "exact", head: true }).eq("round_id", round.id),
+          supabase.from("investors").select("*", { count: "exact", head: true }).eq("workspace_id", round.workspace_id),
+        ]);
 
         stats[round.id] = {
-          memoCount: memoCount || 0,
-          docketCount: docketCount || 0,
-          investorCount: investorCount || 0,
+          memoCount: memoRes.count || 0,
+          docketCount: docketRes.count || 0,
+          investorCount: investorRes.count || 0,
         };
       }
 
@@ -90,6 +107,43 @@ export default function Dashboard() {
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
+  };
+
+  const handleEditRound = (round: Round) => {
+    setSelectedRound(round);
+    setEditName(round.name);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedRound || !editName.trim()) return;
+    
+    await updateRound.mutateAsync({ 
+      roundId: selectedRound.id, 
+      name: editName.trim() 
+    });
+    setEditDialogOpen(false);
+    setSelectedRound(null);
+  };
+
+  const handleArchiveRound = async (round: Round) => {
+    if (round.state === "archived") {
+      await unarchiveRound.mutateAsync(round.id);
+    } else {
+      await archiveRound.mutateAsync(round.id);
+    }
+  };
+
+  const handleDeleteRound = (round: Round) => {
+    setSelectedRound(round);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedRound) return;
+    await deleteRound.mutateAsync(selectedRound.id);
+    setDeleteConfirmOpen(false);
+    setSelectedRound(null);
   };
 
   if (authLoading || roundsLoading) {
@@ -116,33 +170,38 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="h-14 border-b border-border bg-background sticky top-0 z-50 flex items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          <img src={thesisLogo} alt="Thesis" className="h-5" />
-        </div>
+      {/* Header - Breadcrumb style matching ThesisLayout */}
+      <header className="h-14 border-b border-border bg-background sticky top-0 z-50 flex items-center px-6">
+        <div className="flex items-center gap-1">
+          {/* Thesis Logo/Settings Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 px-2 gap-1.5">
+                <img src={thesisLogo} alt="Thesis" className="h-4" />
+                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuItem onClick={() => navigate("/thesis")}>
+                <Home className="w-4 h-4 mr-2" />
+                Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/thesis/settings")}>
+                <Settings className="w-4 h-4 mr-2" />
+                Workspace Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
-                {firstName.charAt(0).toUpperCase()}
-              </div>
-              <span className="text-sm">{firstName}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => navigate("/thesis/settings")}>
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <span className="text-muted-foreground/50">/</span>
+
+          <span className="text-sm text-muted-foreground">Dashboard</span>
+        </div>
       </header>
 
       {/* Main Content */}
@@ -199,9 +258,36 @@ export default function Dashboard() {
                           {round.target_raise && ` · $${Number(round.target_raise).toLocaleString()} target`}
                         </p>
                       </div>
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full capitalize">
-                        {round.state}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full capitalize">
+                          {round.state}
+                        </span>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditRound(round)}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleArchiveRound(round)}>
+                              <Archive className="w-4 h-4 mr-2" />
+                              Archive
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteRound(round)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-3">
@@ -265,7 +351,7 @@ export default function Dashboard() {
                         {round.instrument_type?.toUpperCase() || "SAFE"}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -273,6 +359,27 @@ export default function Dashboard() {
                       >
                         View
                       </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleArchiveRound(round)}>
+                            <ArchiveRestore className="w-4 h-4 mr-2" />
+                            Unarchive
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteRound(round)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
@@ -283,6 +390,55 @@ export default function Dashboard() {
       </main>
 
       <CreateRoundDialog open={createRoundOpen} onOpenChange={setCreateRoundOpen} />
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Round</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Round Name</Label>
+              <Input
+                id="edit-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Enter round name"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={updateRound.isPending}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Round?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{selectedRound?.name}" and all associated memos, dockets, and investor data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
