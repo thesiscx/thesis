@@ -63,7 +63,7 @@ export default function CreateRoundDialog({
     });
 
     onOpenChange(false);
-    navigate(`/thesis/${slug}/memo/global`);
+    navigate(`/circuit/${slug}/memo/global`);
     
     // Reset form
     setRoundType("s");

@@ -128,7 +128,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/thesis`;
+    const redirectUrl = `${window.location.origin}/circuit`;
     
     const { error } = await supabase.auth.signUp({
       email,

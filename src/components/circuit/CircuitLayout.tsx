@@ -9,7 +9,7 @@ import {
   LogOut,
   Home
 } from "lucide-react";
-const thesisLogo = "/thesis-logo.png";
+import circuitLogo from "@/assets/circuit-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,7 +45,7 @@ interface Investor {
   name: string;
 }
 
-interface ThesisLayoutProps {
+interface CircuitLayoutProps {
   children: ReactNode;
   rounds: Round[];
   investors: Investor[];
@@ -53,13 +53,13 @@ interface ThesisLayoutProps {
   onCreateRound: () => void;
 }
 
-export default function ThesisLayout({
+export default function CircuitLayout({
   children,
   rounds,
   investors,
   recentInvestors = [],
   onCreateRound,
-}: ThesisLayoutProps) {
+}: CircuitLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { roundSlug, variantSlug } = useParams();
@@ -70,8 +70,8 @@ export default function ThesisLayout({
   
   // Derive tool from pathname since it's not a route param
   const pathParts = location.pathname.split('/');
-  const toolFromPath = pathParts[3]; // /thesis/:roundSlug/:tool/:variantSlug
-  const activeTool = toolFromPath && ["circuit", "memo", "docket"].includes(toolFromPath) 
+  const toolFromPath = pathParts[3]; // /circuit/:roundSlug/:tool/:variantSlug
+  const activeTool = toolFromPath && ["pipeline", "memo", "docket"].includes(toolFromPath) 
     ? toolFromPath 
     : "memo";
   
@@ -82,15 +82,15 @@ export default function ThesisLayout({
   const isGlobal = activeVariant === "global";
 
   const handleRoundChange = (round: Round) => {
-    navigate(`/thesis/${round.slug}/${activeTool}/global`);
+    navigate(`/circuit/${round.slug}/${activeTool}/global`);
   };
 
-  const handleToolChange = (newTool: "circuit" | "memo" | "docket") => {
-    navigate(`/thesis/${roundSlug}/${newTool}/${activeVariant}`);
+  const handleToolChange = (newTool: "pipeline" | "memo" | "docket") => {
+    navigate(`/circuit/${roundSlug}/${newTool}/${activeVariant}`);
   };
 
   const handleVariantChange = (investorSlug: string) => {
-    navigate(`/thesis/${roundSlug}/${activeTool}/${investorSlug}`);
+    navigate(`/circuit/${roundSlug}/${activeTool}/${investorSlug}`);
     setInvestorSearchOpen(false);
     setInvestorSearch("");
   };
@@ -104,28 +104,28 @@ export default function ThesisLayout({
     i.name.toLowerCase().includes(investorSearch.toLowerCase())
   );
 
-  const archivedRounds = rounds.filter(r => r.state === "archived");
-  const activeRounds = rounds.filter(r => r.state !== "archived");
+  const closedRounds = rounds.filter(r => r.state === "closed");
+  const openRounds = rounds.filter(r => r.state === "open");
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header - 4 Segment Navigation */}
       <header className="h-14 border-b border-border bg-background sticky top-0 z-50 flex items-center justify-between px-6">
         <div className="flex items-center gap-1">
-          {/* Segment 1: Thesis Logo/Settings */}
+          {/* Segment 1: Circuit Logo/Settings */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 px-2 gap-1.5">
-                <img src={thesisLogo} alt="Thesis" className="h-4" />
+                <img src={circuitLogo} alt="Circuit" className="h-4" />
                 <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem onClick={() => navigate("/thesis")}>
+              <DropdownMenuItem onClick={() => navigate("/circuit")}>
                 <Home className="w-4 h-4 mr-2" />
                 Dashboard
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/thesis/settings")}>
+              <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
                 <Settings className="w-4 h-4 mr-2" />
                 Workspace Settings
               </DropdownMenuItem>
@@ -148,7 +148,7 @@ export default function ThesisLayout({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
-              {activeRounds.map((round) => (
+              {openRounds.map((round) => (
                 <DropdownMenuItem
                   key={round.id}
                   onClick={() => handleRoundChange(round)}
@@ -158,14 +158,14 @@ export default function ThesisLayout({
                 </DropdownMenuItem>
               ))}
               
-              {archivedRounds.length > 0 && (
+              {closedRounds.length > 0 && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem disabled className="text-xs text-muted-foreground">
                     <Archive className="w-3 h-3 mr-2" />
-                    Archived
+                    Closed
                   </DropdownMenuItem>
-                  {archivedRounds.map((round) => (
+                  {closedRounds.map((round) => (
                     <DropdownMenuItem
                       key={round.id}
                       onClick={() => handleRoundChange(round)}
@@ -197,10 +197,10 @@ export default function ThesisLayout({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-32">
               <DropdownMenuItem
-                onClick={() => handleToolChange("circuit")}
-                className={cn(activeTool === "circuit" && "bg-accent")}
+                onClick={() => handleToolChange("pipeline")}
+                className={cn(activeTool === "pipeline" && "bg-accent")}
               >
-                Circuit
+                Pipeline
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => handleToolChange("memo")}

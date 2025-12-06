@@ -27,8 +27,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import ThesisLayout from "@/components/thesis/ThesisLayout";
-import CreateRoundDialog from "@/components/thesis/CreateRoundDialog";
+import CircuitLayout from "@/components/circuit/CircuitLayout";
+import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
 import { useRounds } from "@/hooks/useRounds";
 import { useInvestors } from "@/hooks/useInvestors";
 import { supabase } from "@/integrations/supabase/client";
@@ -228,7 +228,7 @@ export default function ThesisCircuit() {
   }
 
   return (
-    <ThesisLayout
+    <CircuitLayout
       rounds={rounds || []}
       investors={investors || []}
       onCreateRound={() => setCreateRoundOpen(true)}
@@ -238,7 +238,7 @@ export default function ThesisCircuit() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="font-heading text-2xl font-bold">Circuit</h1>
+              <h1 className="font-heading text-2xl font-bold">Pipeline</h1>
               <p className="text-muted-foreground text-sm mt-1">
                 Manage your investor pipeline for {activeRound?.name || "this round"}
               </p>
@@ -270,7 +270,7 @@ export default function ThesisCircuit() {
               </div>
               <h3 className="font-heading text-lg font-semibold mb-2">No investors yet</h3>
               <p className="text-muted-foreground text-sm mb-6">
-                Start building your investor circuit.
+                Start building your investor pipeline.
               </p>
               <Button onClick={() => setAddInvestorOpen(true)} className="gap-2">
                 <Plus className="w-4 h-4" />
@@ -308,7 +308,7 @@ export default function ThesisCircuit() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() =>
-                                navigate(`/thesis/${roundSlug}/memo/${investor.slug}`)
+                                navigate(`/circuit/${roundSlug}/memo/${investor.slug}`)
                               }
                             >
                               <FileText className="w-4 h-4 mr-2" />
@@ -316,7 +316,7 @@ export default function ThesisCircuit() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() =>
-                                navigate(`/thesis/${roundSlug}/docket/${investor.slug}`)
+                                navigate(`/circuit/${roundSlug}/docket/${investor.slug}`)
                               }
                             >
                               <FolderOpen className="w-4 h-4 mr-2" />
@@ -496,6 +496,6 @@ export default function ThesisCircuit() {
       </Dialog>
 
       <CreateRoundDialog open={createRoundOpen} onOpenChange={setCreateRoundOpen} />
-    </ThesisLayout>
+    </CircuitLayout>
   );
 }

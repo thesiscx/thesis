@@ -6,8 +6,8 @@ import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useRounds, Round } from "@/hooks/useRounds";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import CreateRoundDialog from "@/components/thesis/CreateRoundDialog";
-const thesisLogo = "/thesis-logo.png";
+import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
+import circuitLogo from "@/assets/circuit-logo.png";
 import {
   Plus,
   Users,
@@ -215,16 +215,16 @@ export default function Dashboard() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 px-2 gap-1.5">
-                <img src={thesisLogo} alt="Thesis" className="h-4" />
+                <img src={circuitLogo} alt="Circuit" className="h-4" />
                 <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem onClick={() => navigate("/thesis")}>
+              <DropdownMenuItem onClick={() => navigate("/circuit")}>
                 <Home className="w-4 h-4 mr-2" />
                 Dashboard
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/thesis/settings")}>
+              <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
                 <Settings className="w-4 h-4 mr-2" />
                 Workspace Settings
               </DropdownMenuItem>
@@ -328,18 +328,18 @@ export default function Dashboard() {
 
                     <div className="grid grid-cols-3 gap-3">
                       <button
-                        onClick={() => navigate(`/thesis/${round.slug}/circuit/global`)}
+                        onClick={() => navigate(`/circuit/${round.slug}/pipeline/global`)}
                         className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
                       >
                         <Users className="w-5 h-5 text-muted-foreground" />
-                        <span className="text-sm font-medium">Circuit</span>
+                        <span className="text-sm font-medium">Pipeline</span>
                         <span className="text-xs text-muted-foreground">
                           {stats?.investorCount || 0} investors
                         </span>
                       </button>
 
                       <button
-                        onClick={() => navigate(`/thesis/${round.slug}/memo/global`)}
+                        onClick={() => navigate(`/circuit/${round.slug}/memo/global`)}
                         className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
                       >
                         <FileText className="w-5 h-5 text-muted-foreground" />
@@ -350,7 +350,7 @@ export default function Dashboard() {
                       </button>
 
                       <button
-                        onClick={() => navigate(`/thesis/${round.slug}/docket/global`)}
+                        onClick={() => navigate(`/circuit/${round.slug}/docket/global`)}
                         className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
                       >
                         <FolderOpen className="w-5 h-5 text-muted-foreground" />
@@ -395,7 +395,7 @@ export default function Dashboard() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/thesis/${round.slug}/memo/global`)}
+                        onClick={() => navigate(`/circuit/${round.slug}/memo/global`)}
                       >
                         View
                       </Button>

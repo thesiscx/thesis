@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import ThesisLayout from "@/components/thesis/ThesisLayout";
-import MemoEditor from "@/components/thesis/MemoEditor";
-import MemoSidebar from "@/components/thesis/MemoSidebar";
-import CreateRoundDialog from "@/components/thesis/CreateRoundDialog";
+import CircuitLayout from "@/components/circuit/CircuitLayout";
+import MemoEditor from "@/components/circuit/MemoEditor";
+import MemoSidebar from "@/components/circuit/MemoSidebar";
+import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
 import { useRounds } from "@/hooks/useRounds";
 import { useInvestors } from "@/hooks/useInvestors";
 import { useMemo } from "@/hooks/useMemo";
@@ -48,7 +48,7 @@ export default function ThesisMemo() {
 
   return (
     <>
-      <ThesisLayout
+      <CircuitLayout
         rounds={rounds}
         investors={investors}
         recentInvestors={recentInvestors}
@@ -80,7 +80,7 @@ export default function ThesisMemo() {
             )}
           </div>
         </div>
-      </ThesisLayout>
+      </CircuitLayout>
 
       <CreateRoundDialog
         open={createRoundOpen}
