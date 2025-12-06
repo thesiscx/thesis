@@ -142,6 +142,28 @@ export function useRounds() {
     },
   });
 
+  const updateRound = useMutation({
+    mutationFn: async ({ roundId, name }: { roundId: string; name: string }) => {
+      const { error } = await supabase
+        .from("rounds")
+        .update({ name, updated_at: new Date().toISOString() })
+        .eq("id", roundId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rounds"] });
+      toast({ title: "Round updated" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update round",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const archiveRound = useMutation({
     mutationFn: async (roundId: string) => {
       const { error } = await supabase
@@ -157,6 +179,48 @@ export function useRounds() {
     },
   });
 
+  const unarchiveRound = useMutation({
+    mutationFn: async (roundId: string) => {
+      const { error } = await supabase
+        .from("rounds")
+        .update({ state: "active" })
+        .eq("id", roundId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rounds"] });
+      toast({ title: "Round restored" });
+    },
+  });
+
+  const deleteRound = useMutation({
+    mutationFn: async (roundId: string) => {
+      // Delete in order: dockets, memos, round_terms, then round
+      await supabase.from("dockets").delete().eq("round_id", roundId);
+      await supabase.from("memos").delete().eq("round_id", roundId);
+      await supabase.from("round_terms").delete().eq("round_id", roundId);
+      
+      const { error } = await supabase
+        .from("rounds")
+        .delete()
+        .eq("id", roundId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rounds"] });
+      toast({ title: "Round deleted" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete round",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Helper to count rounds of a specific type
   const countRoundsOfType = (roundType: RoundType) => {
     return rounds.filter(r => r.round_type === roundType).length;
@@ -166,7 +230,10 @@ export function useRounds() {
     rounds,
     isLoading,
     createRound,
+    updateRound,
     archiveRound,
+    unarchiveRound,
+    deleteRound,
     countRoundsOfType,
   };
 }
