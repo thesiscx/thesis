@@ -9,6 +9,8 @@ interface AssistantSidebarProps {
   roundSlug?: string;
   onOpenRound?: () => void;
   onUpdateMemoContent?: (content: any) => void;
+  hasMemoContent?: boolean;
+  currentMemoContent?: any;
 }
 
 export default function AssistantSidebar({ 
@@ -17,6 +19,8 @@ export default function AssistantSidebar({
   roundSlug,
   onOpenRound,
   onUpdateMemoContent,
+  hasMemoContent,
+  currentMemoContent,
 }: AssistantSidebarProps) {
   return (
     <aside className="w-96 h-screen bg-[hsl(var(--canvas))] flex flex-col shrink-0">
@@ -33,6 +37,8 @@ export default function AssistantSidebar({
           roundSlug={roundSlug}
           onOpenRound={onOpenRound}
           onUpdateMemoContent={onUpdateMemoContent}
+          hasMemoContent={hasMemoContent}
+          currentMemoContent={currentMemoContent}
         />
       </div>
     </aside>
