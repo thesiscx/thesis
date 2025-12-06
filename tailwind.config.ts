@@ -74,6 +74,10 @@ export default {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+        assistant: {
+          accent: "hsl(var(--assistant-accent))",
+          "accent-foreground": "hsl(var(--assistant-accent-foreground))",
+        },
       },
       boxShadow: {
         sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
