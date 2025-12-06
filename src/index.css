@@ -103,6 +103,17 @@
     @apply border-border;
   }
 
+  /* Remove all focus rings */
+  *:focus {
+    outline: none !important;
+  }
+  
+  *:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    ring: none !important;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, sans-serif;
