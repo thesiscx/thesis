@@ -35,13 +35,17 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const fetchProfile = async (userId: string) => {
+    console.log(`[Auth] fetchProfile: querying profile for ${userId.slice(0, 8)}...`);
     const { data, error } = await supabase
       .from("profiles")
       .select("id, company_slug, company_name, full_name, onboarding_completed")
       .eq("id", userId)
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error("[Auth] fetchProfile error:", error.message);
+    } else if (data) {
+      console.log(`[Auth] fetchProfile success: companyName=${data.company_name}, fullName=${data.full_name}`);
       setProfile(data);
     }
     setProfileLoaded(true);
@@ -54,35 +58,50 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // 1. Get initial session with performance logging
-    const start = performance.now();
-    console.log("[Auth] Starting getSession...");
-    
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log(`[Auth] getSession completed in ${(performance.now() - start).toFixed(0)}ms, hasSession: ${!!session}`);
+    const initAuth = async () => {
+      const start = performance.now();
+      console.log("[Auth] Starting getSession...");
       
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const profileStart = performance.now();
-        fetchProfile(session.user.id).then(() => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log(`[Auth] getSession completed in ${(performance.now() - start).toFixed(0)}ms, hasSession: ${!!session}, userId: ${session?.user?.id?.slice(0, 8) || 'none'}`);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const profileStart = performance.now();
+          console.log(`[Auth] Starting fetchProfile for user: ${session.user.id.slice(0, 8)}...`);
+          await fetchProfile(session.user.id);
           console.log(`[Auth] fetchProfile completed in ${(performance.now() - profileStart).toFixed(0)}ms`);
-        });
-      } else {
+        } else {
+          console.log("[Auth] No session, setting profileLoaded=true");
+          setProfileLoaded(true);
+        }
+      } catch (error) {
+        console.error("[Auth] Error in initAuth:", error);
         setProfileLoaded(true);
+      } finally {
+        console.log("[Auth] Setting isLoading=false");
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    };
+
+    initAuth();
 
     // 2. Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log(`[Auth] onAuthStateChange: event=${event}, hasSession=${!!session}`);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           // Defer profile fetch to avoid deadlock
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          setTimeout(() => {
+            console.log(`[Auth] Deferred fetchProfile for user: ${session.user.id.slice(0, 8)}...`);
+            fetchProfile(session.user.id);
+          }, 0);
         } else {
           setProfile(null);
           setProfileLoaded(true);

@@ -203,8 +203,12 @@ export default function Dashboard() {
     setCreateRoundOpen(true);
   };
 
+  // Log render state
+  console.log(`[Dashboard] Render: authLoading=${authLoading}, profileLoaded=${profileLoaded}, companyName=${companyName}, userId=${user?.id?.slice(0, 8) || 'none'}`);
+
   // Only block on auth - rounds can load progressively
   if (authLoading || !profileLoaded) {
+    console.log(`[Dashboard] Showing skeleton: authLoading=${authLoading}, profileLoaded=${profileLoaded}`);
     return (
       <div className="h-screen bg-background flex">
         <div className="flex-1 flex flex-col">
