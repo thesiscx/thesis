@@ -62,7 +62,7 @@ export default function CircuitHeader({
   };
 
   return (
-    <header className="h-14 bg-background sticky top-0 z-50 flex items-center justify-between px-4 shrink-0 border-b border-border/50">
+    <header className="h-14 bg-background sticky top-0 z-50 flex items-center justify-between px-4 shrink-0">
       <div className="flex items-center gap-1">
         {/* Segment 1: Company Logo + Name */}
         <DropdownMenu>

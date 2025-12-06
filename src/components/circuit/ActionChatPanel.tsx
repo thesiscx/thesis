@@ -180,26 +180,68 @@ function PublishFlow({
     }
   };
 
+  // Generate a public access key for the share link
+  const [publicAccessKey, setPublicAccessKey] = useState<string | null>(null);
+  
+  // Generate public access key on mount
+  useEffect(() => {
+    const generatePublicKey = async () => {
+      if (!roundId || !roundSlug) return;
+      try {
+        const { data } = await supabase.functions.invoke("generate-access-key", {
+          body: { roundId, tool: "memo" }
+        });
+        if (data?.key) {
+          setPublicAccessKey(data.key);
+        }
+      } catch (e) {
+        console.error("Failed to generate public key:", e);
+      }
+    };
+    if (!isHistorical) {
+      generatePublicKey();
+    }
+  }, [roundId, roundSlug, isHistorical]);
+
   return (
     <FlowCard title="Memo Published" isHistorical={isHistorical}>
       <div className="space-y-3">
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Public Share Link</Label>
           {publicUrl ? (
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs bg-background px-3 py-2 rounded border border-border break-all">
-                {publicUrl}
-              </code>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={() => copyToClipboard(publicUrl)}
-                className="shrink-0 h-8 w-8 p-0"
-                disabled={isHistorical}
-              >
-                <Copy className="w-3.5 h-3.5" />
-              </Button>
-            </div>
+            <>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-background px-3 py-2 rounded border border-border break-all">
+                  {publicUrl}
+                </code>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => copyToClipboard(publicUrl)}
+                  className="shrink-0 h-8 w-8 p-0"
+                  disabled={isHistorical}
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+              {publicAccessKey && (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex items-center gap-1.5 text-xs text-muted-foreground bg-background px-3 py-2 rounded border border-border">
+                    <Key className="w-3 h-3" />
+                    <span>Access Key: {publicAccessKey}</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => copyToClipboard(publicAccessKey)}
+                    className="shrink-0 h-8 w-8 p-0"
+                    disabled={isHistorical}
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-xs text-muted-foreground">Complete your profile settings to enable public sharing.</p>
           )}
@@ -1018,11 +1060,13 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     setProcessingAction("publish");
     
     try {
+      // Create a new card for this publish action - mark it complete immediately
+      // so it shows as a historical card, not an active one being edited
       const cardId = await createFlowCard("publish");
       if (cardId) {
-        await updateFlowCard(cardId, 0, {}, false);
-        setActiveFlowId(cardId);
+        await updateFlowCard(cardId, 0, {}, false); // Not complete - it's an interactive publish card
       }
+      // Don't set activeFlowId - each publish creates its own card that persists
       await addMessage("result", "Your memo has been published to your share subdomain.");
       toast({ title: "Published successfully" });
     } catch (error) {
@@ -1456,7 +1500,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             label: "Publish", 
             icon: Globe, 
             onClick: handlePublish,
-            disabled: isButtonDisabled("publish") || hasActiveFlow("publish")
+            disabled: isButtonDisabled("publish") // Publish always creates new card, no hasActiveFlow check
           },
         ];
       case "docket":
@@ -1473,7 +1517,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             label: "Publish", 
             icon: Globe, 
             onClick: handlePublish,
-            disabled: isButtonDisabled("publish") || hasActiveFlow("publish")
+            disabled: isButtonDisabled("publish") // Publish always creates new card, no hasActiveFlow check
           },
         ];
       case "pipeline":
@@ -1483,6 +1527,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             label: "Add Investor", 
             icon: UserPlus, 
             onClick: handleAddInvestor,
+            // Only disable if processing or if there's an active incomplete add-investor flow
             disabled: !hasOpenRound || isButtonDisabled("add-investor") || hasActiveFlow("add-investor")
           },
         ];
