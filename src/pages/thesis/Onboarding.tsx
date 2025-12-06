@@ -29,6 +29,9 @@ export default function Onboarding() {
   
   const [step, setStep] = useState<OnboardingStep>("company");
   
+  // User details
+  const [fullName, setFullName] = useState("");
+  
   // Company details
   const [companyName, setCompanyName] = useState("");
   const [companySlug, setCompanySlug] = useState("");
@@ -172,7 +175,7 @@ export default function Onboarding() {
   };
 
   const handleCompanySubmit = async () => {
-    if (!companyName.trim() || !companySlug || slugStatus !== "available") return;
+    if (!fullName.trim() || !companyName.trim() || !companySlug || slugStatus !== "available") return;
     if (!user) return;
 
     setIsUploading(true);
@@ -191,10 +194,11 @@ export default function Onboarding() {
         }
       }
 
-      // Update profile with company details including slug
+      // Update profile with user and company details
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
+          full_name: fullName.trim(),
           company_name: companyName.trim(),
           company_slug: companySlug,
           website: website.trim() || null,
@@ -277,13 +281,23 @@ export default function Onboarding() {
 
             <div className="space-y-6 bg-card border border-border rounded-lg p-6">
               <div className="space-y-2">
+                <Label htmlFor="fullName">Your name *</Label>
+                <Input
+                  id="fullName"
+                  placeholder="John Smith"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="companyName">Company name *</Label>
                 <Input
                   id="companyName"
                   placeholder="Acme Inc."
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  autoFocus
                 />
               </div>
 
@@ -395,7 +409,7 @@ export default function Onboarding() {
               <Button 
                 className="w-full" 
                 onClick={handleCompanySubmit}
-                disabled={!companyName.trim() || !companySlug || slugStatus !== "available" || isUploading}
+                disabled={!fullName.trim() || !companyName.trim() || !companySlug || slugStatus !== "available" || isUploading}
               >
                 {isUploading ? (
                   <>
