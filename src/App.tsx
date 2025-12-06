@@ -155,6 +155,9 @@ const App = () => {
             
             {/* Protected founder routes - WITH AUTH CONTEXT */}
             <Route element={<FounderAuthLayout />}>
+              {/* Smart redirect for authenticated users - must be inside auth context */}
+              <Route path="/app" element={<><RouteLogger name="app" /><ProtectedRoute routeName="app"><SmartRedirect /></ProtectedRoute></>} />
+              
               {/* Admin Routes */}
               <Route path="/admin/login" element={<><RouteLogger name="admin/login" /><AdminLogin /></>} />
               <Route path="/admin" element={<><RouteLogger name="admin" /><Admin /></>} />
