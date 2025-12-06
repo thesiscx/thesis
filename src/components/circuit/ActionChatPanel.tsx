@@ -25,6 +25,10 @@ interface ActionMessage {
   content: string;
   metadata?: Record<string, unknown>;
   created_at: string;
+  flow_type?: string | null;
+  flow_step?: number | null;
+  flow_data?: Record<string, unknown> | null;
+  flow_complete?: boolean | null;
 }
 
 interface ActionChatPanelProps {
@@ -802,6 +806,30 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     gcTime: 1000 * 60 * 30,
   });
 
+  // Restore active flow from database on mount
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Find the most recent incomplete flow card
+      const activeFlowMsg = [...messages]
+        .reverse()
+        .find(m => m.flow_type && m.flow_complete !== true);
+      
+      if (activeFlowMsg && activeFlowMsg.flow_type) {
+        setActiveFlow(activeFlowMsg.flow_type);
+        const step = activeFlowMsg.flow_step ?? 0;
+        const data = (activeFlowMsg.flow_data || {}) as Record<string, any>;
+        
+        if (activeFlowMsg.flow_type === "draft-memo") {
+          setDraftStep(step);
+          setDraftData(data as DraftData);
+        } else if (activeFlowMsg.flow_type === "setup-terms") {
+          setTermsStep(step);
+          setTermsData(data as TermsData);
+        }
+      }
+    }
+  }, [messages]);
+
   // Display messages with welcome fallback
   const displayMessages = messages.length === 0 
     ? [{ id: "welcome", message_type: "system" as const, content: WELCOME_MESSAGES[pageKey], created_at: new Date().toISOString() }]
@@ -812,6 +840,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [displayMessages, activeFlow]);
+
+  // Track current flow message ID for updates
+  const [currentFlowMessageId, setCurrentFlowMessageId] = useState<string | null>(null);
 
   const addMessage = async (type: ActionMessage["message_type"], content: string, metadata?: Json) => {
     if (!user) return;
@@ -827,6 +858,44 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     queryClient.invalidateQueries({ queryKey: ["action-messages", user.id, pageKey] });
   };
 
+  const saveFlowCard = async (flowType: string, step: number, data: Record<string, any>, complete: boolean) => {
+    if (!user) return null;
+    
+    if (currentFlowMessageId) {
+      // Update existing flow card
+      await supabase
+        .from("action_messages")
+        .update({
+          flow_step: step,
+          flow_data: data,
+          flow_complete: complete,
+        })
+        .eq("id", currentFlowMessageId);
+    } else {
+      // Create new flow card
+      const { data: inserted } = await supabase
+        .from("action_messages")
+        .insert({
+          user_id: user.id,
+          page_key: pageKey,
+          message_type: "card",
+          content: `Started ${flowType} flow`,
+          flow_type: flowType,
+          flow_step: step,
+          flow_data: data,
+          flow_complete: complete,
+        })
+        .select("id")
+        .single();
+      
+      if (inserted) {
+        setCurrentFlowMessageId(inserted.id);
+      }
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ["action-messages", user.id, pageKey] });
+  };
+
   // Actions
   const handleOpenRound = async () => {
     if (hasOpenRound) {
@@ -838,12 +907,14 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
-  const handleCloseRound = () => {
+  const handleCloseRound = async () => {
     if (!hasOpenRound || !openRound) {
       addMessage("system", "You don't have an open round to close.");
       return;
     }
+    setCurrentFlowMessageId(null);
     setActiveFlow("close-round");
+    await saveFlowCard("close-round", 0, {}, false);
   };
 
   const confirmCloseRound = async (reason: string, notes: string) => {
@@ -865,6 +936,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
 
       if (error) throw error;
 
+      await saveFlowCard("close-round", 1, { reason, notes }, true);
       await addMessage("result", `Round "${openRound.name}" has been closed successfully.`);
       setFlowComplete(prev => ({ ...prev, "close-round": true }));
       queryClient.invalidateQueries({ queryKey: ["rounds"] });
@@ -906,10 +978,12 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
-  const handleDraftMemo = () => {
+  const handleDraftMemo = async () => {
     setDraftStep(0);
     setDraftData({});
+    setCurrentFlowMessageId(null);
     setActiveFlow("draft-memo");
+    await saveFlowCard("draft-memo", 0, {}, false);
   };
 
   const handleDraftNext = async (data: Record<string, string>) => {
@@ -920,31 +994,77 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     setDraftData(newDraftData);
     
     if (draftStep < totalSteps - 1) {
-      setDraftStep(draftStep + 1);
+      const nextStep = draftStep + 1;
+      setDraftStep(nextStep);
+      await saveFlowCard("draft-memo", nextStep, newDraftData, false);
     } else {
-      // Complete - generate memo content and update
+      // Complete - call AI to generate memo content
       setIsProcessing(true);
       try {
-        const memoContent = generateMemoContent(newDraftData);
+        // Prepare data for AI
+        const aiPayload = {
+          companyName: newDraftData.company_name,
+          roundType: openRound?.round_type || "seed",
+          targetRaise: openRound?.target_raise?.toString() || "",
+          problem: newDraftData.problem,
+          solution: newDraftData.solution,
+          highlights: [
+            newDraftData.key_metrics,
+            newDraftData.tam ? `TAM: ${newDraftData.tam}` : "",
+            newDraftData.founders,
+          ].filter(Boolean).join("\n\n"),
+        };
+
+        await addMessage("system", "Generating your memo with AI... This may take a moment.");
         
+        // Call the AI edge function
+        const { data: aiResponse, error: aiError } = await supabase.functions.invoke("draft-memo-ai", {
+          body: { draftData: aiPayload }
+        });
+
+        if (aiError) throw aiError;
+        
+        if (!aiResponse?.content) {
+          throw new Error("No content returned from AI");
+        }
+
         // Call the callback to update memo content
         if (onUpdateMemoContent) {
-          onUpdateMemoContent(memoContent);
+          onUpdateMemoContent(aiResponse.content);
         }
         
+        await saveFlowCard("draft-memo", totalSteps, newDraftData, true);
+        await addMessage("result", "Your memo has been drafted by AI. Click 'Edit' to review and customize it.");
+        setFlowComplete(prev => ({ ...prev, "draft-memo": true }));
+        toast({ title: "Memo drafted with AI" });
+      } catch (error) {
+        console.error("AI memo generation error:", error);
+        
+        // Fallback to template-based generation
+        const fallbackContent = generateMemoContent(newDraftData);
+        if (onUpdateMemoContent) {
+          onUpdateMemoContent(fallbackContent);
+        }
+        
+        await saveFlowCard("draft-memo", totalSteps, newDraftData, true);
         await addMessage("result", "Your memo structure has been generated. Click 'Edit' to customize your memo.");
         setFlowComplete(prev => ({ ...prev, "draft-memo": true }));
-        toast({ title: "Memo draft generated" });
+        toast({ 
+          title: "Memo template generated", 
+          description: "AI generation failed, using template instead." 
+        });
       } finally {
         setIsProcessing(false);
       }
     }
   };
 
-  const handleSetupTerms = () => {
+  const handleSetupTerms = async () => {
     setTermsStep(0);
     setTermsData({});
+    setCurrentFlowMessageId(null);
     setActiveFlow("setup-terms");
+    await saveFlowCard("setup-terms", 0, {}, false);
   };
 
   const handleTermsNext = async (data: Record<string, any>) => {
@@ -955,7 +1075,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     setTermsData(newTermsData);
     
     if (termsStep < totalSteps - 1) {
-      setTermsStep(termsStep + 1);
+      const nextStep = termsStep + 1;
+      setTermsStep(nextStep);
+      await saveFlowCard("setup-terms", nextStep, newTermsData, false);
     } else {
       // Complete - save terms to database
       setIsProcessing(true);
@@ -977,6 +1099,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
 
         if (error) throw error;
         
+        await saveFlowCard("setup-terms", totalSteps, newTermsData, true);
         await addMessage("result", "Your round terms have been saved. You can now create dockets for investors.");
         setFlowComplete(prev => ({ ...prev, "setup-terms": true }));
         queryClient.invalidateQueries({ queryKey: ["round-terms"] });
@@ -993,8 +1116,10 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
-  const handleAddInvestor = () => {
+  const handleAddInvestor = async () => {
+    setCurrentFlowMessageId(null);
     setActiveFlow("add-investor");
+    await saveFlowCard("add-investor", 0, {}, false);
   };
 
   const confirmAddInvestor = async (data: InvestorFormData) => {
@@ -1022,6 +1147,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
 
       if (error) throw error;
 
+      await saveFlowCard("add-investor", 1, data, true);
       await addMessage("result", `${data.name} has been added to your pipeline.`);
       setFlowComplete(prev => ({ ...prev, "add-investor": true }));
       queryClient.invalidateQueries({ queryKey: ["investors"] });
