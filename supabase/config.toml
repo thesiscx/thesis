@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.check-user-exists]
 verify_jwt = false
+
+[functions.circuit-chat]
+verify_jwt = false
