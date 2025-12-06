@@ -949,8 +949,12 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     : messages;
 
   useEffect(() => {
+    // ScrollArea uses a viewport element inside, we need to find it
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const viewport = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
     }
   }, [displayMessages, activeFlowId]);
 
