@@ -15,7 +15,7 @@ export default function ThesisDocket() {
   const { rounds, isLoading: roundsLoading } = useRounds();
   const { investors } = useInvestors();
 
-  const isGlobal = variantSlug === "global";
+  const isGlobal = !variantSlug || variantSlug === "global";
 
   if (roundsLoading) {
     return (

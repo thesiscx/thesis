@@ -58,7 +58,7 @@ export default function ThesisMemo() {
       if (roundError) throw roundError;
 
       // Check if memo already exists
-      const isGlobal = variantSlug === "global";
+      const isGlobal = !variantSlug || variantSlug === "global";
       let existingMemoId = memo?.id;
 
       if (!existingMemoId) {

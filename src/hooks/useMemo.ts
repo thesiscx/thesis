@@ -34,7 +34,7 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
   
   const debouncedPending = useDebounce(pendingContent, 1000);
 
-  const isGlobal = variantSlug === "global";
+  const isGlobal = !variantSlug || variantSlug === "global";
 
   // CRITICAL: Reset all state when switching rounds/variants
   useEffect(() => {
