@@ -6,7 +6,7 @@ export default function AssistantSidebar() {
     <aside className="w-96 h-screen border-l border-border bg-background flex flex-col shrink-0">
       {/* Header */}
       <div className="h-14 border-b border-border flex items-center px-4 shrink-0">
-        <img src={circuitLogo} alt="Circuit" className="h-6" />
+        <img src={circuitLogo} alt="Circuit" className="h-4" />
       </div>
 
       {/* Content */}
