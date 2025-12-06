@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy, Settings, UserPlus } from "lucide-react";
+import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy, Settings, UserPlus, Pencil } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import type { Json } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,8 @@ interface ActionChatPanelProps {
   roundSlug?: string;
   onOpenRound?: () => void;
   onUpdateMemoContent?: (content: any) => void;
+  hasMemoContent?: boolean;
+  currentMemoContent?: any;
 }
 
 // Card-based flow component wrapper - no close button, persistent
@@ -814,7 +817,7 @@ const WELCOME_MESSAGES: Record<PageKey, string> = {
   pipeline: "Track your investor pipeline here. Add investors and manage your fundraising relationships.",
 };
 
-export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRound, onUpdateMemoContent }: ActionChatPanelProps) {
+export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRound, onUpdateMemoContent, hasMemoContent, currentMemoContent }: ActionChatPanelProps) {
   const { toast } = useToast();
   const { user, profile, isLoading: authLoading } = useFounderAuth();
   const queryClient = useQueryClient();
@@ -833,6 +836,10 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   const [termsStep, setTermsStep] = useState(0);
   const [termsData, setTermsData] = useState<TermsData>({});
   const [generatedLinks, setGeneratedLinks] = useState<Record<string, { url: string; key: string }>>({});
+  
+  // Edit memo dialog state
+  const [editMemoOpen, setEditMemoOpen] = useState(false);
+  const [editMemoPrompt, setEditMemoPrompt] = useState("");
 
   // Fetch messages from DB
   const { data: messages = [] } = useQuery({
@@ -1031,12 +1038,68 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   };
 
   const handleDraftMemo = async () => {
+    // If memo already exists, open edit dialog instead
+    if (hasMemoContent) {
+      setEditMemoOpen(true);
+      return;
+    }
+    
     setDraftStep(0);
     setDraftData({});
     hasInitialized.current = true; // Prevent re-initialization
     const cardId = await createFlowCard("draft-memo");
     if (cardId) {
       setActiveFlowId(cardId);
+    }
+  };
+
+  const handleEditMemoSubmit = async () => {
+    if (!editMemoPrompt.trim() || !currentMemoContent) return;
+    
+    setIsProcessing(true);
+    setEditMemoOpen(false);
+    
+    // Add user message to chat
+    await addMessage("user", editMemoPrompt);
+    await addMessage("confirmation", "Editing your memo...");
+    
+    try {
+      // Call the AI edge function with edit instructions
+      const { data: aiResponse, error: aiError } = await supabase.functions.invoke("draft-memo-ai", {
+        body: { 
+          editMode: true,
+          editPrompt: editMemoPrompt,
+          currentContent: currentMemoContent,
+        }
+      });
+
+      if (aiError) {
+        console.error("[EditMemo] AI function error:", aiError);
+        throw aiError;
+      }
+      
+      if (!aiResponse?.content) {
+        throw new Error("No content returned from AI");
+      }
+
+      // Update memo content
+      if (onUpdateMemoContent) {
+        await onUpdateMemoContent(aiResponse.content);
+      }
+      
+      await addMessage("result", "Your memo has been updated based on your instructions.");
+      toast({ title: "Memo updated" });
+    } catch (error) {
+      console.error("[EditMemo] Error:", error);
+      await addMessage("result", "Failed to edit memo. Please try again.");
+      toast({ 
+        title: "Failed to edit memo", 
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsProcessing(false);
+      setEditMemoPrompt("");
     }
   };
 
@@ -1383,8 +1446,8 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
         return [
           { 
             key: "draft-memo",
-            label: "Draft Memo", 
-            icon: FileEdit, 
+            label: hasMemoContent ? "Edit Draft" : "Draft Memo", 
+            icon: hasMemoContent ? Pencil : FileEdit, 
             onClick: handleDraftMemo,
             disabled: isButtonDisabled("draft-memo") || hasActiveFlow("draft-memo")
           },
@@ -1529,6 +1592,42 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
           ))}
         </div>
       </div>
+      {/* Edit Memo Dialog */}
+      <Dialog open={editMemoOpen} onOpenChange={setEditMemoOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Memo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Describe the changes you'd like to make to your memo.
+            </p>
+            <Textarea
+              value={editMemoPrompt}
+              onChange={(e) => setEditMemoPrompt(e.target.value)}
+              placeholder="e.g., Make the problem section more concise, add more traction metrics, strengthen the competitive advantages..."
+              rows={4}
+              className="resize-none"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditMemoOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleEditMemoSubmit} 
+              disabled={!editMemoPrompt.trim() || isProcessing}
+            >
+              {isProcessing ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Pencil className="w-4 h-4 mr-2" />
+              )}
+              Apply Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

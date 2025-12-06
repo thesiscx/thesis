@@ -29,14 +29,55 @@ serve(async (req) => {
   }
 
   try {
-    const { draftData } = await req.json();
+    const body = await req.json();
+    const { draftData, editMode, editPrompt, currentContent } = body;
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert investment memo writer. You help founders create compelling, professional investor memos.
+    let systemPrompt: string;
+    let userPrompt: string;
+
+    if (editMode && editPrompt && currentContent) {
+      // Edit mode - modify existing memo based on user instructions
+      console.log('Edit mode: modifying existing memo');
+      
+      systemPrompt = `You are an expert investment memo editor. You help founders refine and improve their investor memos.
+
+Your task is to modify an existing investor memo based on the founder's specific instructions.
+
+IMPORTANT FORMATTING RULES:
+1. Return ONLY valid JSON - no markdown, no code blocks, no explanation
+2. The JSON must be a TipTap document structure exactly like the input
+3. Make only the changes requested by the user
+4. Preserve the overall structure and sections of the memo
+5. Maintain a confident, professional tone appropriate for sophisticated investors
+6. Keep content that wasn't mentioned in the edit request
+
+Return the modified memo as a TipTap JSON document with this exact structure:
+{
+  "type": "doc",
+  "content": [
+    { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "Section Title" }] },
+    { "type": "paragraph", "content": [{ "type": "text", "text": "Section content..." }] }
+  ]
+}`;
+
+      userPrompt = `Here is the current memo content:
+
+${JSON.stringify(currentContent, null, 2)}
+
+User's edit request:
+${editPrompt}
+
+Apply the requested changes to the memo while preserving its overall structure. Return the complete updated memo as a TipTap JSON document.`;
+    } else {
+      // Draft mode - create new memo from scratch
+      console.log('Draft mode: creating new memo');
+      
+      systemPrompt = `You are an expert investment memo writer. You help founders create compelling, professional investor memos.
 
 Your task is to generate a complete investor memo with 15 sections based on the information provided by the founder.
 
@@ -60,44 +101,45 @@ Return the memo as a TipTap JSON document with this exact structure:
   ]
 }`;
 
-    const userPrompt = `Generate a complete investor memo for the following company:
+      userPrompt = `Generate a complete investor memo for the following company:
 
-Company Name: ${draftData.companyName || 'Company'}
-One-Liner: ${draftData.oneLiner || 'Not provided'}
-Founded: ${draftData.founded || 'Not specified'}
-Round Type: ${draftData.roundType || 'Seed'}
-Target Raise: ${draftData.targetRaise ? `$${Number(draftData.targetRaise).toLocaleString()}` : 'Not specified'}
+Company Name: ${draftData?.companyName || 'Company'}
+One-Liner: ${draftData?.oneLiner || 'Not provided'}
+Founded: ${draftData?.founded || 'Not specified'}
+Round Type: ${draftData?.roundType || 'Seed'}
+Target Raise: ${draftData?.targetRaise ? `$${Number(draftData.targetRaise).toLocaleString()}` : 'Not specified'}
 
 Problem Statement:
-${draftData.problem || 'The founder will provide the problem statement.'}
+${draftData?.problem || 'The founder will provide the problem statement.'}
 
 Solution:
-${draftData.solution || 'The founder will provide the solution details.'}
+${draftData?.solution || 'The founder will provide the solution details.'}
 
 Total Addressable Market (TAM):
-${draftData.tam || 'Not specified'}
+${draftData?.tam || 'Not specified'}
 
 Market Insight (Why Now):
-${draftData.marketInsight || 'The founder will provide timing insights.'}
+${draftData?.marketInsight || 'The founder will provide timing insights.'}
 
 Revenue Model:
-${draftData.revenueModel || 'Not specified'}
+${draftData?.revenueModel || 'Not specified'}
 
 Pricing:
-${draftData.pricing || 'Not specified'}
+${draftData?.pricing || 'Not specified'}
 
 Key Metrics & Traction:
-${draftData.keyMetrics || 'The founder will provide traction metrics.'}
+${draftData?.keyMetrics || 'The founder will provide traction metrics.'}
 
 Founding Team:
-${draftData.founders || 'The founder will provide team details.'}
+${draftData?.founders || 'The founder will provide team details.'}
 
 Use of Funds:
-${draftData.useOfFunds || 'The founder will provide use of funds.'}
+${draftData?.useOfFunds || 'The founder will provide use of funds.'}
 
 Generate a professional, compelling investor memo with all 15 sections. Use the specific details provided, and where information is not given, write compelling placeholder content that guides the founder on what to add.`;
+    }
 
-    console.log('Calling Lovable AI for memo generation...');
+    console.log('Calling Lovable AI...');
     
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -163,6 +205,17 @@ Generate a professional, compelling investor memo with all 15 sections. Use the 
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', parseError);
       console.log('Raw AI content:', aiContent.substring(0, 500));
+      
+      // For edit mode, return the original content on parse failure
+      if (editMode && currentContent) {
+        console.log('Edit mode parse failure - returning original content');
+        return new Response(JSON.stringify({ 
+          content: currentContent,
+          error: 'Failed to parse AI response, original content preserved'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       
       // Fallback: generate a basic structure with the AI text as content
       memoContent = {

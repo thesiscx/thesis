@@ -124,6 +124,10 @@ export default function ThesisMemo() {
     );
   }
 
+  // Check if memo has content
+  const hasMemoContent = Boolean(localContent || memo?.content);
+  const currentMemoContent = localContent ?? memo?.content;
+
   return (
     <>
       <CircuitLayout
@@ -131,6 +135,8 @@ export default function ThesisMemo() {
         investors={investors}
         onCreateRound={() => setCreateRoundOpen(true)}
         onUpdateMemoContent={handleUpdateMemoContent}
+        hasMemoContent={hasMemoContent}
+        currentMemoContent={currentMemoContent}
       >
         <div className="flex h-[calc(100vh-3.5rem)]">
           {/* Left Sidebar - TOC */}
