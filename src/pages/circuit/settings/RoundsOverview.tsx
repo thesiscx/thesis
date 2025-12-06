@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import CloseRoundDialog from "@/components/circuit/CloseRoundDialog";
+import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
 import { 
   ArrowLeft, 
   Loader2, 
@@ -32,7 +33,8 @@ import {
   Building2,
   CreditCard,
   Archive,
-  RotateCcw
+  RotateCcw,
+  Plus
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -863,6 +865,7 @@ export default function RoundsOverview() {
   const { rounds, isLoading: roundsLoading, openRound, closeRound, reopenRound, hasOpenRound } = useRounds();
   
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
 
   const closedRounds = rounds.filter(r => r.state === "closed");
@@ -971,16 +974,14 @@ export default function RoundsOverview() {
             </div>
           )}
 
-          {/* Empty state */}
-          {!openRound && closedRounds.length === 0 && !roundsLoading && (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground mb-4">No rounds created yet</p>
-                <Button onClick={() => navigate("/circuit")}>
-                  Go to Stage to Open a Round
-                </Button>
-              </CardContent>
-            </Card>
+          {/* Open New Round button when no active round */}
+          {!openRound && !roundsLoading && (
+            <div className="pt-4">
+              <Button onClick={() => setCreateDialogOpen(true)} className="w-full gap-2">
+                <Plus className="w-4 h-4" />
+                Open New Round
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -991,6 +992,12 @@ export default function RoundsOverview() {
         onOpenChange={setCloseDialogOpen}
         roundName={selectedRound?.name || ""}
         onConfirm={confirmCloseRound}
+      />
+
+      {/* Create Round Dialog */}
+      <CreateRoundDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
       />
     </div>
   );
