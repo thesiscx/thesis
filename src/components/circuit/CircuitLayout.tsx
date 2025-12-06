@@ -55,23 +55,25 @@ export default function CircuitLayout({
   };
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header - clean, no border */}
-        <CircuitHeader
-          rounds={rounds}
-          activeRoundSlug={roundSlug}
-          activeTool={activeTool}
-          onRoundChange={handleRoundChange}
-          onToolChange={handleToolChange}
-          onCreateRound={onCreateRound}
-        />
+    <div className="h-screen bg-[hsl(var(--canvas))] flex overflow-hidden">
+      {/* Main content area - white rounded box on cream background */}
+      <div className="flex-1 flex flex-col overflow-hidden p-3 pr-0">
+        <div className="flex-1 flex flex-col bg-background rounded-2xl overflow-hidden shadow-sm">
+          {/* Header - clean, no border */}
+          <CircuitHeader
+            rounds={rounds}
+            activeRoundSlug={roundSlug}
+            activeTool={activeTool}
+            onRoundChange={handleRoundChange}
+            onToolChange={handleToolChange}
+            onCreateRound={onCreateRound}
+          />
 
-        {/* Main content - clean background */}
-        <main className="flex-1 overflow-auto bg-background">
-          {children}
-        </main>
+          {/* Main content */}
+          <main className="flex-1 overflow-auto">
+            {children}
+          </main>
+        </div>
       </div>
 
       {/* Right Sidebar - all actions go through here */}
