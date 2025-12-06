@@ -108,7 +108,7 @@ export default function CircuitHeader({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-64">
             {/* Header with logo and company name */}
-            <div className="px-3 py-4 flex flex-col items-center gap-2 border-b mb-1">
+            <div className="px-3 py-4 flex flex-col items-center gap-2">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
               ) : (
@@ -117,15 +117,27 @@ export default function CircuitHeader({
                 </div>
               )}
               <span className="font-medium text-sm">{companyName || "My Company"}</span>
-              <span className="text-xs text-muted-foreground font-mono">
-                {customDomain || "investor.company.com"}
-              </span>
             </div>
 
-            <DropdownMenuItem onClick={() => navigate("/circuit/settings/domain")}>
-              <Globe className="w-4 h-4 mr-2" />
-              Custom Domain
-            </DropdownMenuItem>
+            {/* Custom domain box */}
+            <div 
+              className="mx-2 mb-2 px-3 py-2 rounded-md border bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => navigate("/circuit/settings/domain")}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-sm font-mono">
+                    {customDomain || "investor.company.com"}
+                  </span>
+                </div>
+                {!customDomain && (
+                  <span className="text-[10px] text-muted-foreground">Not set</span>
+                )}
+              </div>
+            </div>
+
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
               <Building2 className="w-4 h-4 mr-2" />
               Company Settings
