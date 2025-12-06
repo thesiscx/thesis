@@ -359,6 +359,7 @@ export default function Dashboard() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 px-2 gap-1.5 max-w-[180px]">
+                  <img src="/robomart-logo-new.svg" alt="Robomart" className="h-4 mr-1.5" />
                   <span className="truncate font-medium">{companyName || "My Company"}</span>
                   <ChevronsUpDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
                 </Button>
@@ -366,7 +367,7 @@ export default function Dashboard() {
               <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuItem onClick={() => navigate("/circuit")}>
                   <Home className="w-4 h-4 mr-2" />
-                  Dashboard
+                  Stage
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
                   <Settings className="w-4 h-4 mr-2" />
@@ -381,7 +382,7 @@ export default function Dashboard() {
             </DropdownMenu>
 
             <span className="text-muted-foreground/50">/</span>
-            <span className="text-sm text-muted-foreground">Dashboard</span>
+            <span className="text-sm text-muted-foreground pl-1">Stage</span>
           </div>
         </header>
 
@@ -509,7 +510,7 @@ export default function Dashboard() {
       </div>
 
       {/* Right Sidebar */}
-      <AssistantSidebar />
+      <AssistantSidebar pageKey="stage" />
     </div>
   );
 }

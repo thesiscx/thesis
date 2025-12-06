@@ -1,7 +1,19 @@
 import circuitLogo from "@/assets/circuit-logo.png";
-import AIChatPanel from "./AIChatPanel";
+import ActionChatPanel from "./ActionChatPanel";
 
-export default function AssistantSidebar() {
+type PageKey = "stage" | "memo" | "docket" | "pipeline";
+
+interface AssistantSidebarProps {
+  pageKey?: PageKey;
+  roundId?: string;
+  roundSlug?: string;
+}
+
+export default function AssistantSidebar({ 
+  pageKey = "stage", 
+  roundId, 
+  roundSlug 
+}: AssistantSidebarProps) {
   return (
     <aside className="w-96 h-screen border-l border-border bg-background flex flex-col shrink-0">
       {/* Header */}
@@ -11,7 +23,7 @@ export default function AssistantSidebar() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <AIChatPanel />
+        <ActionChatPanel pageKey={pageKey} roundId={roundId} roundSlug={roundSlug} />
       </div>
     </aside>
   );
