@@ -42,6 +42,7 @@ interface CircuitHeaderProps {
   rounds?: Round[];
   activeRoundSlug?: string;
   activeTool?: "pipeline" | "memo" | "docket" | "stage";
+  customDomain?: string | null;
   // Callbacks
   onRoundChange?: (round: Round) => void;
   onToolChange?: (tool: "pipeline" | "memo" | "docket") => void;
@@ -56,6 +57,7 @@ export default function CircuitHeader({
   rounds = [],
   activeRoundSlug,
   activeTool = "stage",
+  customDomain,
   onRoundChange,
   onToolChange,
   onCreateRound,
@@ -117,13 +119,14 @@ export default function CircuitHeader({
               <span className="font-medium text-sm">{companyName || "My Company"}</span>
             </div>
 
-            <DropdownMenuItem onClick={() => navigate("/circuit/settings/rounds")}>
-              <LayoutList className="w-4 h-4 mr-2" />
-              Rounds Overview
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/circuit/settings/domain")}>
-              <Globe className="w-4 h-4 mr-2" />
-              Custom Domain
+            <DropdownMenuItem onClick={() => navigate("/circuit/settings/domain")} className="flex-col items-start gap-0.5">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                Custom Domain
+              </div>
+              <span className="text-xs text-muted-foreground pl-6 font-mono">
+                {customDomain || "Not configured"}
+              </span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
               <Building2 className="w-4 h-4 mr-2" />
