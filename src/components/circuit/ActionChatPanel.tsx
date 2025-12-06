@@ -345,7 +345,8 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
 
       if (keyError) throw keyError;
 
-      const shareUrl = `${window.location.origin}/view/memo/${roundSlug}?key=${keyData.accessKey}`;
+      // Use /share/ prefix to avoid route conflicts with /circuit/ routes
+      const shareUrl = `${window.location.origin}/share/${roundSlug}/memo?key=${keyData.key}`;
       
       await addMessage("result", `Share link generated for ${investorName}:\n\n${shareUrl}`);
       

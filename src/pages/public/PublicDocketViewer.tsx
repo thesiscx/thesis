@@ -45,9 +45,12 @@ export default function PublicDocketViewer() {
 
   // Redirect if no session - WAIT for auth to finish loading first
   useEffect(() => {
+    console.log(`[PublicDocketViewer] Session check: isAuthLoading=${isAuthLoading}, hasSession=${!!investorSession}`);
+    
     if (!isAuthLoading && !investorSession) {
-      // Redirect to access key page, NOT root (which goes to founder routes)
-      navigate(`/${companySlug}/${roundCode}/docket`, { replace: true });
+      console.log(`[PublicDocketViewer] No session, redirecting to /share/${companySlug}/${roundCode}/docket`);
+      // Redirect to access key page (with /share/ prefix)
+      navigate(`/share/${companySlug}/${roundCode}/docket`, { replace: true });
     }
   }, [isAuthLoading, investorSession, companySlug, roundCode, navigate]);
 
@@ -125,8 +128,8 @@ export default function PublicDocketViewer() {
 
   const handleLogout = () => {
     clearInvestorSession();
-    // Redirect to access key page, NOT root
-    navigate(`/${companySlug}/${roundCode}/docket`, { replace: true });
+    // Redirect to access key page (with /share/ prefix)
+    navigate(`/share/${companySlug}/${roundCode}/docket`, { replace: true });
   };
 
   const getStatusBadge = (status: string) => {

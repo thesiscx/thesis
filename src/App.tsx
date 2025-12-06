@@ -1,10 +1,11 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 
 import Auth from "./pages/Auth";
 import InviteCode from "./pages/auth/InviteCode";
@@ -41,18 +42,33 @@ const persister = createSyncStoragePersister({
   key: 'circuit-query-cache',
 });
 
+// Route logger for debugging
+const RouteLogger = ({ name }: { name: string }) => {
+  const location = useLocation();
+  useEffect(() => {
+    console.log(`[Router] ✓ Matched route: "${name}" | Path: ${location.pathname}`);
+  }, [name, location.pathname]);
+  return null;
+};
+
 // Layout wrapper that provides FounderAuth context
-const FounderAuthLayout = () => (
-  <FounderAuthProvider>
-    <Outlet />
-  </FounderAuthProvider>
-);
+const FounderAuthLayout = () => {
+  console.log("[Router] FounderAuthLayout mounting...");
+  return (
+    <FounderAuthProvider>
+      <Outlet />
+    </FounderAuthProvider>
+  );
+};
 
 // Protected route wrapper for founders (must be used inside FounderAuthProvider)
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({ children, routeName }: { children: React.ReactNode; routeName: string }) => {
   const { user, isLoading } = useFounderAuth();
 
+  console.log(`[ProtectedRoute:${routeName}] isLoading=${isLoading}, hasUser=${!!user}`);
+
   if (isLoading) {
+    console.log(`[ProtectedRoute:${routeName}] Showing loading skeleton`);
     return (
       <div className="min-h-screen flex flex-col">
         <Skeleton className="h-14 w-full" />
@@ -68,83 +84,92 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) {
+    console.log(`[ProtectedRoute:${routeName}] No user, redirecting to /auth`);
     return <Navigate to="/auth" replace />;
   }
 
+  console.log(`[ProtectedRoute:${routeName}] User authenticated, rendering children`);
   return <>{children}</>;
 };
 
 // Layout wrapper that provides InvestorAuth context
-const InvestorAuthLayout = () => (
-  <InvestorAuthProvider>
-    <Outlet />
-  </InvestorAuthProvider>
-);
+const InvestorAuthLayout = () => {
+  console.log("[Router] InvestorAuthLayout mounting...");
+  return (
+    <InvestorAuthProvider>
+      <Outlet />
+    </InvestorAuthProvider>
+  );
+};
 
-const App = () => (
-  <PersistQueryClientProvider
-    client={queryClient}
-    persistOptions={{
-      persister,
-      maxAge: 1000 * 60 * 60 * 24,
-      dehydrateOptions: {
-        shouldDehydrateQuery: (query) => {
-          return query.meta?.persist !== false;
+const App = () => {
+  console.log("[App] Rendering, pathname:", window.location.pathname);
+  
+  return (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister,
+        maxAge: 1000 * 60 * 60 * 24,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            return query.meta?.persist !== false;
+          },
         },
-      },
-    }}
-  >
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Redirects - must come first */}
-          <Route path="/" element={<Navigate to="/circuit" replace />} />
-          <Route path="/login" element={<Navigate to="/auth" replace />} />
-          {/* Legacy redirect */}
-          <Route path="/thesis/*" element={<Navigate to="/circuit" replace />} />
-          
-          {/* Legal & Info - no auth needed */}
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/pricing" element={<Pricing />} />
-          
-          {/* Auth pages - NO AUTH CONTEXT, render instantly */}
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/auth/invite" element={<InviteCode />} />
-          <Route path="/auth/email" element={<EmailAuth />} />
-          
-          {/* Protected founder routes - WITH AUTH CONTEXT */}
-          <Route element={<FounderAuthLayout />}>
-            {/* Admin Routes */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<Admin />} />
+      }}
+    >
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Redirects - must come first */}
+            <Route path="/" element={<><RouteLogger name="redirect:/" /><Navigate to="/circuit" replace /></>} />
+            <Route path="/login" element={<><RouteLogger name="redirect:/login" /><Navigate to="/auth" replace /></>} />
+            {/* Legacy redirect */}
+            <Route path="/thesis/*" element={<><RouteLogger name="redirect:/thesis" /><Navigate to="/circuit" replace /></>} />
             
-            {/* Circuit pages (protected) */}
-            <Route path="/circuit" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/circuit/settings" element={<ProtectedRoute><FounderSettings /></ProtectedRoute>} />
-            <Route path="/circuit/:roundSlug/pipeline/:variantSlug" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
-            <Route path="/circuit/:roundSlug/memo/:variantSlug" element={<ProtectedRoute><CircuitMemo /></ProtectedRoute>} />
-            <Route path="/circuit/:roundSlug/docket/:variantSlug" element={<ProtectedRoute><CircuitDocket /></ProtectedRoute>} />
-          </Route>
-          
-          {/* Public Investor Routes - share one InvestorAuthProvider */}
-          <Route element={<InvestorAuthLayout />}>
-            <Route path="/:companySlug/:roundCode/memo" element={<InvestorAccess tool="memo" />} />
-            <Route path="/:companySlug/:roundCode/memo/:investorSlug" element={<InvestorAccess tool="memo" />} />
-            <Route path="/:companySlug/:roundCode/memo/:investorSlug/view" element={<PublicMemoViewer />} />
-            <Route path="/:companySlug/:roundCode/docket" element={<InvestorAccess tool="docket" />} />
-            <Route path="/:companySlug/:roundCode/docket/:investorSlug" element={<InvestorAccess tool="docket" />} />
-            <Route path="/:companySlug/:roundCode/docket/:investorSlug/view" element={<PublicDocketViewer />} />
-          </Route>
-          
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </PersistQueryClientProvider>
-);
+            {/* Legal & Info - no auth needed */}
+            <Route path="/terms" element={<><RouteLogger name="terms" /><Terms /></>} />
+            <Route path="/privacy" element={<><RouteLogger name="privacy" /><Privacy /></>} />
+            <Route path="/pricing" element={<><RouteLogger name="pricing" /><Pricing /></>} />
+            
+            {/* Auth pages - NO AUTH CONTEXT, render instantly */}
+            <Route path="/auth" element={<><RouteLogger name="auth" /><Auth /></>} />
+            <Route path="/auth/invite" element={<><RouteLogger name="auth/invite" /><InviteCode /></>} />
+            <Route path="/auth/email" element={<><RouteLogger name="auth/email" /><EmailAuth /></>} />
+            
+            {/* Protected founder routes - WITH AUTH CONTEXT */}
+            <Route element={<FounderAuthLayout />}>
+              {/* Admin Routes */}
+              <Route path="/admin/login" element={<><RouteLogger name="admin/login" /><AdminLogin /></>} />
+              <Route path="/admin" element={<><RouteLogger name="admin" /><Admin /></>} />
+              
+              {/* Circuit pages (protected) */}
+              <Route path="/circuit" element={<><RouteLogger name="circuit:dashboard" /><ProtectedRoute routeName="dashboard"><Dashboard /></ProtectedRoute></>} />
+              <Route path="/circuit/settings" element={<><RouteLogger name="circuit:settings" /><ProtectedRoute routeName="settings"><FounderSettings /></ProtectedRoute></>} />
+              <Route path="/circuit/:roundSlug/pipeline/:variantSlug" element={<><RouteLogger name="circuit:pipeline" /><ProtectedRoute routeName="pipeline"><Pipeline /></ProtectedRoute></>} />
+              <Route path="/circuit/:roundSlug/memo/:variantSlug" element={<><RouteLogger name="circuit:memo" /><ProtectedRoute routeName="memo"><CircuitMemo /></ProtectedRoute></>} />
+              <Route path="/circuit/:roundSlug/docket/:variantSlug" element={<><RouteLogger name="circuit:docket" /><ProtectedRoute routeName="docket"><CircuitDocket /></ProtectedRoute></>} />
+            </Route>
+            
+            {/* Public Investor Routes - WITH /share/ PREFIX to avoid conflicts */}
+            <Route element={<InvestorAuthLayout />}>
+              <Route path="/share/:companySlug/:roundCode/memo" element={<><RouteLogger name="share:memo:access" /><InvestorAccess tool="memo" /></>} />
+              <Route path="/share/:companySlug/:roundCode/memo/:investorSlug" element={<><RouteLogger name="share:memo:investor" /><InvestorAccess tool="memo" /></>} />
+              <Route path="/share/:companySlug/:roundCode/memo/:investorSlug/view" element={<><RouteLogger name="share:memo:view" /><PublicMemoViewer /></>} />
+              <Route path="/share/:companySlug/:roundCode/docket" element={<><RouteLogger name="share:docket:access" /><InvestorAccess tool="docket" /></>} />
+              <Route path="/share/:companySlug/:roundCode/docket/:investorSlug" element={<><RouteLogger name="share:docket:investor" /><InvestorAccess tool="docket" /></>} />
+              <Route path="/share/:companySlug/:roundCode/docket/:investorSlug/view" element={<><RouteLogger name="share:docket:view" /><PublicDocketViewer /></>} />
+            </Route>
+            
+            {/* 404 */}
+            <Route path="*" element={<><RouteLogger name="404" /><NotFound /></>} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </PersistQueryClientProvider>
+  );
+};
 
 export default App;
