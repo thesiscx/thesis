@@ -15,13 +15,12 @@ import {
   FolderOpen,
   Settings,
   LogOut,
-  Archive,
+  Lock,
+  Unlock,
   ChevronsUpDown,
   Home,
   MoreHorizontal,
   Pencil,
-  Trash2,
-  ArchiveRestore,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -63,9 +62,9 @@ export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading, signOut, companyName } = useFounderAuth();
-  const { rounds, isLoading: roundsLoading, archiveRound, unarchiveRound, deleteRound } = useRounds();
+  const { rounds, isLoading: roundsLoading, hasOpenRound, closeRound, reopenRound } = useRounds();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
   const [editTargetRaise, setEditTargetRaise] = useState("");
@@ -149,24 +148,40 @@ export default function Dashboard() {
   };
 
 
-  const handleArchiveRound = async (round: Round) => {
-    if (round.state === "archived") {
-      await unarchiveRound.mutateAsync(round.id);
-    } else {
-      await archiveRound.mutateAsync(round.id);
-    }
-  };
-
-  const handleDeleteRound = (round: Round) => {
+  const handleCloseRound = (round: Round) => {
     setSelectedRound(round);
-    setDeleteConfirmOpen(true);
+    setCloseConfirmOpen(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmCloseRound = async () => {
     if (!selectedRound) return;
-    await deleteRound.mutateAsync(selectedRound.id);
-    setDeleteConfirmOpen(false);
+    await closeRound.mutateAsync(selectedRound.id);
+    setCloseConfirmOpen(false);
     setSelectedRound(null);
+  };
+
+  const handleReopenRound = async (round: Round) => {
+    if (hasOpenRound) {
+      toast({
+        title: "Cannot reopen round",
+        description: "You must close your current round before reopening another.",
+        variant: "destructive",
+      });
+      return;
+    }
+    await reopenRound.mutateAsync(round.id);
+  };
+
+  const handleOpenNewRound = () => {
+    if (hasOpenRound) {
+      toast({
+        title: "Cannot open new round",
+        description: "You must close your current round before opening a new one.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setCreateRoundOpen(true);
   };
 
   if (authLoading || roundsLoading) {
@@ -186,8 +201,8 @@ export default function Dashboard() {
     );
   }
 
-  const activeRounds = rounds?.filter((r) => r.state !== "archived") || [];
-  const archivedRounds = rounds?.filter((r) => r.state === "archived") || [];
+  const openRounds = rounds?.filter((r) => r.state === "open") || [];
+  const closedRounds = rounds?.filter((r) => r.state === "closed") || [];
 
   const firstName = profile?.full_name?.split(" ")[0] || "there";
 
@@ -236,42 +251,47 @@ export default function Dashboard() {
               <p className="text-muted-foreground mt-1">{companyName}</p>
             )}
           </div>
-          <Button onClick={() => setCreateRoundOpen(true)} className="gap-2">
+          <Button 
+            onClick={handleOpenNewRound} 
+            className="gap-2"
+            disabled={hasOpenRound}
+          >
             <Plus className="w-4 h-4" />
-            New Round
+            Open New Round
           </Button>
         </div>
 
         {/* Empty State */}
-        {activeRounds.length === 0 && archivedRounds.length === 0 && (
+        {openRounds.length === 0 && closedRounds.length === 0 && (
           <div className="border border-dashed border-border rounded-lg p-12 text-center">
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <FolderOpen className="w-6 h-6 text-muted-foreground" />
             </div>
             <h3 className="font-heading text-lg font-semibold mb-2">No rounds yet</h3>
             <p className="text-muted-foreground text-sm mb-6">
-              Create your first fundraising round to get started.
+              Open your first fundraising round to get started.
             </p>
-            <Button onClick={() => setCreateRoundOpen(true)} className="gap-2">
+            <Button onClick={handleOpenNewRound} className="gap-2">
               <Plus className="w-4 h-4" />
-              Create Round
+              Open New Round
             </Button>
           </div>
         )}
 
-        {/* Active Rounds */}
-        {activeRounds.length > 0 && (
+        {/* Open Rounds */}
+        {openRounds.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Active Rounds
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+              <Unlock className="w-4 h-4" />
+              Open Round
             </h2>
             <div className="grid gap-4">
-              {activeRounds.map((round) => {
+              {openRounds.map((round) => {
                 const stats = roundStats?.[round.id];
                 return (
                   <div
                     key={round.id}
-                    className="border border-border rounded-lg p-6 bg-card hover:border-muted-foreground/30 transition-colors"
+                    className="border-2 border-primary/30 rounded-lg p-6 bg-card"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div>
@@ -282,8 +302,8 @@ export default function Dashboard() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full capitalize">
-                          {round.state}
+                        <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
+                          Open
                         </span>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -294,19 +314,12 @@ export default function Dashboard() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleEditRound(round)}>
                               <Pencil className="w-4 h-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleArchiveRound(round)}>
-                              <Archive className="w-4 h-4 mr-2" />
-                              Archive
+                              Edit Terms
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteRound(round)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
+                            <DropdownMenuItem onClick={() => handleCloseRound(round)}>
+                              <Lock className="w-4 h-4 mr-2" />
+                              Close Round
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -354,27 +367,31 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Archived Rounds */}
-        {archivedRounds.length > 0 && (
+        {/* Closed Rounds */}
+        {closedRounds.length > 0 && (
           <div className="mt-12 space-y-4">
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-              <Archive className="w-4 h-4" />
-              Archived
+              <Lock className="w-4 h-4" />
+              Closed Rounds
             </h2>
             <div className="grid gap-4">
-              {archivedRounds.map((round) => (
+              {closedRounds.map((round) => (
                 <div
                   key={round.id}
-                  className="border border-border rounded-lg p-4 bg-muted/30 opacity-70"
+                  className="border border-border rounded-lg p-4 bg-muted/20"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium">{round.name}</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="font-medium text-muted-foreground">{round.name}</h3>
+                      <p className="text-sm text-muted-foreground/70">
                         {round.instrument_type?.toUpperCase() || "SAFE"}
+                        {round.target_raise && ` · $${Number(round.target_raise).toLocaleString()}`}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
+                      <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
+                        Closed
+                      </span>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -382,27 +399,17 @@ export default function Dashboard() {
                       >
                         View
                       </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleArchiveRound(round)}>
-                            <ArchiveRestore className="w-4 h-4 mr-2" />
-                            Unarchive
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteRound(round)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {!hasOpenRound && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReopenRound(round)}
+                          className="gap-1.5"
+                        >
+                          <Unlock className="w-3.5 h-3.5" />
+                          Reopen
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -459,22 +466,20 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+      {/* Close Round Confirmation */}
+      <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Round?</AlertDialogTitle>
+            <AlertDialogTitle>Close {selectedRound?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{selectedRound?.name}" and all associated memos, dockets, and investor data. This action cannot be undone.
+              Closing this round will mark it as complete. You can reopen it later if needed.
+              This allows you to open a new fundraising round.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
+            <AlertDialogAction onClick={confirmCloseRound}>
+              Close Round
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -482,3 +487,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+export { Dashboard };

@@ -62,6 +62,10 @@ export function useRounds() {
     enabled: !!user?.id,
   });
 
+  // Check if there's an active (open) round
+  const hasOpenRound = rounds.some(r => r.state === "open");
+  const openRound = rounds.find(r => r.state === "open");
+
   const createRound = useMutation({
     mutationFn: async (input: { 
       name: string; 
@@ -72,11 +76,17 @@ export function useRounds() {
     }) => {
       if (!user?.id) throw new Error("Not authenticated");
 
+      // Check if there's already an open round
+      const openRounds = rounds.filter(r => r.state === "open");
+      if (openRounds.length > 0) {
+        throw new Error("You must close your current round before opening a new one");
+      }
+
       // Calculate round_number based on existing rounds of same type
       const existingOfType = rounds.filter(r => r.round_type === input.round_type);
       const roundNumber = existingOfType.length + 1;
 
-      // Create the round
+      // Create the round with "open" state
       const { data: round, error: roundError } = await supabase
         .from("rounds")
         .insert({
@@ -88,6 +98,7 @@ export function useRounds() {
           created_by: user.id,
           round_type: input.round_type,
           round_number: roundNumber,
+          state: "open",
         })
         .select()
         .single();
@@ -131,11 +142,11 @@ export function useRounds() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rounds"] });
-      toast({ title: "Round created successfully" });
+      toast({ title: "Round opened successfully" });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to create round",
+        title: "Failed to open round",
         description: error.message,
         variant: "destructive",
       });
@@ -164,57 +175,43 @@ export function useRounds() {
     },
   });
 
-  const archiveRound = useMutation({
+  const closeRound = useMutation({
     mutationFn: async (roundId: string) => {
       const { error } = await supabase
         .from("rounds")
-        .update({ state: "archived" })
+        .update({ state: "closed" })
         .eq("id", roundId);
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rounds"] });
-      toast({ title: "Round archived" });
+      toast({ title: "Round closed" });
     },
   });
 
-  const unarchiveRound = useMutation({
+  const reopenRound = useMutation({
     mutationFn: async (roundId: string) => {
+      // Check if there's already an open round
+      const openRounds = rounds.filter(r => r.state === "open");
+      if (openRounds.length > 0) {
+        throw new Error("You must close your current round before reopening another");
+      }
+
       const { error } = await supabase
         .from("rounds")
-        .update({ state: "draft" })
+        .update({ state: "open" })
         .eq("id", roundId);
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rounds"] });
-      toast({ title: "Round restored" });
-    },
-  });
-
-  const deleteRound = useMutation({
-    mutationFn: async (roundId: string) => {
-      // Delete in order: dockets, memos, round_terms, then round
-      await supabase.from("dockets").delete().eq("round_id", roundId);
-      await supabase.from("memos").delete().eq("round_id", roundId);
-      await supabase.from("round_terms").delete().eq("round_id", roundId);
-      
-      const { error } = await supabase
-        .from("rounds")
-        .delete()
-        .eq("id", roundId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rounds"] });
-      toast({ title: "Round deleted" });
+      toast({ title: "Round reopened" });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to delete round",
+        title: "Cannot reopen round",
         description: error.message,
         variant: "destructive",
       });
@@ -229,11 +226,12 @@ export function useRounds() {
   return {
     rounds,
     isLoading,
+    hasOpenRound,
+    openRound,
     createRound,
     updateRound,
-    archiveRound,
-    unarchiveRound,
-    deleteRound,
+    closeRound,
+    reopenRound,
     countRoundsOfType,
   };
 }
