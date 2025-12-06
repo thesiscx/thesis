@@ -123,7 +123,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, userMessageId } = await req.json();
+    const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -195,20 +195,36 @@ serve(async (req) => {
     if (userId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && response.body) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       
-      // Create a transform stream to capture the response while passing it through
+      // Create a transform stream with proper SSE line buffering
       let assistantContent = "";
       let toolCalls: any[] = [];
       let currentToolCall: { id?: string; name?: string; arguments?: string } = {};
+      let sseBuffer = ""; // Buffer for incomplete SSE lines across chunks
       
       const transformStream = new TransformStream({
         transform(chunk, controller) {
           controller.enqueue(chunk);
           
-          // Decode and parse the chunk to extract content
-          const text = new TextDecoder().decode(chunk);
-          const lines = text.split("\n");
+          // Decode chunk and add to buffer
+          sseBuffer += new TextDecoder().decode(chunk);
           
-          for (const line of lines) {
+          // Process ONLY complete lines (ending with \n)
+          let newlineIndex;
+          while ((newlineIndex = sseBuffer.indexOf("\n")) !== -1) {
+            let line = sseBuffer.slice(0, newlineIndex);
+            sseBuffer = sseBuffer.slice(newlineIndex + 1);
+            
+            // Remove carriage return if present
+            if (line.endsWith("\r")) {
+              line = line.slice(0, -1);
+            }
+            
+            // Skip empty lines and comments
+            if (line.trim() === "" || line.startsWith(":")) {
+              continue;
+            }
+            
+            // Process data lines
             if (line.startsWith("data: ") && line !== "data: [DONE]") {
               try {
                 const json = JSON.parse(line.slice(6));
@@ -223,7 +239,7 @@ serve(async (req) => {
                 if (delta?.tool_calls) {
                   for (const toolCall of delta.tool_calls) {
                     if (toolCall.id) {
-                      // New tool call starting
+                      // New tool call starting - save previous if exists
                       if (currentToolCall.id) {
                         toolCalls.push({ ...currentToolCall });
                       }
@@ -243,17 +259,36 @@ serve(async (req) => {
                     }
                   }
                 }
-              } catch {
-                // Ignore parse errors
+              } catch (e) {
+                console.error("Failed to parse SSE line:", line, e);
               }
             }
           }
+          // Remaining incomplete line stays in sseBuffer for next chunk
         },
         async flush() {
+          // Process any remaining content in buffer
+          if (sseBuffer.trim()) {
+            const line = sseBuffer.trim();
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              try {
+                const json = JSON.parse(line.slice(6));
+                const delta = json.choices?.[0]?.delta;
+                if (delta?.content) {
+                  assistantContent += delta.content;
+                }
+              } catch (e) {
+                console.error("Failed to parse final SSE buffer:", line, e);
+              }
+            }
+          }
+          
           // Push the last tool call if exists
           if (currentToolCall.id) {
             toolCalls.push({ ...currentToolCall });
           }
+          
+          console.log("Stream complete. Content length:", assistantContent.length, "Tool calls:", toolCalls.length);
           
           // Prepare the content to save - include tool calls if any
           let contentToSave = assistantContent;
@@ -266,12 +301,16 @@ serve(async (req) => {
           // Save assistant message to database after stream completes
           if ((assistantContent || toolCalls.length > 0) && userId) {
             try {
-              await supabase.from("circuit_chat_messages").insert({
+              const { error } = await supabase.from("circuit_chat_messages").insert({
                 user_id: userId,
                 role: "assistant",
                 content: contentToSave,
               });
-              console.log("Saved assistant message to database, tool_calls:", toolCalls.length);
+              if (error) {
+                console.error("Failed to save assistant message:", error);
+              } else {
+                console.log("Saved assistant message to database, content length:", contentToSave.length, "tool_calls:", toolCalls.length);
+              }
             } catch (e) {
               console.error("Failed to save assistant message:", e);
             }

@@ -54,12 +54,20 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // 1. Get initial session
+    // 1. Get initial session with performance logging
+    const start = performance.now();
+    console.log("[Auth] Starting getSession...");
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log(`[Auth] getSession completed in ${(performance.now() - start).toFixed(0)}ms, hasSession: ${!!session}`);
+      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        const profileStart = performance.now();
+        fetchProfile(session.user.id).then(() => {
+          console.log(`[Auth] fetchProfile completed in ${(performance.now() - profileStart).toFixed(0)}ms`);
+        });
       } else {
         setProfileLoaded(true);
       }

@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ActionCard from "./ActionCard";
 
 interface ToolCall {
@@ -45,95 +46,55 @@ function parseToolCalls(content: string): { toolCalls: ToolCall[]; cleanContent:
 export default function AIChatPanel() {
   const { toast } = useToast();
   const { user, session } = useFounderAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const queryClient = useQueryClient();
+  const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load initial messages
-  const loadMessages = useCallback(async (loadMore = false) => {
-    if (!user) return;
-    
-    if (loadMore) {
-      setIsLoadingMore(true);
-    }
-
-    try {
-      const oldestMessage = loadMore && messages.length > 0 
-        ? messages[0] 
-        : null;
-
-      let query = supabase
+  // Use React Query for message caching - persists across navigations
+  const { data: dbMessages = [], isLoading: isLoadingMessages, isFetched } = useQuery({
+    queryKey: ["circuit-chat-messages", user?.id],
+    queryFn: async () => {
+      console.log("[AIChatPanel] Fetching messages from DB for user:", user?.id);
+      const start = performance.now();
+      
+      const { data, error } = await supabase
         .from("circuit_chat_messages")
         .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(PAGE_SIZE);
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: true })
+        .limit(100); // Get last 100 messages
 
-      if (oldestMessage) {
-        query = query.lt("created_at", oldestMessage.created_at);
-      }
-
-      const { data, error } = await query;
-
+      console.log(`[AIChatPanel] DB query took ${(performance.now() - start).toFixed(0)}ms, got ${data?.length || 0} messages`);
+      
       if (error) throw error;
+      
+      return (data || []).map(m => {
+        const { toolCalls, cleanContent } = parseToolCalls(m.content);
+        return {
+          ...m,
+          role: m.role as "user" | "assistant",
+          content: cleanContent,
+          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+          toolCallsHandled: true,
+        };
+      });
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5, // 5 minutes - don't refetch on every mount
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+  });
 
-      if (data) {
-        // Reverse to get chronological order and parse tool calls
-        const newMessages: Message[] = data.reverse().map(m => {
-          const { toolCalls, cleanContent } = parseToolCalls(m.content);
-          return {
-            ...m,
-            role: m.role as "user" | "assistant",
-            content: cleanContent,
-            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-            toolCallsHandled: true, // DB messages have already been handled
-          };
-        });
-        
-        if (loadMore) {
-          setMessages(prev => [...newMessages, ...prev]);
-        } else {
-          setMessages(newMessages);
-        }
-        
-        setHasMore(data.length === PAGE_SIZE);
-      }
-    } catch (error) {
-      console.error("Error loading messages:", error);
-    } finally {
-      setIsLoadingMore(false);
-      setInitialLoadDone(true);
-    }
-  }, [user, messages]);
+  // Merge DB messages with local streaming messages
+  const messages = [...dbMessages, ...localMessages];
 
-  // Initial load - only when user exists
+  // Auto-scroll to bottom on new messages
   useEffect(() => {
-    if (user) {
-      loadMessages();
-    } else {
-      // If no user, mark initial load as done to prevent infinite spinner
-      setInitialLoadDone(true);
-    }
-  }, [user]); // Remove loadMessages from deps to prevent loops
-
-  // Auto-scroll to bottom on new messages (only for new messages, not when loading more)
-  useEffect(() => {
-    if (scrollRef.current && !isLoadingMore) {
+    if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isLoadingMore]);
-
-  // Handle scroll for loading more
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLDivElement;
-    if (target.scrollTop === 0 && hasMore && !isLoadingMore && initialLoadDone) {
-      loadMessages(true);
-    }
-  }, [hasMore, isLoadingMore, initialLoadDone, loadMessages]);
+  }, [messages]);
 
   const saveUserMessage = async (content: string): Promise<Message | null> => {
     if (!user) return null;
@@ -211,7 +172,7 @@ export default function AIChatPanel() {
           const content = delta?.content as string | undefined;
           if (content) {
             assistantContent += content;
-            setMessages((prev) => {
+            setLocalMessages((prev) => {
               const last = prev[prev.length - 1];
               if (last?.role === "assistant" && last.id.startsWith("temp-")) {
                 return prev.map((m, i) =>
@@ -233,7 +194,6 @@ export default function AIChatPanel() {
           if (delta?.tool_calls) {
             for (const toolCall of delta.tool_calls) {
               if (toolCall.id) {
-                // New tool call starting
                 if (currentToolCall.id) {
                   toolCalls.push({
                     id: currentToolCall.id,
@@ -263,6 +223,22 @@ export default function AIChatPanel() {
       }
     }
 
+    // Process any remaining buffer
+    if (textBuffer.trim()) {
+      const line = textBuffer.trim();
+      if (line.startsWith("data: ") && line.slice(6).trim() !== "[DONE]") {
+        try {
+          const parsed = JSON.parse(line.slice(6).trim());
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            assistantContent += content;
+          }
+        } catch {
+          // Ignore final parse error
+        }
+      }
+    }
+
     // Push the last tool call
     if (currentToolCall.id) {
       toolCalls.push({
@@ -276,7 +252,7 @@ export default function AIChatPanel() {
   };
 
   const handleToolCallComplete = (messageId: string, toolCallId: string) => {
-    setMessages(prev => prev.map(m => {
+    setLocalMessages(prev => prev.map(m => {
       if (m.id === messageId && m.toolCalls) {
         const remainingCalls = m.toolCalls.filter(tc => tc.id !== toolCallId);
         return {
@@ -309,15 +285,15 @@ export default function AIChatPanel() {
       return;
     }
 
-    // Add to local state
-    const newMessages = [...messages, savedUserMessage];
-    setMessages(newMessages);
+    // Invalidate query to include new message
+    await queryClient.invalidateQueries({ queryKey: ["circuit-chat-messages", user.id] });
 
     try {
-      const { content, toolCalls } = await streamChat(newMessages);
+      const allMessages = [...messages, savedUserMessage];
+      const { content, toolCalls } = await streamChat(allMessages);
       
       // Update the temp message with final content and tool calls
-      setMessages(prev => prev.map(m => 
+      setLocalMessages(prev => prev.map(m => 
         m.id.startsWith("temp-") ? {
           ...m,
           id: "final-" + crypto.randomUUID(),
@@ -326,6 +302,12 @@ export default function AIChatPanel() {
           toolCallsHandled: false,
         } : m
       ));
+
+      // Invalidate to get the saved assistant message from DB
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["circuit-chat-messages", user.id] });
+        setLocalMessages([]); // Clear local messages once DB is updated
+      }, 500);
     } catch (error) {
       console.error("Chat error:", error);
       toast({
@@ -333,7 +315,7 @@ export default function AIChatPanel() {
         description: error instanceof Error ? error.message : "Failed to get response",
         variant: "destructive",
       });
-      setMessages(prev => prev.filter(m => !m.id.startsWith("temp-")));
+      setLocalMessages(prev => prev.filter(m => !m.id.startsWith("temp-")));
     } finally {
       setIsLoading(false);
     }
@@ -354,7 +336,7 @@ export default function AIChatPanel() {
     return hoursDiff > 24;
   };
 
-  // Show sign-in prompt if no user (after auth check completes)
+  // Show sign-in prompt if no user
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">
@@ -369,22 +351,16 @@ export default function AIChatPanel() {
     );
   }
 
+  const showLoading = isLoadingMessages && !isFetched;
+
   return (
     <div className="flex flex-col h-full">
       {/* Messages */}
       <ScrollArea 
         className="flex-1 p-4" 
         ref={scrollRef}
-        onScrollCapture={handleScroll}
       >
-        {/* Load more indicator */}
-        {isLoadingMore && (
-          <div className="flex justify-center py-2 mb-2">
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-          </div>
-        )}
-        
-        {!initialLoadDone ? (
+        {showLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
