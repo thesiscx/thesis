@@ -26,6 +26,7 @@ export default function ThesisMemo() {
   const { investors } = useInvestors();
   const { 
     memo, 
+    localContent,
     tocItems, 
     updateMemo, 
     isSaving, 
@@ -40,16 +41,62 @@ export default function ThesisMemo() {
 
   // Callback to handle memo content update from Draft Memo wizard
   const handleUpdateMemoContent = useCallback(async (content: any) => {
-    if (!memo?.id) return;
+    if (!user?.id || !roundSlug) {
+      console.error("Missing user or roundSlug");
+      return;
+    }
     
     try {
-      // Directly update the memo in the database
-      const { error } = await supabase
-        .from("memos")
-        .update({ content })
-        .eq("id", memo.id);
+      // First get the round
+      const { data: round, error: roundError } = await supabase
+        .from("rounds")
+        .select("id")
+        .eq("slug", roundSlug)
+        .eq("created_by", user.id)
+        .single();
 
-      if (error) throw error;
+      if (roundError) throw roundError;
+
+      // Check if memo already exists
+      const isGlobal = variantSlug === "global";
+      let existingMemoId = memo?.id;
+
+      if (!existingMemoId) {
+        // Try to find existing memo
+        let query = supabase
+          .from("memos")
+          .select("id")
+          .eq("round_id", round.id);
+
+        if (isGlobal) {
+          query = query.eq("is_global", true);
+        }
+
+        const { data } = await query.maybeSingle();
+        existingMemoId = data?.id;
+      }
+
+      if (existingMemoId) {
+        // Update existing memo
+        const { error } = await supabase
+          .from("memos")
+          .update({ content })
+          .eq("id", existingMemoId);
+
+        if (error) throw error;
+      } else {
+        // Create new memo
+        const { error } = await supabase
+          .from("memos")
+          .insert({
+            round_id: round.id,
+            content,
+            is_global: isGlobal,
+            created_by: user.id,
+          });
+
+        if (error) throw error;
+      }
 
       // Invalidate the memo query to refetch
       queryClient.invalidateQueries({ queryKey: ["memo", roundSlug, variantSlug, user?.id] });
@@ -59,7 +106,7 @@ export default function ThesisMemo() {
     } catch (error) {
       console.error("Failed to update memo content:", error);
     }
-  }, [memo?.id, queryClient, roundSlug, variantSlug, user?.id]);
+  }, [memo, queryClient, roundSlug, variantSlug, user?.id]);
 
   if (roundsLoading) {
     return (
@@ -133,7 +180,7 @@ export default function ThesisMemo() {
                   onChange={updateMemo}
                 />
               ) : (
-                <MemoViewer content={memo?.content} />
+                <MemoViewer content={localContent ?? memo?.content} />
               )}
             </div>
           </div>
