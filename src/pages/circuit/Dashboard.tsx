@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useRounds, Round } from "@/hooks/useRounds";
@@ -11,56 +10,25 @@ import CloseRoundDialog from "@/components/circuit/CloseRoundDialog";
 import AssistantSidebar from "@/components/circuit/AssistantSidebar";
 import CircuitHeader from "@/components/circuit/CircuitHeader";
 import {
-  Plus,
   Users,
   FileText,
   FolderOpen,
   Lock,
   Unlock,
-  MoreHorizontal,
-  Pencil,
   ChevronRight,
   ChevronDown,
   BookOpen,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading, companyName, fullName, profileLoaded } = useFounderAuth();
-  const { rounds, isLoading: roundsLoading, hasOpenRound, reopenRound } = useRounds();
+  const { rounds, isLoading: roundsLoading, hasOpenRound } = useRounds();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
-  const [editTargetRaise, setEditTargetRaise] = useState("");
-  const [editInstrumentType, setEditInstrumentType] = useState("");
   const [expandedRounds, setExpandedRounds] = useState<Set<string>>(new Set());
 
   // Fetch memo and docket counts per round
@@ -90,13 +58,13 @@ export default function Dashboard() {
     enabled: !!rounds && rounds.length > 0,
   });
 
-  // Auto-expand open rounds
-  useState(() => {
-    if (rounds) {
+  // Auto-expand open rounds on initial load
+  useEffect(() => {
+    if (rounds && rounds.length > 0) {
       const openRoundIds = rounds.filter(r => r.state === "open").map(r => r.id);
       setExpandedRounds(new Set(openRoundIds));
     }
-  });
+  }, [rounds]);
 
   const toggleRoundExpanded = (roundId: string) => {
     setExpandedRounds(prev => {
@@ -108,43 +76,6 @@ export default function Dashboard() {
       }
       return next;
     });
-  };
-
-
-  const handleEditRound = (round: Round) => {
-    setSelectedRound(round);
-    setEditTargetRaise(round.target_raise?.toString() || "");
-    setEditInstrumentType(round.instrument_type || "safe");
-    setEditDialogOpen(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!selectedRound) return;
-    
-    const { error } = await supabase
-      .from("rounds")
-      .update({
-        target_raise: editTargetRaise ? Number(editTargetRaise) : null,
-        instrument_type: editInstrumentType,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", selectedRound.id);
-
-    if (error) {
-      toast({ title: "Failed to update round", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    queryClient.invalidateQueries({ queryKey: ["rounds"] });
-    toast({ title: "Round updated" });
-    setEditDialogOpen(false);
-    setSelectedRound(null);
-  };
-
-
-  const handleCloseRound = (round: Round) => {
-    setSelectedRound(round);
-    setCloseDialogOpen(true);
   };
 
   const confirmCloseRound = async (reason: string, notes: string) => {
@@ -162,48 +93,17 @@ export default function Dashboard() {
       .eq("id", selectedRound.id);
 
     if (error) {
-      toast({ title: "Failed to close round", description: error.message, variant: "destructive" });
       return;
     }
 
     queryClient.invalidateQueries({ queryKey: ["rounds"] });
-    toast({ title: "Round closed" });
     setCloseDialogOpen(false);
     setSelectedRound(null);
   };
 
-  const handleReopenRound = async (round: Round) => {
-    if (hasOpenRound) {
-      toast({
-        title: "Cannot reopen round",
-        description: "You must close your current round before reopening another.",
-        variant: "destructive",
-      });
-      return;
-    }
-    await reopenRound.mutateAsync(round.id);
-  };
-
-  const handleOpenNewRound = () => {
-    if (hasOpenRound) {
-      toast({
-        title: "Cannot open new round",
-        description: "You must close your current round before opening a new one.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setCreateRoundOpen(true);
-  };
-
-  // Log render state with timestamp
-  console.log(`[Dashboard:${Date.now()}] Render: authLoading=${authLoading}, profileLoaded=${profileLoaded}, companyName=${companyName}, userId=${user?.id?.slice(0, 8) || 'none'}`);
-  console.log(`[Dashboard] Blocked by: ${authLoading ? 'authLoading ' : ''}${!profileLoaded ? 'profileLoaded' : ''}`);
-
   // Only block on auth - rounds can load progressively
   if (authLoading || !profileLoaded) {
     const blockingState = authLoading ? "Checking authentication..." : "Loading profile...";
-    console.log(`[Dashboard] Showing skeleton: ${blockingState}`);
     return (
       <div className="h-screen bg-background flex">
         <div className="flex-1 flex flex-col">
@@ -213,9 +113,6 @@ export default function Dashboard() {
           <div className="flex-1 flex flex-col items-center justify-center gap-3">
             <Skeleton className="h-8 w-8 rounded-full" />
             <span className="text-sm text-muted-foreground">{blockingState}</span>
-            <span className="text-xs text-muted-foreground/60 font-mono">
-              auth={authLoading ? '⏳' : '✓'} profile={profileLoaded ? '✓' : '⏳'}
-            </span>
           </div>
         </div>
         <div className="w-96 border-l border-border" />
@@ -241,97 +138,65 @@ export default function Dashboard() {
 
     return (
       <div className="select-none">
-        {/* Round row */}
+        {/* Round row - entire div is clickable */}
         <div
+          onClick={() => toggleRoundExpanded(round.id)}
           className={cn(
-            "group flex items-center gap-1 py-1.5 px-2 rounded-md cursor-pointer",
-            "hover:bg-muted/50 transition-colors",
-            isOpen && "bg-primary/5"
+            "group flex items-center gap-2 py-3 px-4 rounded-xl cursor-pointer",
+            "hover:bg-secondary/50 transition-all",
+            isOpen && "bg-secondary/30 border border-border",
+            !isOpen && "hover:bg-muted/50"
           )}
         >
-          <button
-            onClick={() => toggleRoundExpanded(round.id)}
-            className="p-0.5 hover:bg-muted rounded"
-          >
+          <div className="p-0.5">
             {isExpanded ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             ) : (
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             )}
-          </button>
+          </div>
           
-          <div className="flex-1 flex items-center gap-2 min-w-0">
-            <span className={cn("font-medium truncate", !isOpen && "text-muted-foreground")}>
+          <div className="flex-1 flex items-center gap-3 min-w-0">
+            <span className={cn(
+              "font-medium truncate",
+              isOpen ? "text-foreground" : "text-muted-foreground"
+            )}>
               {round.name}
             </span>
             {isOpen && (
-              <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium shrink-0">
+              <span className="text-[10px] bg-foreground/10 text-foreground px-2 py-0.5 rounded-full font-medium shrink-0">
                 Open
               </span>
             )}
-            <span className="text-xs text-muted-foreground shrink-0">
-              {round.instrument_type?.toUpperCase()}
-              {round.target_raise && ` · $${Number(round.target_raise).toLocaleString()}`}
-            </span>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="w-3.5 h-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {isOpen ? (
-                <>
-                  <DropdownMenuItem onClick={() => handleEditRound(round)}>
-                    <Pencil className="w-4 h-4 mr-2" />
-                    Edit Terms
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleCloseRound(round)}>
-                    <Lock className="w-4 h-4 mr-2" />
-                    Close Round
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <>
-                  <DropdownMenuItem onClick={() => navigate(`/circuit/${round.slug}/memo/global`)}>
-                    View
-                  </DropdownMenuItem>
-                  {!hasOpenRound && (
-                    <DropdownMenuItem onClick={() => handleReopenRound(round)}>
-                      <Unlock className="w-4 h-4 mr-2" />
-                      Reopen Round
-                    </DropdownMenuItem>
-                  )}
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <span className="text-xs text-muted-foreground shrink-0">
+            {round.instrument_type?.toUpperCase()}
+            {round.target_raise && ` · $${Number(round.target_raise).toLocaleString()}`}
+          </span>
         </div>
 
         {/* Tool children */}
         {isExpanded && (
-          <div className="ml-5 border-l border-border">
+          <div className="ml-6 mt-2 space-y-1 pl-4 border-l border-border">
             {tools.map((tool) => (
               <button
                 key={tool.key}
-                onClick={() => !tool.disabled && navigate(`/circuit/${round.slug}/${tool.key}/global`)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!tool.disabled) {
+                    navigate(`/circuit/${round.slug}/${tool.key}/global`);
+                  }
+                }}
                 disabled={tool.disabled}
                 className={cn(
-                  "w-full flex items-center gap-2 py-1.5 px-3 text-left",
-                  "hover:bg-muted/50 transition-colors rounded-r-md",
+                  "w-full flex items-center gap-3 py-2.5 px-4 text-left rounded-lg",
+                  "hover:bg-secondary/50 transition-all",
                   tool.disabled && "opacity-50 cursor-not-allowed hover:bg-transparent"
                 )}
               >
                 <tool.icon className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="text-sm">{tool.label}</span>
+                <span className="text-sm font-medium">{tool.label}</span>
                 {tool.disabled ? (
                   <span className="text-[10px] text-muted-foreground ml-auto">Coming soon</span>
                 ) : tool.countKey && stats?.[tool.countKey] !== undefined ? (
@@ -355,53 +220,40 @@ export default function Dashboard() {
         <CircuitHeader activeTool="stage" />
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto px-8 py-8">
           <div className="max-w-2xl">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="font-heading text-2xl font-bold">Hello, {firstName}</h1>
-                {companyName && (
-                  <p className="text-muted-foreground mt-1">{companyName}</p>
-                )}
-              </div>
-              <Button 
-                onClick={handleOpenNewRound} 
-                className="gap-2"
-                disabled={hasOpenRound}
-              >
-                <Plus className="w-4 h-4" />
-                Open New Round
-              </Button>
+            {/* Greeting - aligned with header padding */}
+            <div className="mb-10">
+              <h1 className="font-heading text-2xl font-bold">Hello, {firstName}</h1>
+              {companyName && (
+                <p className="text-muted-foreground mt-1">{companyName}</p>
+              )}
             </div>
 
             {/* Empty State */}
             {openRounds.length === 0 && closedRounds.length === 0 && (
-              <div className="border border-dashed border-border rounded-lg p-12 text-center">
+              <div className="border border-dashed border-border rounded-xl p-12 text-center">
                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                   <FolderOpen className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <h3 className="font-heading text-lg font-semibold mb-2">No rounds yet</h3>
-                <p className="text-muted-foreground text-sm mb-6">
-                  Open your first fundraising round to get started.
+                <p className="text-muted-foreground text-sm">
+                  Use the "Open Round" button in Circuit to start your first fundraising round.
                 </p>
-                <Button onClick={handleOpenNewRound} className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Open New Round
-                </Button>
               </div>
             )}
 
             {/* Tree View */}
             {(openRounds.length > 0 || closedRounds.length > 0) && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {/* Open Rounds */}
                 {openRounds.length > 0 && (
                   <div>
-                    <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-2">
+                    <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2 px-4">
                       <Unlock className="w-3.5 h-3.5" />
                       Open Round
                     </h2>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {openRounds.map((round) => (
                         <RoundTree key={round.id} round={round} isOpen />
                       ))}
@@ -412,11 +264,11 @@ export default function Dashboard() {
                 {/* Closed Rounds */}
                 {closedRounds.length > 0 && (
                   <div>
-                    <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-2">
+                    <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2 px-4">
                       <Lock className="w-3.5 h-3.5" />
                       Closed Rounds
                     </h2>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {closedRounds.map((round) => (
                         <RoundTree key={round.id} round={round} isOpen={false} />
                       ))}
@@ -430,45 +282,6 @@ export default function Dashboard() {
 
         <CreateRoundDialog open={createRoundOpen} onOpenChange={setCreateRoundOpen} />
 
-        {/* Edit Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit {selectedRound?.name}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Instrument type</Label>
-                <Select value={editInstrumentType} onValueChange={setEditInstrumentType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="safe">SAFE</SelectItem>
-                    <SelectItem value="note">Convertible Note</SelectItem>
-                    <SelectItem value="equity">Equity</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Target raise ($)</Label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 1000000"
-                  value={editTargetRaise}
-                  onChange={(e) => setEditTargetRaise(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveEdit}>Save Changes</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
         <CloseRoundDialog
           open={closeDialogOpen}
           onOpenChange={setCloseDialogOpen}
@@ -477,8 +290,8 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Right Sidebar */}
-      <AssistantSidebar pageKey="stage" />
+      {/* Assistant Sidebar */}
+      <AssistantSidebar pageKey="stage" onOpenRound={() => setCreateRoundOpen(true)} />
     </div>
   );
 }
