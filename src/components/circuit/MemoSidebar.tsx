@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Check, History } from "lucide-react";
+import { Check, History, Pencil, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ interface MemoSidebarProps {
   versions?: MemoVersion[];
   onRestoreVersion?: (versionId: string) => void;
   isRestoringVersion?: boolean;
+  isEditing?: boolean;
+  onToggleEdit?: () => void;
 }
 
 export default function MemoSidebar({
@@ -39,6 +41,8 @@ export default function MemoSidebar({
   versions = [],
   onRestoreVersion,
   isRestoringVersion,
+  isEditing = false,
+  onToggleEdit,
 }: MemoSidebarProps) {
   const [activeSection, setActiveSection] = useState<string>("");
   const isScrollingRef = useRef(false);
@@ -91,11 +95,25 @@ export default function MemoSidebar({
           <h1 className="font-heading text-2xl font-bold">
             Memo
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {onToggleEdit && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 w-6 p-0"
+                onClick={onToggleEdit}
+              >
+                {isEditing ? (
+                  <Eye className="h-3.5 w-3.5" />
+                ) : (
+                  <Pencil className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            )}
             {versions.length > 0 && onRestoreVersion && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 px-1.5">
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                     <History className="h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>

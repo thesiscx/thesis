@@ -9,8 +9,8 @@ import { useRounds } from "@/hooks/useRounds";
 import { useInvestors } from "@/hooks/useInvestors";
 import { useMemo } from "@/hooks/useMemo";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Pencil, Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
@@ -147,32 +147,12 @@ export default function ThesisMemo() {
             versions={versions}
             onRestoreVersion={restoreVersion}
             isRestoringVersion={isRestoringVersion}
+            isEditing={isEditing}
+            onToggleEdit={() => setIsEditing(!isEditing)}
           />
 
           {/* Main Content Area */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            {/* Edit/View Toggle Button - top right of content area */}
-            <div className="flex justify-end p-2 bg-background shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(!isEditing)}
-                className="gap-2"
-              >
-                {isEditing ? (
-                  <>
-                    <Eye className="h-4 w-4" />
-                    View
-                  </>
-                ) : (
-                  <>
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </>
-                )}
-              </Button>
-            </div>
-
             {/* Content */}
             <div className="flex-1 overflow-hidden">
               {isLoading ? (
