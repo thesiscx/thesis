@@ -149,13 +149,17 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
     setIsAdmin(null);
     setProfileLoaded(false);
     
-    // Redirect immediately if path provided
+    // MUST wait for Supabase to clear localStorage session before redirect
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('SignOut error:', error);
+    }
+    
+    // Redirect AFTER signOut completes
     if (redirectTo) {
       window.location.href = redirectTo;
     }
-    
-    // Fire and forget - let Supabase invalidate in background
-    supabase.auth.signOut().catch(console.error);
   };
 
   return (
