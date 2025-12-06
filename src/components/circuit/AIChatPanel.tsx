@@ -110,12 +110,15 @@ export default function AIChatPanel() {
     }
   }, [user, messages]);
 
-  // Initial load
+  // Initial load - only when user exists
   useEffect(() => {
-    if (user && !initialLoadDone) {
+    if (user) {
       loadMessages();
+    } else {
+      // If no user, mark initial load as done to prevent infinite spinner
+      setInitialLoadDone(true);
     }
-  }, [user, initialLoadDone, loadMessages]);
+  }, [user]); // Remove loadMessages from deps to prevent loops
 
   // Auto-scroll to bottom on new messages (only for new messages, not when loading more)
   useEffect(() => {
@@ -351,6 +354,7 @@ export default function AIChatPanel() {
     return hoursDiff > 24;
   };
 
+  // Show sign-in prompt if no user (after auth check completes)
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">

@@ -45,21 +45,24 @@ export function useRounds() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const userId = user?.id;
+  
   const { data: rounds = [], isLoading } = useQuery({
-    queryKey: ["rounds", user?.id],
+    queryKey: ["rounds", userId],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!userId) return [];
       
       const { data, error } = await supabase
         .from("rounds")
         .select("*")
-        .eq("created_by", user.id)
+        .eq("created_by", userId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as Round[];
     },
-    enabled: !!user?.id,
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 2, // Consider fresh for 2 minutes
   });
 
   // Check if there's an active (open) round
