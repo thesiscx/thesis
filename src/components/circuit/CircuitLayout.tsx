@@ -70,6 +70,12 @@ export default function CircuitLayout({
           onRoundChange={handleRoundChange}
           onToolChange={handleToolChange}
           onCreateRound={onCreateRound}
+          onEditRound={() => navigate(`/circuit/settings`)}
+          onCloseRound={() => {
+            // Close round action - could open a dialog or navigate
+            // For now, navigate to settings where close action exists
+            navigate(`/circuit/settings`);
+          }}
         />
 
         {/* Content */}
