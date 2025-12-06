@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy, Settings, UserPlus, Pencil } from "lucide-react";
+import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy, Settings, UserPlus, Pencil, UserRoundSearch } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -207,7 +207,10 @@ function PublishFlow({
     <FlowCard title="Memo Published" isHistorical={isHistorical}>
       <div className="space-y-3">
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Public Share Link</Label>
+          <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Globe className="w-3.5 h-3.5" />
+            Public Share Link
+          </Label>
           {publicUrl ? (
             <>
               <div className="flex items-center gap-2">
@@ -226,7 +229,10 @@ function PublishFlow({
               </div>
               {publicAccessKey && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Access Key</Label>
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5" />
+                    Access Key
+                  </Label>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 text-xs bg-secondary/50 px-3 py-2 rounded border border-border break-all font-mono">
                       {publicAccessKey}
@@ -251,7 +257,10 @@ function PublishFlow({
 
         {!isHistorical && (
           <div className="border-t border-border pt-3 space-y-2">
-            <Label className="text-xs text-muted-foreground">Create Individual Investor Links</Label>
+            <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <UserRoundSearch className="w-3.5 h-3.5" />
+              Individual Investor Links
+            </Label>
             {investors.length === 0 ? (
               <p className="text-xs text-muted-foreground">No investors in your pipeline yet.</p>
             ) : (
