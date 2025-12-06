@@ -13,7 +13,8 @@ import {
   Globe,
   Building2,
   User,
-  LayoutList
+  LayoutList,
+  Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -108,7 +109,7 @@ export default function CircuitHeader({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-64">
             {/* Header with logo and company name */}
-            <div className="px-3 py-4 flex flex-col items-center gap-2">
+            <div className="px-3 py-4 flex flex-col items-center gap-2 border-b mb-1">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
               ) : (
@@ -119,25 +120,25 @@ export default function CircuitHeader({
               <span className="font-medium text-sm">{companyName || "My Company"}</span>
             </div>
 
-            {/* Custom domain box */}
+            {/* Subdomain box - copy only */}
             <div 
-              className="mx-2 mb-2 px-3 py-2 rounded-md border bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => navigate("/circuit/settings/domain")}
+              className="mx-2 mb-1 px-2 py-1.5 rounded border bg-muted/30 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => {
+                const domain = customDomain || "investor.company.com";
+                navigator.clipboard.writeText(domain);
+              }}
+              title="Click to copy"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Globe className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-sm font-mono">
-                    {customDomain || "investor.company.com"}
-                  </span>
-                </div>
-                {!customDomain && (
-                  <span className="text-[10px] text-muted-foreground">Not set</span>
-                )}
-              </div>
+              <span className="text-xs font-mono text-muted-foreground truncate">
+                {customDomain || "investor.company.com"}
+              </span>
+              <Copy className="w-3 h-3 text-muted-foreground shrink-0 ml-2" />
             </div>
 
-            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate("/circuit/settings/domain")}>
+              <Globe className="w-4 h-4 mr-2" />
+              Custom Domain
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
               <Building2 className="w-4 h-4 mr-2" />
               Company Settings
