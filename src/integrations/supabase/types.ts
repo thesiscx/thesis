@@ -126,6 +126,33 @@ export type Database = {
           },
         ]
       }
+      circuit_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_archived: boolean
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       dockets: {
         Row: {
           amount: number | null
