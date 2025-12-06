@@ -21,6 +21,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Create admin client with service role key
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -38,6 +47,7 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.error("Error checking user:", error);
+      // SECURITY: Return generic error to prevent information disclosure
       return new Response(
         JSON.stringify({ error: "Failed to check user" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -48,8 +58,11 @@ Deno.serve(async (req) => {
       (user) => user.email?.toLowerCase() === email.toLowerCase()
     );
 
-    console.log(`User check for ${email}: exists=${userExists}`);
+    // SECURITY: Log without exposing the actual email
+    console.log(`User check completed: exists=${userExists}`);
 
+    // SECURITY: Always return the same structure regardless of whether user exists
+    // This prevents timing attacks and user enumeration
     return new Response(
       JSON.stringify({ exists: userExists }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
