@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useRounds, ROUND_TYPE_LABELS, Round } from "@/hooks/useRounds";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, 
@@ -24,7 +25,11 @@ import {
   DollarSign,
   ChevronDown,
   ChevronRight,
-  Lock
+  Lock,
+  Eye,
+  Upload,
+  Building2,
+  CreditCard
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -37,6 +42,13 @@ interface RoundTerms {
   mfn_enabled: boolean | null;
   minimum_ticket: number | null;
   wire_instructions: string | null;
+  wire_bank_name: string | null;
+  wire_account_name: string | null;
+  wire_account_number: string | null;
+  wire_routing_number: string | null;
+  wire_swift_code: string | null;
+  wire_bank_address: string | null;
+  wire_reference: string | null;
 }
 
 interface RoundStats {
@@ -199,9 +211,151 @@ function SankeyChart({ roundId }: { roundId: string }) {
   );
 }
 
+function ContractPreviewDialog({ 
+  open, 
+  onOpenChange, 
+  round, 
+  terms 
+}: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  round: Round;
+  terms: RoundTerms | null;
+}) {
+  const { companyName } = useFounderAuth();
+  const instrumentLabel = round.instrument_type === 'safe' ? 'SAFE' : 
+                          round.instrument_type === 'note' ? 'Convertible Note' : 
+                          'Investment Agreement';
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Preview {instrumentLabel}</DialogTitle>
+        </DialogHeader>
+        
+        <div className="prose prose-sm max-w-none">
+          <div className="text-center mb-8">
+            <h2 className="text-xl font-bold mb-2">
+              {round.instrument_type === 'safe' ? 'SIMPLE AGREEMENT FOR FUTURE EQUITY' : 
+               round.instrument_type === 'note' ? 'CONVERTIBLE PROMISSORY NOTE' :
+               'INVESTMENT AGREEMENT'}
+            </h2>
+            <p className="text-muted-foreground">{companyName || '[Company Name]'}</p>
+          </div>
+
+          <div className="space-y-6 text-sm">
+            <section>
+              <h3 className="font-semibold text-base mb-2">Investment Terms</h3>
+              <div className="grid grid-cols-2 gap-4 bg-muted/30 p-4 rounded-lg">
+                <div>
+                  <p className="text-muted-foreground">Valuation Cap</p>
+                  <p className="font-medium">
+                    {terms?.valuation_cap ? `$${terms.valuation_cap.toLocaleString()}` : 'Not set'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Discount Rate</p>
+                  <p className="font-medium">
+                    {terms?.discount_rate ? `${terms.discount_rate}%` : 'Not set'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Minimum Investment</p>
+                  <p className="font-medium">
+                    {terms?.minimum_ticket ? `$${terms.minimum_ticket.toLocaleString()}` : 'Not set'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Instrument Type</p>
+                  <p className="font-medium">{instrumentLabel}</p>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-base mb-2">Rights & Provisions</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                {terms?.pro_rata_enabled && (
+                  <li>Pro-rata rights to participate in future financing rounds</li>
+                )}
+                {terms?.mfn_enabled && (
+                  <li>Most Favored Nation (MFN) clause applicable</li>
+                )}
+                <li>Standard {round.instrument_type.toUpperCase()} terms and conditions apply</li>
+              </ul>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-base mb-2">Wire Instructions</h3>
+              {terms?.wire_bank_name ? (
+                <div className="bg-muted/30 p-4 rounded-lg space-y-2 font-mono text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bank Name:</span>
+                    <span>{terms.wire_bank_name}</span>
+                  </div>
+                  {terms.wire_account_name && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Account Name:</span>
+                      <span>{terms.wire_account_name}</span>
+                    </div>
+                  )}
+                  {terms.wire_account_number && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Account Number:</span>
+                      <span>{terms.wire_account_number}</span>
+                    </div>
+                  )}
+                  {terms.wire_routing_number && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Routing Number:</span>
+                      <span>{terms.wire_routing_number}</span>
+                    </div>
+                  )}
+                  {terms.wire_swift_code && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">SWIFT Code:</span>
+                      <span>{terms.wire_swift_code}</span>
+                    </div>
+                  )}
+                  {terms.wire_bank_address && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Bank Address:</span>
+                      <span>{terms.wire_bank_address}</span>
+                    </div>
+                  )}
+                  {terms.wire_reference && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Reference:</span>
+                      <span>{terms.wire_reference}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground italic">Wire instructions not configured</p>
+              )}
+            </section>
+
+            <section className="border-t pt-4 mt-6">
+              <p className="text-xs text-muted-foreground text-center">
+                This is a preview of the investment agreement. The final document will be 
+                generated when creating investor-specific dockets.
+              </p>
+            </section>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function RoundTermsEditor({ round }: { round: Round }) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isOpen = round.state === "open";
 
   const { data: terms, isLoading, refetch } = useQuery({
@@ -219,16 +373,22 @@ function RoundTermsEditor({ round }: { round: Round }) {
   });
 
   const [formData, setFormData] = useState({
-    valuation_cap: terms?.valuation_cap || null,
-    discount_rate: terms?.discount_rate || null,
-    pro_rata_enabled: terms?.pro_rata_enabled || false,
-    mfn_enabled: terms?.mfn_enabled || false,
-    minimum_ticket: terms?.minimum_ticket || null,
-    wire_instructions: terms?.wire_instructions || "",
+    valuation_cap: null as number | null,
+    discount_rate: null as number | null,
+    pro_rata_enabled: false,
+    mfn_enabled: false,
+    minimum_ticket: null as number | null,
+    wire_bank_name: "",
+    wire_account_name: "",
+    wire_account_number: "",
+    wire_routing_number: "",
+    wire_swift_code: "",
+    wire_bank_address: "",
+    wire_reference: "",
   });
 
   // Update form when terms load
-  useState(() => {
+  useEffect(() => {
     if (terms) {
       setFormData({
         valuation_cap: terms.valuation_cap,
@@ -236,10 +396,16 @@ function RoundTermsEditor({ round }: { round: Round }) {
         pro_rata_enabled: terms.pro_rata_enabled || false,
         mfn_enabled: terms.mfn_enabled || false,
         minimum_ticket: terms.minimum_ticket,
-        wire_instructions: terms.wire_instructions || "",
+        wire_bank_name: terms.wire_bank_name || "",
+        wire_account_name: terms.wire_account_name || "",
+        wire_account_number: terms.wire_account_number || "",
+        wire_routing_number: terms.wire_routing_number || "",
+        wire_swift_code: terms.wire_swift_code || "",
+        wire_bank_address: terms.wire_bank_address || "",
+        wire_reference: terms.wire_reference || "",
       });
     }
-  });
+  }, [terms]);
 
   const handleSave = async () => {
     if (!isOpen) return;
@@ -250,7 +416,18 @@ function RoundTermsEditor({ round }: { round: Round }) {
         .from("round_terms")
         .upsert({
           round_id: round.id,
-          ...formData,
+          valuation_cap: formData.valuation_cap,
+          discount_rate: formData.discount_rate,
+          pro_rata_enabled: formData.pro_rata_enabled,
+          mfn_enabled: formData.mfn_enabled,
+          minimum_ticket: formData.minimum_ticket,
+          wire_bank_name: formData.wire_bank_name || null,
+          wire_account_name: formData.wire_account_name || null,
+          wire_account_number: formData.wire_account_number || null,
+          wire_routing_number: formData.wire_routing_number || null,
+          wire_swift_code: formData.wire_swift_code || null,
+          wire_bank_address: formData.wire_bank_address || null,
+          wire_reference: formData.wire_reference || null,
         }, { onConflict: "round_id" });
 
       if (error) throw error;
@@ -263,119 +440,306 @@ function RoundTermsEditor({ round }: { round: Round }) {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      toast({ title: "Please upload a PDF file", variant: "destructive" });
+      return;
+    }
+
+    setParsing(true);
+    try {
+      // Upload to temp storage for parsing
+      const fileName = `wire-instructions-${Date.now()}.pdf`;
+      const filePath = `temp/${round.id}/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("pitch-decks")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from("pitch-decks")
+        .getPublicUrl(filePath);
+
+      // Call AI to parse the wire instructions
+      const { data, error } = await supabase.functions.invoke("parse-wire-instructions", {
+        body: { fileUrl: urlData.publicUrl, roundId: round.id }
+      });
+
+      if (error) throw error;
+
+      if (data?.wireInstructions) {
+        setFormData(prev => ({
+          ...prev,
+          wire_bank_name: data.wireInstructions.bankName || prev.wire_bank_name,
+          wire_account_name: data.wireInstructions.accountName || prev.wire_account_name,
+          wire_account_number: data.wireInstructions.accountNumber || prev.wire_account_number,
+          wire_routing_number: data.wireInstructions.routingNumber || prev.wire_routing_number,
+          wire_swift_code: data.wireInstructions.swiftCode || prev.wire_swift_code,
+          wire_bank_address: data.wireInstructions.bankAddress || prev.wire_bank_address,
+          wire_reference: data.wireInstructions.reference || prev.wire_reference,
+        }));
+        toast({ title: "Wire instructions parsed", description: "Review the extracted information below" });
+      } else {
+        toast({ title: "Could not parse wire instructions", description: "Please enter manually", variant: "destructive" });
+      }
+
+      // Clean up temp file
+      await supabase.storage.from("pitch-decks").remove([filePath]);
+    } catch (error: any) {
+      console.error("Parse error:", error);
+      toast({ 
+        title: "Failed to parse document", 
+        description: "Please enter wire instructions manually",
+        variant: "destructive" 
+      });
+    } finally {
+      setParsing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   if (isLoading) {
     return <Skeleton className="h-40" />;
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {!isOpen && (
         <div className="flex items-center gap-2 text-muted-foreground text-sm bg-muted/50 p-3 rounded-lg">
           <Lock className="w-4 h-4" />
           Terms cannot be edited for closed rounds
         </div>
       )}
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Valuation Cap</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-            <Input
-              type="number"
-              value={formData.valuation_cap || ""}
-              onChange={(e) => setFormData(prev => ({ ...prev, valuation_cap: e.target.value ? Number(e.target.value) : null }))}
-              placeholder="10,000,000"
-              className="pl-7"
-              disabled={!isOpen}
-            />
+
+      {/* Preview Button */}
+      <Button 
+        variant="outline" 
+        onClick={() => setPreviewOpen(true)}
+        className="gap-2"
+      >
+        <Eye className="w-4 h-4" />
+        Preview Agreement
+      </Button>
+
+      {/* Investment Terms */}
+      <div>
+        <h5 className="text-sm font-medium mb-3 flex items-center gap-2">
+          <DollarSign className="w-4 h-4" />
+          Investment Terms
+        </h5>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Valuation Cap</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                type="number"
+                value={formData.valuation_cap || ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, valuation_cap: e.target.value ? Number(e.target.value) : null }))}
+                placeholder="10,000,000"
+                className="pl-7"
+                disabled={!isOpen}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Discount Rate</Label>
+            <div className="relative">
+              <Input
+                type="number"
+                value={formData.discount_rate || ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, discount_rate: e.target.value ? Number(e.target.value) : null }))}
+                placeholder="20"
+                className="pr-7"
+                disabled={!isOpen}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Minimum Investment</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                type="number"
+                value={formData.minimum_ticket || ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, minimum_ticket: e.target.value ? Number(e.target.value) : null }))}
+                placeholder="25,000"
+                className="pl-7"
+                disabled={!isOpen}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Instrument Type</Label>
+            <Select value={round.instrument_type} disabled>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="safe">SAFE</SelectItem>
+                <SelectItem value="note">Convertible Note</SelectItem>
+                <SelectItem value="equity">Priced Equity</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-        
-        <div className="space-y-2">
-          <Label>Discount Rate</Label>
-          <div className="relative">
-            <Input
-              type="number"
-              value={formData.discount_rate || ""}
-              onChange={(e) => setFormData(prev => ({ ...prev, discount_rate: e.target.value ? Number(e.target.value) : null }))}
-              placeholder="20"
-              className="pr-7"
+
+        <div className="flex gap-6 mt-4">
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={formData.pro_rata_enabled || false}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, pro_rata_enabled: checked }))}
               disabled={!isOpen}
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+            <Label>Pro-Rata Rights</Label>
           </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label>Minimum Ticket</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-            <Input
-              type="number"
-              value={formData.minimum_ticket || ""}
-              onChange={(e) => setFormData(prev => ({ ...prev, minimum_ticket: e.target.value ? Number(e.target.value) : null }))}
-              placeholder="25,000"
-              className="pl-7"
+          
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={formData.mfn_enabled || false}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, mfn_enabled: checked }))}
               disabled={!isOpen}
             />
+            <Label>MFN Clause</Label>
           </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label>Instrument Type</Label>
-          <Select value={round.instrument_type} disabled>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="safe">SAFE</SelectItem>
-              <SelectItem value="note">Convertible Note</SelectItem>
-              <SelectItem value="equity">Priced Equity</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
-      <div className="flex gap-6">
-        <div className="flex items-center gap-3">
-          <Switch
-            checked={formData.pro_rata_enabled || false}
-            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, pro_rata_enabled: checked }))}
-            disabled={!isOpen}
-          />
-          <Label>Pro-Rata Rights</Label>
+      <Separator />
+
+      {/* Wire Instructions */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h5 className="text-sm font-medium flex items-center gap-2">
+            <Building2 className="w-4 h-4" />
+            Wire Instructions
+          </h5>
+          {isOpen && (
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={parsing}
+                className="gap-2"
+              >
+                {parsing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {parsing ? "Parsing..." : "Upload PDF"}
+              </Button>
+            </div>
+          )}
         </div>
         
-        <div className="flex items-center gap-3">
-          <Switch
-            checked={formData.mfn_enabled || false}
-            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, mfn_enabled: checked }))}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Bank Name</Label>
+            <Input
+              value={formData.wire_bank_name}
+              onChange={(e) => setFormData(prev => ({ ...prev, wire_bank_name: e.target.value }))}
+              placeholder="First National Bank"
+              disabled={!isOpen}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Account Name</Label>
+            <Input
+              value={formData.wire_account_name}
+              onChange={(e) => setFormData(prev => ({ ...prev, wire_account_name: e.target.value }))}
+              placeholder="Acme Inc."
+              disabled={!isOpen}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Account Number</Label>
+            <Input
+              value={formData.wire_account_number}
+              onChange={(e) => setFormData(prev => ({ ...prev, wire_account_number: e.target.value }))}
+              placeholder="1234567890"
+              disabled={!isOpen}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Routing Number (ABA)</Label>
+            <Input
+              value={formData.wire_routing_number}
+              onChange={(e) => setFormData(prev => ({ ...prev, wire_routing_number: e.target.value }))}
+              placeholder="021000021"
+              disabled={!isOpen}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>SWIFT/BIC Code</Label>
+            <Input
+              value={formData.wire_swift_code}
+              onChange={(e) => setFormData(prev => ({ ...prev, wire_swift_code: e.target.value }))}
+              placeholder="CHASUS33"
+              disabled={!isOpen}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Reference / Memo</Label>
+            <Input
+              value={formData.wire_reference}
+              onChange={(e) => setFormData(prev => ({ ...prev, wire_reference: e.target.value }))}
+              placeholder="Investment - [Investor Name]"
+              disabled={!isOpen}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2 mt-4">
+          <Label>Bank Address</Label>
+          <Textarea
+            value={formData.wire_bank_address}
+            onChange={(e) => setFormData(prev => ({ ...prev, wire_bank_address: e.target.value }))}
+            placeholder="123 Bank Street, New York, NY 10001"
+            rows={2}
             disabled={!isOpen}
           />
-          <Label>MFN Clause</Label>
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Wire Instructions</Label>
-        <Textarea
-          value={formData.wire_instructions}
-          onChange={(e) => setFormData(prev => ({ ...prev, wire_instructions: e.target.value }))}
-          placeholder="Bank name, account number, routing number, etc."
-          rows={3}
-          disabled={!isOpen}
-        />
       </div>
 
       {isOpen && (
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-2">
           <Button onClick={handleSave} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Terms
           </Button>
         </div>
       )}
+
+      <ContractPreviewDialog 
+        open={previewOpen} 
+        onOpenChange={setPreviewOpen} 
+        round={round}
+        terms={terms}
+      />
     </div>
   );
 }
