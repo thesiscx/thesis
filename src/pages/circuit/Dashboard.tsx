@@ -215,17 +215,14 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="h-screen bg-[hsl(var(--canvas))] flex">
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header - on cream background */}
-        <div className="px-3 pt-3">
-          <CircuitHeader activeTool="stage" />
-        </div>
+    <div className="h-screen bg-[hsl(var(--canvas))] flex p-3 pr-0">
+      {/* Main content area - white rounded box */}
+      <div className="flex-1 flex flex-col overflow-hidden bg-background rounded-2xl shadow-sm">
+        {/* Header - inside white box */}
+        <CircuitHeader activeTool="stage" />
 
-        {/* White rounded content box */}
-        <div className="flex-1 overflow-hidden p-3 pt-2">
-          <main className="h-full bg-background rounded-2xl overflow-auto shadow-sm px-8 py-8">
+        {/* Content */}
+        <main className="flex-1 overflow-auto px-8 py-8">
             <div className="max-w-2xl">
               {/* Greeting */}
               <div className="mb-10">
@@ -286,18 +283,17 @@ export default function Dashboard() {
           </main>
         </div>
 
-        <CreateRoundDialog open={createRoundOpen} onOpenChange={setCreateRoundOpen} />
-
-        <CloseRoundDialog
-          open={closeDialogOpen}
-          onOpenChange={setCloseDialogOpen}
-          roundName={selectedRound?.name || ""}
-          onConfirm={confirmCloseRound}
-        />
-      </div>
-
       {/* Assistant Sidebar */}
       <AssistantSidebar pageKey="stage" onOpenRound={() => setCreateRoundOpen(true)} />
+
+      <CreateRoundDialog open={createRoundOpen} onOpenChange={setCreateRoundOpen} />
+
+      <CloseRoundDialog
+        open={closeDialogOpen}
+        onOpenChange={setCloseDialogOpen}
+        roundName={selectedRound?.name || ""}
+        onConfirm={confirmCloseRound}
+      />
     </div>
   );
 }
