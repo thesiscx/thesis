@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
+import { useFounderAuth } from '@/contexts/FounderAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { PetitionEditor } from '@/components/editor/PetitionEditor';
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
@@ -22,7 +22,7 @@ interface Version {
 
 const Editor = () => {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading, isSessionReady } = useAuth();
+  const { user, isLoading: authLoading, isAdmin } = useFounderAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -38,31 +38,7 @@ const Editor = () => {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastVersionSaveRef = useRef<Date>(new Date());
 
-  // Cache admin check with React Query - returns null for unknown, false for confirmed non-admin
-  const { data: isAdmin, isLoading: adminLoading } = useQuery({
-    queryKey: ['adminCheck', user?.id],
-    queryFn: async (): Promise<boolean | null> => {
-      if (!user) return null;
-      
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (error) {
-        console.error('Admin check error:', error);
-        return null;
-      }
-      
-      return !!data;
-    },
-    enabled: !!user && !authLoading && isSessionReady,
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 30,
-    meta: { persist: false },
-  });
+  // isAdmin comes from FounderAuthContext now - no need for separate query
 
   // Cache content with React Query - fetch ONLY the draft (not published)
   const { data: contentData, isLoading: contentLoading } = useQuery({
@@ -196,7 +172,7 @@ const Editor = () => {
 
   // Only redirect when we have CONFIRMED non-admin status (isAdmin === false, not null)
   useEffect(() => {
-    if (!adminLoading && isAdmin === false && user && isSessionReady) {
+    if (!authLoading && isAdmin === false && user) {
       toast({
         title: 'Access denied',
         description: 'You need admin privileges to access the editor.',
@@ -204,7 +180,7 @@ const Editor = () => {
       });
       navigate('/editor/login', { replace: true });
     }
-  }, [adminLoading, isAdmin, user, isSessionReady, navigate, toast]);
+  }, [authLoading, isAdmin, user, navigate, toast]);
 
   const saveContent = useCallback(async (newContent: any, createVersion = false) => {
     if (!contentId || !user) return;
@@ -392,7 +368,7 @@ const Editor = () => {
   }, [queryClient]);
 
   // Show nothing while loading or redirecting
-  if (authLoading || !isSessionReady || !user || isAdmin === false || contentLoading || content === null) {
+  if (authLoading || !user || isAdmin === false || contentLoading || content === null) {
     return null;
   }
 
