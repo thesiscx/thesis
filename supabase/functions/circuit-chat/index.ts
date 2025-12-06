@@ -23,23 +23,99 @@ Circuit is a professional fundraising infrastructure tool for startup founders -
 4. **Professional Workflow**: Rounds are "opened" and "closed" (not created/deleted) - this maintains an audit trail
 
 ## Your Role
-- Help founders understand and use Circuit effectively
-- Assist with fundraising strategy and best practices
-- Help draft memo content and pitch materials
-- Answer questions about SAFEs, convertible notes, and deal terms
-- Provide guidance on investor communications
+You are an ACTIVE assistant that CAN and SHOULD perform actions on behalf of the user. You have tools available to:
+- Add investors to the pipeline
+- Create investor-specific memo variants
+- Create investor-specific docket variants
+
+When users ask you to do something, USE YOUR TOOLS to actually do it. Don't just explain how - take action!
 
 ## Tone & Style
 - Professional but approachable
 - Concise and actionable
 - Knowledgeable about startup fundraising
-- Encouraging but realistic
+- Proactive - take action when asked
 
 ## Important Notes
 - You're speaking to startup founders who are actively fundraising
-- Keep responses focused and practical
-- If asked about features that don't exist, suggest they're on the roadmap
-- Never pretend to have access to their actual data - you're a helpful advisor`;
+- When users ask you to add an investor, create a memo, etc. - USE YOUR TOOLS
+- Always confirm what you're about to do before executing
+- If you need more information to complete an action, ask for it`;
+
+// Define the tools available to Circuit
+const CIRCUIT_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "add_investor",
+      description: "Add a new investor to the user's pipeline. Use this when the user asks to add an investor, track someone, or put someone in their pipeline.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            description: "The investor's full name"
+          },
+          email: {
+            type: "string",
+            description: "The investor's email address (optional)"
+          },
+          entity_name: {
+            type: "string",
+            description: "The name of the investor's fund or entity (optional)"
+          },
+          entity_type: {
+            type: "string",
+            enum: ["individual", "vc", "angel", "family_office", "corporate", "other"],
+            description: "The type of investor entity (optional)"
+          }
+        },
+        required: ["name"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_investor_memo",
+      description: "Create a personalized memo variant for a specific investor. Use this when the user wants to create a custom memo for an investor.",
+      parameters: {
+        type: "object",
+        properties: {
+          investor_name: {
+            type: "string",
+            description: "The name of the investor to create the memo for"
+          }
+        },
+        required: ["investor_name"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_investor_docket",
+      description: "Create a personalized docket/deal document for a specific investor. Use this when the user wants to create SAFE or deal docs for an investor.",
+      parameters: {
+        type: "object",
+        properties: {
+          investor_name: {
+            type: "string",
+            description: "The name of the investor to create the docket for"
+          },
+          amount: {
+            type: "number",
+            description: "The investment amount in dollars (optional)"
+          }
+        },
+        required: ["investor_name"],
+        additionalProperties: false
+      }
+    }
+  }
+];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -86,6 +162,7 @@ serve(async (req) => {
           { role: "system", content: CIRCUIT_SYSTEM_PROMPT },
           ...messages,
         ],
+        tools: CIRCUIT_TOOLS,
         stream: true,
       }),
     });
@@ -120,6 +197,8 @@ serve(async (req) => {
       
       // Create a transform stream to capture the response while passing it through
       let assistantContent = "";
+      let toolCalls: any[] = [];
+      let currentToolCall: { id?: string; name?: string; arguments?: string } = {};
       
       const transformStream = new TransformStream({
         transform(chunk, controller) {
@@ -133,9 +212,36 @@ serve(async (req) => {
             if (line.startsWith("data: ") && line !== "data: [DONE]") {
               try {
                 const json = JSON.parse(line.slice(6));
-                const content = json.choices?.[0]?.delta?.content;
-                if (content) {
-                  assistantContent += content;
+                const delta = json.choices?.[0]?.delta;
+                
+                // Handle regular content
+                if (delta?.content) {
+                  assistantContent += delta.content;
+                }
+                
+                // Handle tool calls
+                if (delta?.tool_calls) {
+                  for (const toolCall of delta.tool_calls) {
+                    if (toolCall.id) {
+                      // New tool call starting
+                      if (currentToolCall.id) {
+                        toolCalls.push({ ...currentToolCall });
+                      }
+                      currentToolCall = {
+                        id: toolCall.id,
+                        name: toolCall.function?.name || "",
+                        arguments: toolCall.function?.arguments || ""
+                      };
+                    } else if (toolCall.function) {
+                      // Continuing existing tool call
+                      if (toolCall.function.name) {
+                        currentToolCall.name = (currentToolCall.name || "") + toolCall.function.name;
+                      }
+                      if (toolCall.function.arguments) {
+                        currentToolCall.arguments = (currentToolCall.arguments || "") + toolCall.function.arguments;
+                      }
+                    }
+                  }
                 }
               } catch {
                 // Ignore parse errors
@@ -144,15 +250,28 @@ serve(async (req) => {
           }
         },
         async flush() {
+          // Push the last tool call if exists
+          if (currentToolCall.id) {
+            toolCalls.push({ ...currentToolCall });
+          }
+          
+          // Prepare the content to save - include tool calls if any
+          let contentToSave = assistantContent;
+          if (toolCalls.length > 0) {
+            // Embed tool calls as JSON in the message for the frontend to parse
+            const toolCallsJson = JSON.stringify(toolCalls);
+            contentToSave = `__TOOL_CALLS__${toolCallsJson}__END_TOOL_CALLS__${assistantContent}`;
+          }
+          
           // Save assistant message to database after stream completes
-          if (assistantContent && userId) {
+          if ((assistantContent || toolCalls.length > 0) && userId) {
             try {
               await supabase.from("circuit_chat_messages").insert({
                 user_id: userId,
                 role: "assistant",
-                content: assistantContent,
+                content: contentToSave,
               });
-              console.log("Saved assistant message to database");
+              console.log("Saved assistant message to database, tool_calls:", toolCalls.length);
             } catch (e) {
               console.error("Failed to save assistant message:", e);
             }
