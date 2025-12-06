@@ -231,9 +231,9 @@ export default function Dashboard() {
   const firstName = fullName?.split(" ")[0] || "there";
 
   const tools = [
+    { key: "pipeline", label: "Pipeline", icon: Users, countKey: "investorCount" as const, countLabel: "investors" },
     { key: "memo", label: "Memo", icon: FileText, countKey: "memoCount" as const, countLabel: "variants" },
     { key: "docket", label: "Docket", icon: FolderOpen, countKey: "docketCount" as const, countLabel: "docs" },
-    { key: "pipeline", label: "Pipeline", icon: Users, countKey: "investorCount" as const, countLabel: "investors" },
     { key: "registry", label: "Registry", icon: BookOpen, disabled: true },
   ];
 
