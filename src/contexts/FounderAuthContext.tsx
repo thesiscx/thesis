@@ -55,47 +55,58 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Failsafe timeout - force loading complete after 5 seconds
-    const failsafeTimeout = setTimeout(() => {
-      if (mounted && isLoading) {
-        console.warn('Auth loading timeout - forcing complete');
-        setIsLoading(false);
+    // Initialize auth state immediately on mount
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        
+        if (initialSession?.user) {
+          await fetchProfile(initialSession.user.id);
+        } else {
+          setProfileLoaded(true);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
         setProfileLoaded(true);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
-    }, 5000);
+    };
 
-    // Set up auth state listener
+    // Set up auth state listener for subsequent changes (login/logout/token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         if (!mounted) return;
+        
+        // Skip INITIAL_SESSION since we handle it above
+        if (event === 'INITIAL_SESSION') return;
         
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
         if (newSession?.user) {
-          // Defer Supabase calls to prevent deadlock
+          // Defer to prevent deadlock
           setTimeout(() => {
-            if (!mounted) return;
-            fetchProfile(newSession.user.id).finally(() => {
-              if (mounted) setIsLoading(false);
-            });
+            if (mounted) fetchProfile(newSession.user.id);
           }, 0);
         } else {
           setCompanySlug(null);
           setCompanyName(null);
           setFullName(null);
           setProfileLoaded(true);
-          setIsLoading(false);
         }
       }
     );
 
-    // Trigger initial session check
-    supabase.auth.getSession();
+    initializeAuth();
 
     return () => {
       mounted = false;
-      clearTimeout(failsafeTimeout);
       subscription.unsubscribe();
     };
   }, []);
