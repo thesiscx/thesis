@@ -19,7 +19,6 @@ import {
   ChevronsUpDown,
   Home,
   MoreHorizontal,
-  Pencil,
   Trash2,
   ArchiveRestore,
 } from "lucide-react";
@@ -40,27 +39,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoading: authLoading, signOut, companyName } = useFounderAuth();
-  const { rounds, isLoading: roundsLoading, archiveRound, unarchiveRound, updateRound, deleteRound } = useRounds();
+  const { rounds, isLoading: roundsLoading, archiveRound, unarchiveRound, deleteRound } = useRounds();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
-  const [editName, setEditName] = useState("");
 
   // Fetch profile for full name
   const { data: profile } = useQuery({
@@ -109,22 +97,6 @@ export default function Dashboard() {
     navigate("/auth");
   };
 
-  const handleEditRound = (round: Round) => {
-    setSelectedRound(round);
-    setEditName(round.name);
-    setEditDialogOpen(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!selectedRound || !editName.trim()) return;
-    
-    await updateRound.mutateAsync({ 
-      roundId: selectedRound.id, 
-      name: editName.trim() 
-    });
-    setEditDialogOpen(false);
-    setSelectedRound(null);
-  };
 
   const handleArchiveRound = async (round: Round) => {
     if (round.state === "archived") {
@@ -269,10 +241,6 @@ export default function Dashboard() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditRound(round)}>
-                              <Pencil className="w-4 h-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleArchiveRound(round)}>
                               <Archive className="w-4 h-4 mr-2" />
                               Archive
@@ -391,33 +359,6 @@ export default function Dashboard() {
 
       <CreateRoundDialog open={createRoundOpen} onOpenChange={setCreateRoundOpen} />
 
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Round</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Round Name</Label>
-              <Input
-                id="edit-name"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                placeholder="Enter round name"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveEdit} disabled={updateRound.isPending}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
