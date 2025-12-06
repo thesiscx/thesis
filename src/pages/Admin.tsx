@@ -14,12 +14,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Admin() {
-  const { user, signOut, isLoading, isAdmin } = useFounderAuth();
+  const { user, signOut, isLoading } = useFounderAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Cache stats with React Query - fetch immediately when user exists
+  // Check admin role directly in Admin page
+  const { data: isAdmin, isLoading: isCheckingAdmin } = useQuery({
+    queryKey: ['adminRole', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user!.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Cache stats with React Query
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['adminStats'],
     queryFn: async () => {
@@ -50,9 +66,9 @@ export default function Admin() {
     }
   }, [isLoading, user, navigate]);
 
-  // Only redirect when we have CONFIRMED non-admin status
+  // Redirect when confirmed non-admin
   useEffect(() => {
-    if (!isLoading && isAdmin === false && user) {
+    if (!isCheckingAdmin && isAdmin === false && user) {
       toast({
         title: 'Access denied',
         description: 'You need admin privileges to access the admin dashboard.',
@@ -60,7 +76,7 @@ export default function Admin() {
       });
       navigate("/admin/login", { replace: true });
     }
-  }, [isLoading, isAdmin, user, navigate, toast]);
+  }, [isCheckingAdmin, isAdmin, user, navigate, toast]);
 
   const handleSignOut = () => {
     signOut('/admin/login');
@@ -70,8 +86,8 @@ export default function Admin() {
     queryClient.invalidateQueries({ queryKey: ['adminStats'] });
   };
 
-  // Show skeleton while loading
-  if (isLoading) {
+  // Show skeleton while loading auth or checking admin
+  if (isLoading || isCheckingAdmin) {
     return (
       <div className="min-h-screen bg-background">
         <div className="border-b bg-card">
@@ -97,7 +113,7 @@ export default function Admin() {
   }
 
   // Don't render if not authenticated or not admin
-  if (!user || isAdmin === false || isAdmin === null) {
+  if (!user || !isAdmin) {
     return null;
   }
 
