@@ -104,7 +104,7 @@ export default function CircuitHeader({
               <ChevronsUpDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuContent align="start" className="w-64">
             {/* Header with logo and company name */}
             <div className="px-3 py-4 flex flex-col items-center gap-2 border-b mb-1">
               {avatarUrl ? (
@@ -231,24 +231,10 @@ export default function CircuitHeader({
               <DropdownMenuSeparator />
               
               {/* Round Actions */}
-              <DropdownMenuItem onClick={onCreateRound}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Round
+              <DropdownMenuItem onClick={() => navigate("/circuit/settings/rounds")}>
+                <LayoutList className="w-4 h-4 mr-2" />
+                Rounds Overview
               </DropdownMenuItem>
-              
-              {activeRound && (
-                <DropdownMenuItem onClick={onEditRound}>
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Edit Round Details
-                </DropdownMenuItem>
-              )}
-              
-              {activeRound && isActiveRoundOpen && (
-                <DropdownMenuItem onClick={onCloseRound} className="text-destructive">
-                  <Archive className="w-4 h-4 mr-2" />
-                  Close Round
-                </DropdownMenuItem>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
