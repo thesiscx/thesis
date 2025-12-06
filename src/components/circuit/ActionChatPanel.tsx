@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy, Settings } from "lucide-react";
+import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy, Settings, UserPlus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -632,6 +632,130 @@ function DocketTermsFlow({
   );
 }
 
+// Add Investor flow
+interface InvestorFormData {
+  name?: string;
+  email?: string;
+  entity_name?: string;
+  entity_type?: string;
+  address?: string;
+}
+
+function AddInvestorFlow({
+  onSubmit,
+  isLoading,
+  isComplete,
+}: {
+  onSubmit: (data: InvestorFormData) => void;
+  isLoading: boolean;
+  isComplete: boolean;
+}) {
+  const [formData, setFormData] = useState<InvestorFormData>({
+    entity_type: "individual",
+  });
+
+  if (isComplete) {
+    return (
+      <FlowCard title="Add Investor">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Check className="w-4 h-4 text-green-600" />
+          <span>Investor added to your pipeline.</span>
+        </div>
+      </FlowCard>
+    );
+  }
+
+  const ENTITY_TYPES = [
+    { value: "individual", label: "Individual" },
+    { value: "llc", label: "LLC" },
+    { value: "corporation", label: "Corporation" },
+    { value: "partnership", label: "Partnership" },
+    { value: "trust", label: "Trust" },
+  ];
+
+  return (
+    <FlowCard title="Add Investor">
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Name *</Label>
+          <Input
+            value={formData.name || ""}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="Sequoia Capital"
+            className="bg-background"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Email</Label>
+          <Input
+            value={formData.email || ""}
+            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            placeholder="partner@sequoia.com"
+            type="email"
+            className="bg-background"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Entity Name</Label>
+          <Input
+            value={formData.entity_name || ""}
+            onChange={(e) => setFormData(prev => ({ ...prev, entity_name: e.target.value }))}
+            placeholder="Sequoia Capital Operations LLC"
+            className="bg-background"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Entity Type</Label>
+          <RadioGroup 
+            value={formData.entity_type || "individual"} 
+            onValueChange={(v) => setFormData(prev => ({ ...prev, entity_type: v }))}
+            className="grid grid-cols-2 gap-1.5"
+          >
+            {ENTITY_TYPES.map((opt) => (
+              <label
+                key={opt.value}
+                className={cn(
+                  "flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-xs transition-all",
+                  formData.entity_type === opt.value 
+                    ? "border-foreground bg-foreground/5" 
+                    : "border-border hover:bg-secondary/50"
+                )}
+              >
+                <RadioGroupItem value={opt.value} className="h-3 w-3" />
+                {opt.label}
+              </label>
+            ))}
+          </RadioGroup>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Address</Label>
+          <Textarea
+            value={formData.address || ""}
+            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+            placeholder="2800 Sand Hill Road, Menlo Park, CA 94025"
+            rows={2}
+            className="text-sm resize-none bg-background"
+          />
+        </div>
+      </div>
+
+      <Button 
+        size="sm" 
+        onClick={() => onSubmit(formData)} 
+        disabled={!formData.name?.trim() || isLoading}
+        className="w-full"
+      >
+        {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
+        Add Investor
+      </Button>
+    </FlowCard>
+  );
+}
+
 // Welcome messages for each page
 const WELCOME_MESSAGES: Record<PageKey, string> = {
   stage: "Welcome to Circuit. I'll help you manage your fundraising rounds. Use the actions below to open a new round or close your current one.",
@@ -869,6 +993,51 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
+  const handleAddInvestor = () => {
+    setActiveFlow("add-investor");
+  };
+
+  const confirmAddInvestor = async (data: InvestorFormData) => {
+    if (!openRound || !data.name?.trim()) return;
+    
+    setIsProcessing(true);
+    setProcessingAction("add-investor");
+    
+    try {
+      const slug = data.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+        .slice(0, 30);
+
+      const { error } = await supabase.from("investors").insert({
+        name: data.name.trim(),
+        slug,
+        email: data.email?.trim() || null,
+        entity_name: data.entity_name?.trim() || null,
+        entity_type: data.entity_type || "individual",
+        address: data.address?.trim() || null,
+        workspace_id: openRound.workspace_id,
+      });
+
+      if (error) throw error;
+
+      await addMessage("result", `${data.name} has been added to your pipeline.`);
+      setFlowComplete(prev => ({ ...prev, "add-investor": true }));
+      queryClient.invalidateQueries({ queryKey: ["investors"] });
+      toast({ title: "Investor added" });
+    } catch (error) {
+      toast({ 
+        title: "Failed to add investor", 
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsProcessing(false);
+      setProcessingAction(null);
+    }
+  };
+
   const generateInvestorLink = async (investorId: string, investorName: string) => {
     if (!roundId) return;
     
@@ -950,6 +1119,14 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             accumulatedData={termsData}
           />
         );
+      case "add-investor":
+        return (
+          <AddInvestorFlow
+            onSubmit={confirmAddInvestor}
+            isLoading={isProcessing}
+            isComplete={flowComplete["add-investor"] || false}
+          />
+        );
       default:
         return null;
     }
@@ -1018,9 +1195,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
           { 
             key: "add-investor",
             label: "Add Investor", 
-            icon: Users, 
-            onClick: () => addMessage("system", "Use the Add Investor button in the pipeline view."),
-            disabled: false
+            icon: UserPlus, 
+            onClick: handleAddInvestor,
+            disabled: !hasOpenRound || isButtonDisabled("add-investor") || activeFlow === "add-investor"
           },
         ];
       default:
