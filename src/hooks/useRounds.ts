@@ -183,7 +183,7 @@ export function useRounds() {
     mutationFn: async (roundId: string) => {
       const { error } = await supabase
         .from("rounds")
-        .update({ state: "active" })
+        .update({ state: "draft" })
         .eq("id", roundId);
 
       if (error) throw error;
