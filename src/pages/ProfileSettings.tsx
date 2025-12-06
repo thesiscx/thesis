@@ -193,7 +193,7 @@ export default function ProfileSettings() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Unable to load user profile</p>
-          <Button onClick={() => navigate("/circuit")}>Return to Stage</Button>
+          <Button onClick={() => navigate("/")}>Return</Button>
         </div>
       </div>
     );
@@ -204,11 +204,11 @@ export default function ProfileSettings() {
       <div className="container mx-auto max-w-2xl py-8 px-6">
         <Button 
           variant="ghost" 
-          onClick={() => navigate("/circuit")}
+          onClick={() => navigate(-1)}
           className="mb-6 -ml-2 hover:bg-secondary"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Stage
+          Back
         </Button>
         
         <div className="mb-8">

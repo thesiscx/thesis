@@ -135,15 +135,15 @@ export default function CircuitHeader({
               <Copy className="w-3 h-3 text-muted-foreground shrink-0 ml-2" />
             </div>
 
-            <DropdownMenuItem onClick={() => navigate("/circuit/settings/domain")}>
+            <DropdownMenuItem onClick={() => navigate("/settings/domain")}>
               <Globe className="w-4 h-4 mr-2" />
               Custom Domain
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
+            <DropdownMenuItem onClick={() => navigate("/settings")}>
               <Building2 className="w-4 h-4 mr-2" />
               Company Settings
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/circuit/settings/profile")}>
+            <DropdownMenuItem onClick={() => navigate("/settings/profile")}>
               <User className="w-4 h-4 mr-2" />
               Profile Settings
             </DropdownMenuItem>
@@ -245,7 +245,7 @@ export default function CircuitHeader({
               <DropdownMenuSeparator />
               
               {/* Round Actions */}
-              <DropdownMenuItem onClick={() => navigate("/circuit/settings/rounds")}>
+              <DropdownMenuItem onClick={() => navigate("/settings/rounds")}>
                 <LayoutList className="w-4 h-4 mr-2" />
                 Rounds Overview
               </DropdownMenuItem>

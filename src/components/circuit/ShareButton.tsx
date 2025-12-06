@@ -65,9 +65,9 @@ export default function ShareButton({
   const isGlobal = !investorId;
   const roundCode = getRoundCode({ round_type: roundType as any, round_number: roundNumber });
   
-  // Generate the shareable link
+  // Generate the shareable link (uses /share/ prefix for public routes)
   const shareLink = companySlug 
-    ? `https://circuit.run/${companySlug}/${roundCode}/${tool}${investorSlug ? `/${investorSlug}` : ""}`
+    ? `https://circuit.cx/share/${companySlug}/${roundCode}/${tool}${investorSlug ? `/${investorSlug}` : ""}`
     : null;
 
   const copyLink = async () => {

@@ -115,7 +115,7 @@ export default function EmailAuth() {
         return;
       }
 
-      navigate("/circuit", { replace: true });
+      navigate("/", { replace: true });
     } catch (error) {
       console.error("Sign in error:", error);
       toast({
@@ -153,7 +153,7 @@ export default function EmailAuth() {
         email: email.trim().toLowerCase(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/circuit`,
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
 
@@ -259,7 +259,7 @@ export default function EmailAuth() {
         .eq("id", user.id);
 
       sessionStorage.removeItem("validated_invite_code");
-      navigate("/circuit", { replace: true });
+      navigate("/", { replace: true });
     } catch (error) {
       console.error("Round creation error:", error);
       toast({
