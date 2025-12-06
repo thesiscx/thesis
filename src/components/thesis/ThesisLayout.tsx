@@ -9,7 +9,7 @@ import {
   LogOut,
   Home
 } from "lucide-react";
-import thesisLogo from "@/assets/thesis-logo.png";
+const thesisLogo = "/thesis-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
