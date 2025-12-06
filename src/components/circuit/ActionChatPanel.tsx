@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+
 import type { Json } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -570,6 +570,73 @@ function generateMemoContent(data: DraftData): any {
   };
 }
 
+// Edit memo flow - text input card for editing existing memo
+function EditMemoFlow({
+  onSubmit,
+  isLoading,
+  isComplete,
+  isHistorical,
+  savedData,
+}: {
+  onSubmit: (prompt: string) => void;
+  isLoading: boolean;
+  isComplete: boolean;
+  isHistorical?: boolean;
+  savedData?: { prompt?: string };
+}) {
+  const [prompt, setPrompt] = useState(savedData?.prompt || "");
+
+  if (isComplete || isHistorical) {
+    return (
+      <div className={cn("rounded-xl border border-border p-4", isHistorical && "bg-secondary/30 opacity-60")}>
+        <div className="flex items-center gap-2 text-sm">
+          <Check className="w-4 h-4 text-green-600" />
+          <span className="font-medium">Memo updated</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <FlowCard title="Edit Memo">
+        <div className="flex flex-col items-center gap-3 py-4">
+          <Loader2 className="w-6 h-6 animate-spin text-foreground" />
+          <span className="text-sm text-muted-foreground animate-pulse">
+            Applying your changes...
+          </span>
+        </div>
+      </FlowCard>
+    );
+  }
+
+  return (
+    <FlowCard title="Edit Memo">
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">
+          Describe the changes you'd like to make to your memo.
+        </p>
+        <Textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="e.g., Make the problem section more concise, add more traction metrics, strengthen the competitive advantages..."
+          rows={4}
+          className="text-sm resize-none bg-background"
+        />
+      </div>
+      <Button 
+        size="sm" 
+        onClick={() => onSubmit(prompt)} 
+        disabled={!prompt.trim()}
+        className="w-full"
+      >
+        <Check className="w-4 h-4 mr-2" />
+        Apply Changes
+      </Button>
+    </FlowCard>
+  );
+}
+
 // Accumulated terms data
 interface TermsData {
   valuation_cap?: string;
@@ -893,8 +960,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   const [termsData, setTermsData] = useState<TermsData>({});
   const [generatedDockets, setGeneratedDockets] = useState<Record<string, boolean>>({});
   
-  // Edit memo dialog state
-  const [editMemoOpen, setEditMemoOpen] = useState(false);
+  // Edit memo state
   const [editMemoPrompt, setEditMemoPrompt] = useState("");
 
   // Fetch messages from DB
@@ -1100,9 +1166,14 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   };
 
   const handleDraftMemo = async () => {
-    // If memo already exists, open edit dialog instead
+    // If memo already exists, create an edit-memo flow card
     if (hasMemoContent) {
-      setEditMemoOpen(true);
+      setEditMemoPrompt("");
+      hasInitialized.current = true;
+      const cardId = await createFlowCard("edit-memo");
+      if (cardId) {
+        setActiveFlowId(cardId);
+      }
       return;
     }
     
@@ -1115,22 +1186,17 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
-  const handleEditMemoSubmit = async () => {
-    if (!editMemoPrompt.trim() || !currentMemoContent) return;
+  const handleEditMemoSubmit = async (prompt: string) => {
+    if (!prompt.trim() || !currentMemoContent || !activeFlowId) return;
     
     setIsProcessing(true);
-    setEditMemoOpen(false);
-    
-    // Add user message to chat
-    await addMessage("user", editMemoPrompt);
-    await addMessage("confirmation", "Editing your memo...");
     
     try {
       // Call the AI edge function with edit instructions
       const { data: aiResponse, error: aiError } = await supabase.functions.invoke("draft-memo-ai", {
         body: { 
           editMode: true,
-          editPrompt: editMemoPrompt,
+          editPrompt: prompt,
           currentContent: currentMemoContent,
         }
       });
@@ -1148,6 +1214,10 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       if (onUpdateMemoContent) {
         await onUpdateMemoContent(aiResponse.content);
       }
+      
+      // Mark flow as complete
+      await updateFlowCard(activeFlowId, 0, { prompt }, true);
+      setActiveFlowId(null);
       
       await addMessage("result", "Your memo has been updated based on your instructions.");
       toast({ title: "Memo updated" });
@@ -1457,6 +1527,16 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             savedData={flowData as InvestorFormData}
           />
         );
+      case "edit-memo":
+        return (
+          <EditMemoFlow
+            onSubmit={handleEditMemoSubmit}
+            isLoading={isProcessing && isActive}
+            isComplete={isComplete}
+            isHistorical={isHistorical}
+            savedData={flowData as { prompt?: string }}
+          />
+        );
       default:
         return null;
     }
@@ -1644,42 +1724,6 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
           ))}
         </div>
       </div>
-      {/* Edit Memo Dialog */}
-      <Dialog open={editMemoOpen} onOpenChange={setEditMemoOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Memo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              Describe the changes you'd like to make to your memo.
-            </p>
-            <Textarea
-              value={editMemoPrompt}
-              onChange={(e) => setEditMemoPrompt(e.target.value)}
-              placeholder="e.g., Make the problem section more concise, add more traction metrics, strengthen the competitive advantages..."
-              rows={4}
-              className="resize-none"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditMemoOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleEditMemoSubmit} 
-              disabled={!editMemoPrompt.trim() || isProcessing}
-            >
-              {isProcessing ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Pencil className="w-4 h-4 mr-2" />
-              )}
-              Apply Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
