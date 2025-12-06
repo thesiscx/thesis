@@ -2,3 +2,6 @@ project_id = "kruktizdznznouaorkej"
 
 [functions.validate-access-key]
 verify_jwt = false
+
+[functions.check-user-exists]
+verify_jwt = false
