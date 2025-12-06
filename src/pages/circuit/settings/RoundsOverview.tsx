@@ -998,6 +998,9 @@ export default function RoundsOverview() {
       <CreateRoundDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["rounds"] });
+        }}
       />
     </div>
   );
