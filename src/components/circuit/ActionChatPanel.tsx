@@ -186,7 +186,7 @@ const WELCOME_MESSAGES: Record<PageKey, string> = {
 
 export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionChatPanelProps) {
   const { toast } = useToast();
-  const { user } = useFounderAuth();
+  const { user, isLoading: authLoading } = useFounderAuth();
   const queryClient = useQueryClient();
   const { hasOpenRound, openRound, closeRound } = useRounds();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -194,10 +194,13 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
   const [activeFlow, setActiveFlow] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  console.log(`[ActionChatPanel] Render: pageKey=${pageKey}, userId=${user?.id?.slice(0, 8) || 'none'}, authLoading=${authLoading}`);
+
   // Fetch messages for this page
-  const { data: messages = [], isLoading } = useQuery({
+  const { data: messages = [], isLoading: messagesLoading, isFetching } = useQuery({
     queryKey: ["action-messages", user?.id, pageKey],
     queryFn: async () => {
+      console.log(`[ActionChatPanel] Fetching messages for ${pageKey}...`);
       const { data, error } = await supabase
         .from("action_messages")
         .select("*")
@@ -206,7 +209,11 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
         .order("created_at", { ascending: true })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.error(`[ActionChatPanel] Query error:`, error);
+        throw error;
+      }
+      console.log(`[ActionChatPanel] Got ${data?.length || 0} messages`);
       return (data || []) as ActionMessage[];
     },
     enabled: !!user?.id,
@@ -450,7 +457,19 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
     }
   };
 
+  // Show loading only when auth is loading
+  if (authLoading) {
+    console.log("[ActionChatPanel] Showing auth loading spinner");
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Show sign-in message if no user (not loading)
   if (!user) {
+    console.log("[ActionChatPanel] No user, showing sign-in message");
     return (
       <div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">
         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-3">
@@ -462,11 +481,14 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
     );
   }
 
+  // Only show loading when actively fetching messages (not when disabled)
+  const showMessagesLoading = messagesLoading && isFetching;
+
   return (
     <div className="flex flex-col h-full">
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        {isLoading ? (
+        {showMessagesLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
