@@ -58,7 +58,7 @@ export default function CircuitLayout({
     <div className="h-screen bg-background flex overflow-hidden">
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header - no action buttons, all actions through Circuit sidebar */}
+        {/* Header - clean, no border */}
         <CircuitHeader
           rounds={rounds}
           activeRoundSlug={roundSlug}
@@ -68,8 +68,8 @@ export default function CircuitLayout({
           onCreateRound={onCreateRound}
         />
 
-        {/* Main content */}
-        <main className="flex-1 overflow-auto">
+        {/* Main content - clean background */}
+        <main className="flex-1 overflow-auto bg-background">
           {children}
         </main>
       </div>

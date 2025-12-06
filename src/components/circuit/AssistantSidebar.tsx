@@ -19,9 +19,9 @@ export default function AssistantSidebar({
   onUpdateMemoContent,
 }: AssistantSidebarProps) {
   return (
-    <aside className="w-96 h-screen border-l border-border bg-[hsl(var(--assistant-bg))] flex flex-col shrink-0">
-      {/* Header with Circuit logo */}
-      <div className="h-14 border-b border-border/50 flex items-center px-6 shrink-0">
+    <aside className="w-96 h-screen border-l border-border/50 bg-[hsl(var(--assistant-bg))] flex flex-col shrink-0">
+      {/* Header with Circuit logo - no bottom border for cleaner look */}
+      <div className="h-14 flex items-center px-6 shrink-0">
         <img src={circuitLogo} alt="Circuit" className="h-5" />
       </div>
 
