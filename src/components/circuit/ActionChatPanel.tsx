@@ -1059,7 +1059,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   return (
     <div className="flex flex-col h-full">
       {/* Messages */}
-      <ScrollArea className="flex-1 px-6 py-6" ref={scrollRef}>
+      <ScrollArea className="flex-1 px-6 py-6 overscroll-contain" ref={scrollRef}>
         <div className="space-y-6">
           {displayMessages.map((msg) => (
             <div key={msg.id} className="space-y-1.5">
@@ -1096,8 +1096,8 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
         </div>
       </ScrollArea>
 
-      {/* Footer with action buttons */}
-      <div className="px-6 py-4 border-t border-border">
+      {/* Footer with action buttons - no border, positioned higher */}
+      <div className="px-6 pb-8">
         <div className="flex items-center gap-2 flex-wrap">
           {actionButtons.map((btn) => (
             <Button

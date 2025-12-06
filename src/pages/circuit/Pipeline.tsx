@@ -35,13 +35,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Plus,
   Search,
   MoreHorizontal,
   FileText,
   FolderOpen,
   Trash2,
   Pencil,
+  Users,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -236,17 +236,11 @@ export default function ThesisCircuit() {
       <div className="flex-1 overflow-auto">
         <div className="max-w-6xl mx-auto p-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="font-heading text-2xl font-bold">Pipeline</h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Manage your investor pipeline for {activeRound?.name || "this round"}
-              </p>
-            </div>
-            <Button onClick={() => setAddInvestorOpen(true)} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Investor
-            </Button>
+          <div className="mb-6">
+            <h1 className="font-heading text-2xl font-bold">Pipeline</h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Manage your investor pipeline for {activeRound?.name || "this round"}
+            </p>
           </div>
 
           {/* Search */}
@@ -266,16 +260,12 @@ export default function ThesisCircuit() {
           ) : filteredInvestors.length === 0 ? (
             <div className="border border-dashed border-border rounded-lg p-12 text-center">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <Plus className="w-6 h-6 text-muted-foreground" />
+                <Users className="w-6 h-6 text-muted-foreground" />
               </div>
               <h3 className="font-heading text-lg font-semibold mb-2">No investors yet</h3>
-              <p className="text-muted-foreground text-sm mb-6">
-                Start building your investor pipeline.
+              <p className="text-muted-foreground text-sm">
+                Add investors using the sidebar.
               </p>
-              <Button onClick={() => setAddInvestorOpen(true)} className="gap-2">
-                <Plus className="w-4 h-4" />
-                Add Investor
-              </Button>
             </div>
           ) : (
             <div className="border border-border rounded-lg overflow-hidden">
