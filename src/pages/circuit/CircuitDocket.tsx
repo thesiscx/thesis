@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import ThesisLayout from "@/components/thesis/ThesisLayout";
-import GlobalDocket from "@/components/thesis/docket/GlobalDocket";
-import InvestorDocket from "@/components/thesis/docket/InvestorDocket";
-import CreateRoundDialog from "@/components/thesis/CreateRoundDialog";
+import CircuitLayout from "@/components/circuit/CircuitLayout";
+import GlobalDocket from "@/components/circuit/docket/GlobalDocket";
+import InvestorDocket from "@/components/circuit/docket/InvestorDocket";
+import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
 import { useRounds } from "@/hooks/useRounds";
 import { useInvestors } from "@/hooks/useInvestors";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,7 +32,7 @@ export default function ThesisDocket() {
 
   return (
     <>
-      <ThesisLayout
+      <CircuitLayout
         rounds={rounds}
         investors={investors}
         recentInvestors={recentInvestors}
@@ -43,7 +43,7 @@ export default function ThesisDocket() {
         ) : (
           <InvestorDocket roundSlug={roundSlug} investorSlug={variantSlug} />
         )}
-      </ThesisLayout>
+      </CircuitLayout>
 
       <CreateRoundDialog
         open={createRoundOpen}

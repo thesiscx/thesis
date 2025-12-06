@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { FeatureStream } from "@/components/FeatureStream";
+import circuitLogo from "@/assets/circuit-logo.png";
 
 export default function Auth() {
   const { user, isLoading } = useFounderAuth();
@@ -10,7 +11,7 @@ export default function Auth() {
   // Redirect if already logged in
   useEffect(() => {
     if (user && !isLoading) {
-      navigate("/thesis", { replace: true });
+      navigate("/circuit", { replace: true });
     }
   }, [user, isLoading, navigate]);
 
@@ -31,7 +32,7 @@ export default function Auth() {
           
           {/* Logo & Tagline */}
           <div className="text-center space-y-2">
-            <img src="/thesis-logo.png" alt="Thesis" className="h-8 mx-auto" />
+            <img src={circuitLogo} alt="Circuit" className="h-8 mx-auto" />
             <p className="text-muted-foreground font-medium">
               Run Your Raise
             </p>
@@ -52,7 +53,7 @@ export default function Auth() {
       {/* Footer */}
       <footer className="py-6 text-center">
         <p className="text-xs text-muted-foreground">
-          © 2025 Thesis.{" "}
+          © 2025 Circuit.{" "}
           <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>.{" "}
           <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>.{" "}
           <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>.

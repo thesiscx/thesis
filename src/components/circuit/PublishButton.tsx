@@ -93,7 +93,7 @@ export default function PublishButton({
 
   // Generate the public URL based on company slug and round code
   const roundCode = getRoundCode({ round_type: roundType as any, round_number: roundNumber });
-  const publishedUrl = `thesis.run/${companySlug}/${roundCode}/${tool}${isGlobal ? "" : `/${variantSlug}`}`;
+  const publishedUrl = `circuit.run/${companySlug}/${roundCode}/${tool}${isGlobal ? "" : `/${variantSlug}`}`;
 
   const handlePublish = async () => {
     setIsPublishing(true);

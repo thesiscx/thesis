@@ -12,11 +12,11 @@ import EmailAuth from "./pages/auth/EmailAuth";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Pricing from "./pages/Pricing";
-import Dashboard from "./pages/thesis/Dashboard";
-import ThesisMemo from "./pages/thesis/ThesisMemo";
-import ThesisDocket from "./pages/thesis/ThesisDocket";
-import ThesisCircuit from "./pages/thesis/ThesisCircuit";
-import FounderSettings from "./pages/thesis/FounderSettings";
+import Dashboard from "./pages/circuit/Dashboard";
+import CircuitMemo from "./pages/circuit/CircuitMemo";
+import CircuitDocket from "./pages/circuit/CircuitDocket";
+import Pipeline from "./pages/circuit/Pipeline";
+import FounderSettings from "./pages/circuit/FounderSettings";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
@@ -38,7 +38,7 @@ const queryClient = new QueryClient({
 
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
-  key: 'thesis-query-cache',
+  key: 'circuit-query-cache',
 });
 
 // Layout wrapper that provides FounderAuth context
@@ -100,8 +100,10 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           {/* Redirects - must come first */}
-          <Route path="/" element={<Navigate to="/thesis" replace />} />
+          <Route path="/" element={<Navigate to="/circuit" replace />} />
           <Route path="/login" element={<Navigate to="/auth" replace />} />
+          {/* Legacy redirect */}
+          <Route path="/thesis/*" element={<Navigate to="/circuit" replace />} />
           
           {/* Legal & Info - no auth needed */}
           <Route path="/terms" element={<Terms />} />
@@ -119,12 +121,12 @@ const App = () => (
             <Route path="/auth/invite" element={<InviteCode />} />
             <Route path="/auth/email" element={<EmailAuth />} />
             
-            {/* Thesis pages (protected) */}
-            <Route path="/thesis" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/thesis/settings" element={<ProtectedRoute><FounderSettings /></ProtectedRoute>} />
-            <Route path="/thesis/:roundSlug/circuit/:variantSlug" element={<ProtectedRoute><ThesisCircuit /></ProtectedRoute>} />
-            <Route path="/thesis/:roundSlug/memo/:variantSlug" element={<ProtectedRoute><ThesisMemo /></ProtectedRoute>} />
-            <Route path="/thesis/:roundSlug/docket/:variantSlug" element={<ProtectedRoute><ThesisDocket /></ProtectedRoute>} />
+            {/* Circuit pages (protected) */}
+            <Route path="/circuit" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/circuit/settings" element={<ProtectedRoute><FounderSettings /></ProtectedRoute>} />
+            <Route path="/circuit/:roundSlug/pipeline/:variantSlug" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
+            <Route path="/circuit/:roundSlug/memo/:variantSlug" element={<ProtectedRoute><CircuitMemo /></ProtectedRoute>} />
+            <Route path="/circuit/:roundSlug/docket/:variantSlug" element={<ProtectedRoute><CircuitDocket /></ProtectedRoute>} />
           </Route>
           
           {/* Public Investor Routes - share one InvestorAuthProvider */}

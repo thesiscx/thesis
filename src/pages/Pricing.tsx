@@ -110,7 +110,7 @@ export default function Pricing() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-12">
-          Questions? Reach out at hello@thesis.app
+          Questions? Reach out at hello@circuit.run
         </p>
       </div>
     </div>

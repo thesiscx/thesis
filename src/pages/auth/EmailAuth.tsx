@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useRounds, ROUND_TYPES, ROUND_TYPE_LABELS, RoundType } from "@/hooks/useRounds";
 import { useDebounce } from "@/hooks/useDebounce";
-import thesisLogo from "@/assets/thesis-logo-2.png";
+import circuitLogo from "@/assets/circuit-logo.png";
 import { ArrowLeft, Loader2, Check, AlertCircle } from "lucide-react";
 
 type AuthStep = "email" | "password" | "create-password" | "profile" | "round";
@@ -68,7 +68,7 @@ export default function EmailAuth() {
           .maybeSingle();
 
         if (profile?.onboarding_completed && profile?.company_name) {
-          navigate("/thesis", { replace: true });
+          navigate("/circuit", { replace: true });
         } else if (step === "email" || step === "password" || step === "create-password") {
           // User just signed up, continue to profile step
           setStep("profile");
