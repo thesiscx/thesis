@@ -236,13 +236,19 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
   }, [localContent, memo?.id]);
 
   const updateMemo = useCallback((content: Json, items: TocItem[]) => {
-    // CRITICAL: Track memo ID with content to prevent saving to wrong memo
-    if (memo?.id) {
+    // Only trigger save if content actually changed
+    const contentChanged = JSON.stringify(content) !== JSON.stringify(localContent);
+    
+    if (memo?.id && contentChanged) {
       setPendingContent({ content, memoId: memo.id });
     }
-    setLocalContent(content);
+    
+    // Always update local state for UI responsiveness
+    if (contentChanged) {
+      setLocalContent(content);
+    }
     setTocItems(items);
-  }, [memo?.id]);
+  }, [memo?.id, localContent]);
 
   const saveVersion = useCallback(() => {
     createVersionMutation.mutate();
