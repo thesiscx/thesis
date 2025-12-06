@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,14 +47,32 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, userMessageId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY is not configured");
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Circuit chat request with", messages.length, "messages");
+    // Get user from authorization header
+    const authHeader = req.headers.get("Authorization");
+    let userId: string | null = null;
+    
+    if (authHeader && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const token = authHeader.replace("Bearer ", "");
+      
+      // Verify the token and get user
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (!error && user) {
+        userId = user.id;
+      }
+    }
+
+    console.log("Circuit chat request with", messages.length, "messages, userId:", userId);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -91,6 +110,60 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "AI service temporarily unavailable" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // If we have a userId and the response is ok, we need to capture the assistant's response
+    // and save it to the database after streaming completes
+    if (userId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && response.body) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      // Create a transform stream to capture the response while passing it through
+      let assistantContent = "";
+      
+      const transformStream = new TransformStream({
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+          
+          // Decode and parse the chunk to extract content
+          const text = new TextDecoder().decode(chunk);
+          const lines = text.split("\n");
+          
+          for (const line of lines) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              try {
+                const json = JSON.parse(line.slice(6));
+                const content = json.choices?.[0]?.delta?.content;
+                if (content) {
+                  assistantContent += content;
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            }
+          }
+        },
+        async flush() {
+          // Save assistant message to database after stream completes
+          if (assistantContent && userId) {
+            try {
+              await supabase.from("circuit_chat_messages").insert({
+                user_id: userId,
+                role: "assistant",
+                content: assistantContent,
+              });
+              console.log("Saved assistant message to database");
+            } catch (e) {
+              console.error("Failed to save assistant message:", e);
+            }
+          }
+        },
+      });
+
+      const transformedStream = response.body.pipeThrough(transformStream);
+      
+      return new Response(transformedStream, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
 
