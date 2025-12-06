@@ -165,27 +165,29 @@ export default function MemoEditor({
     },
   });
 
-  // Set content on initial mount and whenever content changes from outside
+  // Set content when editor is ready or content prop changes
   useEffect(() => {
-    if (editor && content && !hasInitialized.current) {
-      hasInitialized.current = true;
-      editor.commands.setContent(content as any);
-      
-      const headings = extractHeadings(editor);
-      onChange(content, headings);
-    }
-  }, [editor, content, extractHeadings, onChange]);
-
-  // Handle content updates from outside (e.g., version restore)
-  useEffect(() => {
-    if (editor && content && hasInitialized.current) {
+    if (editor && content) {
       const currentContent = JSON.stringify(editor.getJSON());
       const newContent = JSON.stringify(content);
+      
+      // Always set content if it's different from what's in the editor
       if (currentContent !== newContent) {
+        console.log('[MemoEditor] Setting content from prop', { hasInitialized: hasInitialized.current });
         editor.commands.setContent(content as any);
+        
+        const headings = extractHeadings(editor);
+        // Only call onChange on initial load to avoid loops
+        if (!hasInitialized.current) {
+          hasInitialized.current = true;
+          onChange(content, headings);
+        }
+      } else if (!hasInitialized.current) {
+        // Content matches but we need to mark as initialized
+        hasInitialized.current = true;
       }
     }
-  }, [editor, content]);
+  }, [editor, content, extractHeadings, onChange]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
