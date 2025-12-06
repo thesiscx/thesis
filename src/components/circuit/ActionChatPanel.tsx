@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy } from "lucide-react";
+import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy, Settings } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -473,11 +474,169 @@ function generateMemoContent(data: DraftData): any {
   };
 }
 
+// Accumulated terms data
+interface TermsData {
+  valuation_cap?: string;
+  discount_rate?: string;
+  mfn_enabled?: boolean;
+  pro_rata_enabled?: boolean;
+  minimum_ticket?: string;
+  wire_instructions?: string;
+}
+
+// Docket terms setup wizard flow
+function DocketTermsFlow({
+  step,
+  onNext,
+  isLoading,
+  isComplete,
+  accumulatedData,
+}: {
+  step: number;
+  onNext: (data: Record<string, any>) => void;
+  isLoading: boolean;
+  isComplete: boolean;
+  accumulatedData: TermsData;
+}) {
+  const [formData, setFormData] = useState<Record<string, any>>({});
+
+  const STEPS = [
+    {
+      title: "Valuation & Discount",
+      fields: [
+        { key: "valuation_cap", label: "Valuation Cap", placeholder: "10000000", prefix: "$", type: "number" },
+        { key: "discount_rate", label: "Discount Rate (%)", placeholder: "20", type: "number" },
+      ]
+    },
+    {
+      title: "Investor Rights",
+      fields: [
+        { key: "mfn_enabled", label: "MFN (Most Favored Nation)", type: "switch" },
+        { key: "pro_rata_enabled", label: "Pro-rata Rights", type: "switch" },
+      ]
+    },
+    {
+      title: "Investment Terms",
+      fields: [
+        { key: "minimum_ticket", label: "Minimum Investment", placeholder: "25000", prefix: "$", type: "number" },
+      ]
+    },
+    {
+      title: "Wire Instructions",
+      fields: [
+        { key: "wire_instructions", label: "Wire Instructions", placeholder: "Bank name, account number, routing number...", type: "textarea" },
+      ]
+    },
+  ];
+
+  // Pre-fill form with accumulated data when step changes
+  useEffect(() => {
+    const currentStep = STEPS[step];
+    if (currentStep) {
+      const prefilled: Record<string, any> = {};
+      currentStep.fields.forEach(f => {
+        const val = accumulatedData[f.key as keyof TermsData];
+        if (val !== undefined) {
+          prefilled[f.key] = val;
+        }
+      });
+      setFormData(prev => ({ ...prefilled, ...prev }));
+    }
+  }, [step, accumulatedData]);
+
+  if (isComplete) {
+    return (
+      <FlowCard title="Terms Setup Complete">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Check className="w-4 h-4 text-green-600" />
+          <span>Your round terms have been saved.</span>
+        </div>
+      </FlowCard>
+    );
+  }
+
+  const currentStep = STEPS[step];
+  if (!currentStep) return null;
+
+  // Check if step is valid - for switches, they're always valid
+  const isStepValid = currentStep.fields.every(f => {
+    if (f.type === "switch") return true;
+    return formData[f.key]?.toString().trim();
+  });
+
+  return (
+    <FlowCard title={`Terms Setup - ${currentStep.title}`}>
+      <div className="text-xs text-muted-foreground mb-3">
+        Step {step + 1} of {STEPS.length}
+      </div>
+      
+      <div className="space-y-4">
+        {currentStep.fields.map((field) => (
+          <div key={field.key} className="space-y-1.5">
+            {field.type === "switch" ? (
+              <div className="flex items-center justify-between py-2">
+                <Label className="text-sm">{field.label}</Label>
+                <Switch
+                  checked={formData[field.key] || false}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, [field.key]: checked }))}
+                />
+              </div>
+            ) : field.type === "textarea" ? (
+              <>
+                <Label className="text-xs text-muted-foreground">{field.label}</Label>
+                <Textarea
+                  value={formData[field.key] || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
+                  placeholder={field.placeholder}
+                  rows={4}
+                  className="text-sm resize-none bg-background"
+                />
+              </>
+            ) : (
+              <>
+                <Label className="text-xs text-muted-foreground">{field.label}</Label>
+                <div className="relative">
+                  {field.prefix && (
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      {field.prefix}
+                    </span>
+                  )}
+                  <Input
+                    value={formData[field.key] || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
+                    placeholder={field.placeholder}
+                    type={field.type}
+                    className={cn("bg-background", field.prefix && "pl-7")}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <Button 
+        size="sm" 
+        onClick={() => onNext(formData)} 
+        disabled={!isStepValid || isLoading}
+        className="w-full"
+      >
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        ) : step === STEPS.length - 1 ? (
+          <Check className="w-4 h-4 mr-2" />
+        ) : null}
+        {step === STEPS.length - 1 ? "Save Terms" : "Continue"}
+      </Button>
+    </FlowCard>
+  );
+}
+
 // Welcome messages for each page
 const WELCOME_MESSAGES: Record<PageKey, string> = {
   stage: "Welcome to Circuit. I'll help you manage your fundraising rounds. Use the actions below to open a new round or close your current one.",
   memo: "Your investor memo editor. Use the actions below to draft, publish, and share your memo with investors.",
-  docket: "Your docket contains all deal documents. Set up your terms and share with investors.",
+  docket: "Your docket contains all deal documents. Set up your terms below to get started.",
   pipeline: "Track your investor pipeline here. Add investors and manage your fundraising relationships.",
 };
 
@@ -495,6 +654,8 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   const [flowComplete, setFlowComplete] = useState<Record<string, boolean>>({});
   const [draftStep, setDraftStep] = useState(0);
   const [draftData, setDraftData] = useState<DraftData>({});
+  const [termsStep, setTermsStep] = useState(0);
+  const [termsData, setTermsData] = useState<TermsData>({});
   const [generatedLinks, setGeneratedLinks] = useState<Record<string, { url: string; key: string }>>({});
 
   // Fetch messages from DB
@@ -656,6 +817,58 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
+  const handleSetupTerms = () => {
+    setTermsStep(0);
+    setTermsData({});
+    setActiveFlow("setup-terms");
+  };
+
+  const handleTermsNext = async (data: Record<string, any>) => {
+    const totalSteps = 4;
+    
+    // Accumulate data across steps
+    const newTermsData = { ...termsData, ...data };
+    setTermsData(newTermsData);
+    
+    if (termsStep < totalSteps - 1) {
+      setTermsStep(termsStep + 1);
+    } else {
+      // Complete - save terms to database
+      setIsProcessing(true);
+      try {
+        if (!roundId) throw new Error("No round selected");
+
+        // Upsert round_terms
+        const { error } = await supabase
+          .from("round_terms")
+          .upsert({
+            round_id: roundId,
+            valuation_cap: newTermsData.valuation_cap ? parseFloat(newTermsData.valuation_cap) : null,
+            discount_rate: newTermsData.discount_rate ? parseFloat(newTermsData.discount_rate) : null,
+            mfn_enabled: newTermsData.mfn_enabled || false,
+            pro_rata_enabled: newTermsData.pro_rata_enabled || false,
+            minimum_ticket: newTermsData.minimum_ticket ? parseFloat(newTermsData.minimum_ticket) : null,
+            wire_instructions: newTermsData.wire_instructions || null,
+          }, { onConflict: 'round_id' });
+
+        if (error) throw error;
+        
+        await addMessage("result", "Your round terms have been saved. You can now create dockets for investors.");
+        setFlowComplete(prev => ({ ...prev, "setup-terms": true }));
+        queryClient.invalidateQueries({ queryKey: ["round-terms"] });
+        toast({ title: "Terms saved" });
+      } catch (error) {
+        toast({ 
+          title: "Failed to save terms", 
+          description: error instanceof Error ? error.message : "Unknown error",
+          variant: "destructive" 
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+  };
+
   const generateInvestorLink = async (investorId: string, investorName: string) => {
     if (!roundId) return;
     
@@ -727,6 +940,16 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             accumulatedData={draftData}
           />
         );
+      case "setup-terms":
+        return (
+          <DocketTermsFlow
+            step={termsStep}
+            onNext={handleTermsNext}
+            isLoading={isProcessing}
+            isComplete={flowComplete["setup-terms"] || false}
+            accumulatedData={termsData}
+          />
+        );
       default:
         return null;
     }
@@ -776,11 +999,18 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       case "docket":
         return [
           { 
+            key: "setup-terms",
+            label: "Setup Terms", 
+            icon: Settings, 
+            onClick: handleSetupTerms,
+            disabled: isButtonDisabled("setup-terms") || activeFlow === "setup-terms"
+          },
+          { 
             key: "publish",
             label: "Publish", 
             icon: Globe, 
             onClick: handlePublish,
-            disabled: isButtonDisabled("publish")
+            disabled: isButtonDisabled("publish") || activeFlow === "publish"
           },
         ];
       case "pipeline":

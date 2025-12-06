@@ -1,16 +1,6 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import {
   Table,
   TableBody,
@@ -20,23 +10,65 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+import { FileText } from "lucide-react";
 
 interface GlobalDocketProps {
   roundSlug?: string;
 }
 
 export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
-  const [instrumentType, setInstrumentType] = useState<"safe" | "note">("safe");
-  const [roundState, setRoundState] = useState<"draft" | "live" | "closed">("draft");
-  
-  // Placeholder data
-  const investorDockets = [
-    { id: "1", investor: "Sequoia", amount: 500000, status: "investor_signed", lastUpdated: "2024-01-15", wireReceived: false },
-    { id: "2", investor: "Andreessen", amount: 250000, status: "sent", lastUpdated: "2024-01-14", wireReceived: false },
-    { id: "3", investor: "Julian K", amount: 50000, status: "executed", lastUpdated: "2024-01-10", wireReceived: true },
-  ];
+  const { user } = useFounderAuth();
+
+  // Fetch round and dockets
+  const { data: roundData } = useQuery({
+    queryKey: ["round", roundSlug, user?.id],
+    queryFn: async () => {
+      if (!roundSlug || !user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("rounds")
+        .select("id, name")
+        .eq("slug", roundSlug)
+        .eq("created_by", user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!roundSlug && !!user?.id,
+  });
+
+  const { data: dockets = [], isLoading } = useQuery({
+    queryKey: ["dockets", roundData?.id],
+    queryFn: async () => {
+      if (!roundData?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("dockets")
+        .select(`
+          id,
+          amount,
+          status,
+          wire_received,
+          updated_at,
+          investor_id,
+          is_global,
+          investors (
+            id,
+            name
+          )
+        `)
+        .eq("round_id", roundData.id)
+        .order("updated_at", { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!roundData?.id,
+  });
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -49,198 +81,87 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
     const labels: Record<string, string> = {
       draft: "Draft",
       sent: "Sent",
-      investor_signed: "Signed by investor",
-      executed: "Fully executed",
+      investor_signed: "Signed",
+      executed: "Executed",
       expired: "Expired",
     };
     return <Badge variant={variants[status] || "outline"}>{labels[status] || status}</Badge>;
   };
 
+  const formatAmount = (amount: number | null) => {
+    if (!amount) return "—";
+    return `$${amount.toLocaleString()}`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-[calc(100vh-3.5rem)] p-8">
+        <Skeleton className="h-8 w-48 mb-6" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="h-[calc(100vh-3.5rem)] overflow-y-auto">
-      <div className="max-w-5xl mx-auto p-8 space-y-8">
+      <div className="max-w-5xl mx-auto p-8 space-y-6">
         <div>
-          <h1 className="font-heading text-2xl font-semibold mb-2">Docket Settings</h1>
-          <p className="text-muted-foreground">Configure your round terms and agreement template</p>
+          <h1 className="font-heading text-2xl font-semibold mb-2">Dockets</h1>
+          <p className="text-muted-foreground">
+            Manage deal documents and track investor commitments
+          </p>
         </div>
 
-        <Tabs defaultValue="terms" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="terms">Round Terms</TabsTrigger>
-            <TabsTrigger value="template">Agreement Template</TabsTrigger>
-            <TabsTrigger value="activity">Activity</TabsTrigger>
-          </TabsList>
-
-          {/* Round Terms Tab */}
-          <TabsContent value="terms" className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Instrument Type</Label>
-                <Select value={instrumentType} onValueChange={(v: "safe" | "note") => setInstrumentType(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="safe">SAFE</SelectItem>
-                    <SelectItem value="note">Convertible Note</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Round State</Label>
-                <Select value={roundState} onValueChange={(v: "draft" | "live" | "closed") => setRoundState(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="live">Live</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cap">Valuation Cap</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input id="cap" placeholder="10,000,000" className="pl-7" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="discount">Discount Rate (%)</Label>
-                <Input id="discount" placeholder="20" type="number" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="target">Target Raise</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input id="target" placeholder="2,000,000" className="pl-7" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="minimum">Minimum Ticket</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input id="minimum" placeholder="25,000" className="pl-7" />
-                </div>
-              </div>
+        {dockets.length === 0 ? (
+          <div className="border border-dashed border-border/50 rounded-xl p-12 text-center">
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <FileText className="w-6 h-6 text-muted-foreground" />
             </div>
-
-            <div className="flex gap-6">
-              <div className="flex items-center gap-2">
-                <Switch id="mfn" />
-                <Label htmlFor="mfn">MFN (Most Favored Nation)</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch id="prorata" />
-                <Label htmlFor="prorata">Pro-rata Rights</Label>
-              </div>
-            </div>
-
-            <div className="border-t pt-6 space-y-4">
-              <h3 className="font-medium">Company Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="company">Company Name</Label>
-                  <Input id="company" placeholder="Acme Inc." />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="entity">Entity Type</Label>
-                  <Input id="entity" placeholder="Delaware C-Corp" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="jurisdiction">Jurisdiction</Label>
-                  <Input id="jurisdiction" placeholder="Delaware" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Registered Address</Label>
-                  <Input id="address" placeholder="123 Main St..." />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signatory">Signatory Name</Label>
-                  <Input id="signatory" placeholder="John Doe" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="title">Signatory Title</Label>
-                  <Input id="title" placeholder="CEO" />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t pt-6 space-y-4">
-              <h3 className="font-medium">Wire Instructions</h3>
-              <Textarea 
-                placeholder="Bank name, account number, routing number..."
-                className="min-h-[100px]"
-              />
-            </div>
-
-            <div className="flex justify-end">
-              <Button>Save Terms</Button>
-            </div>
-          </TabsContent>
-
-          {/* Agreement Template Tab */}
-          <TabsContent value="template" className="space-y-4">
-            <div className="border rounded-lg p-6 bg-muted/30">
-              <ScrollArea className="h-[500px]">
-                <div className="prose prose-sm max-w-none">
-                  <h2>SAFE (Simple Agreement for Future Equity)</h2>
-                  <p className="text-muted-foreground text-sm">
-                    Most of this template is locked. Editable sections are highlighted.
-                  </p>
-                  <hr />
-                  <p>
-                    THIS CERTIFIES THAT in exchange for the payment by [<span className="bg-yellow-200 dark:bg-yellow-900 px-1">Investor Name</span>] 
-                    (the "Investor") of $[<span className="bg-yellow-200 dark:bg-yellow-900 px-1">Amount</span>] 
-                    (the "Purchase Amount") on or about [Date], [Company Name], a Delaware corporation 
-                    (the "Company"), issues to the Investor the right to certain shares of the Company's 
-                    Capital Stock, subject to the terms described below.
-                  </p>
-                  <p>
-                    The "Post-Money Valuation Cap" is $[<span className="bg-yellow-200 dark:bg-yellow-900 px-1">Valuation Cap</span>].
-                  </p>
-                  {/* More SAFE template content would go here */}
-                </div>
-              </ScrollArea>
-            </div>
-          </TabsContent>
-
-          {/* Activity Tab */}
-          <TabsContent value="activity">
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Investor</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead>Wire Received</TableHead>
+            <h3 className="font-medium mb-2">No dockets yet</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Set up your round terms using the sidebar, then create dockets for individual investors.
+            </p>
+          </div>
+        ) : (
+          <div className="border border-border/50 rounded-xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="font-medium">Investor</TableHead>
+                  <TableHead className="font-medium">Amount</TableHead>
+                  <TableHead className="font-medium">Status</TableHead>
+                  <TableHead className="font-medium">Last Updated</TableHead>
+                  <TableHead className="font-medium text-right">Wire Received</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dockets.map((docket: any) => (
+                  <TableRow 
+                    key={docket.id} 
+                    className="cursor-pointer hover:bg-muted/30 transition-colors"
+                  >
+                    <TableCell className="font-medium">
+                      {docket.is_global ? "Global Template" : docket.investors?.name || "Unknown"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatAmount(docket.amount)}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(docket.status)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {docket.updated_at ? format(new Date(docket.updated_at), "MMM d, yyyy") : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Switch 
+                        checked={docket.wire_received || false} 
+                        disabled
+                      />
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {investorDockets.map((docket) => (
-                    <TableRow key={docket.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell className="font-medium">{docket.investor}</TableCell>
-                      <TableCell>${docket.amount.toLocaleString()}</TableCell>
-                      <TableCell>{getStatusBadge(docket.status)}</TableCell>
-                      <TableCell className="text-muted-foreground">{docket.lastUpdated}</TableCell>
-                      <TableCell>
-                        <Switch checked={docket.wireReceived} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-        </Tabs>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </div>
   );
