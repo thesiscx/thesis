@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import CircuitLayout from "@/components/circuit/CircuitLayout";
 import MemoEditor from "@/components/circuit/MemoEditor";
@@ -11,11 +11,16 @@ import { useMemo } from "@/hooks/useMemo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Pencil, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useFounderAuth } from "@/contexts/FounderAuthContext";
 
 export default function ThesisMemo() {
   const { roundSlug, variantSlug } = useParams();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const queryClient = useQueryClient();
+  const { user } = useFounderAuth();
   
   const { rounds, isLoading: roundsLoading } = useRounds();
   const { investors } = useInvestors();
@@ -32,6 +37,29 @@ export default function ThesisMemo() {
   } = useMemo(roundSlug, variantSlug);
 
   const isLoading = memoLoading;
+
+  // Callback to handle memo content update from Draft Memo wizard
+  const handleUpdateMemoContent = useCallback(async (content: any) => {
+    if (!memo?.id) return;
+    
+    try {
+      // Directly update the memo in the database
+      const { error } = await supabase
+        .from("memos")
+        .update({ content })
+        .eq("id", memo.id);
+
+      if (error) throw error;
+
+      // Invalidate the memo query to refetch
+      queryClient.invalidateQueries({ queryKey: ["memo", roundSlug, variantSlug, user?.id] });
+      
+      // Switch to edit mode to show the content
+      setIsEditing(true);
+    } catch (error) {
+      console.error("Failed to update memo content:", error);
+    }
+  }, [memo?.id, queryClient, roundSlug, variantSlug, user?.id]);
 
   if (roundsLoading) {
     return (
@@ -55,6 +83,7 @@ export default function ThesisMemo() {
         rounds={rounds}
         investors={investors}
         onCreateRound={() => setCreateRoundOpen(true)}
+        onUpdateMemoContent={handleUpdateMemoContent}
       >
         <div className="flex h-[calc(100vh-3.5rem)]">
           {/* Left Sidebar - TOC */}
