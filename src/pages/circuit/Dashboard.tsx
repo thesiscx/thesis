@@ -196,25 +196,26 @@ export default function Dashboard() {
     setCreateRoundOpen(true);
   };
 
-  // Log render state
-  console.log(`[Dashboard] Render: authLoading=${authLoading}, profileLoaded=${profileLoaded}, companyName=${companyName}, userId=${user?.id?.slice(0, 8) || 'none'}`);
+  // Log render state with timestamp
+  console.log(`[Dashboard:${Date.now()}] Render: authLoading=${authLoading}, profileLoaded=${profileLoaded}, companyName=${companyName}, userId=${user?.id?.slice(0, 8) || 'none'}`);
+  console.log(`[Dashboard] Blocked by: ${authLoading ? 'authLoading ' : ''}${!profileLoaded ? 'profileLoaded' : ''}`);
 
   // Only block on auth - rounds can load progressively
   if (authLoading || !profileLoaded) {
-    console.log(`[Dashboard] Showing skeleton: authLoading=${authLoading}, profileLoaded=${profileLoaded}`);
+    const blockingState = authLoading ? "Checking authentication..." : "Loading profile...";
+    console.log(`[Dashboard] Showing skeleton: ${blockingState}`);
     return (
       <div className="h-screen bg-background flex">
         <div className="flex-1 flex flex-col">
           <div className="h-14 border-b border-border px-6 flex items-center">
             <Skeleton className="h-6 w-24" />
           </div>
-          <div className="flex-1 p-6">
-            <Skeleton className="h-8 w-64 mb-8" />
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full max-w-md" />
-              <Skeleton className="h-10 w-full max-w-md" />
-              <Skeleton className="h-10 w-full max-w-md" />
-            </div>
+          <div className="flex-1 flex flex-col items-center justify-center gap-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <span className="text-sm text-muted-foreground">{blockingState}</span>
+            <span className="text-xs text-muted-foreground/60 font-mono">
+              auth={authLoading ? '⏳' : '✓'} profile={profileLoaded ? '✓' : '⏳'}
+            </span>
           </div>
         </div>
         <div className="w-96 border-l border-border" />

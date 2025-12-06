@@ -40,7 +40,8 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   const initCompleted = useRef(false);
 
   const fetchProfile = async (userId: string) => {
-    console.log(`[Auth] fetchProfile: querying profile for ${userId.slice(0, 8)}...`);
+    const start = performance.now();
+    console.log(`[Auth:${Date.now()}] fetchProfile: STARTING for ${userId.slice(0, 8)}...`);
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -48,15 +49,19 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         .eq("id", userId)
         .single();
 
+      const elapsed = (performance.now() - start).toFixed(0);
       if (error) {
-        console.error("[Auth] fetchProfile error:", error.message);
+        console.error(`[Auth:${Date.now()}] fetchProfile error after ${elapsed}ms:`, error.message);
       } else if (data) {
-        console.log(`[Auth] fetchProfile success: companyName=${data.company_name}, fullName=${data.full_name}`);
+        console.log(`[Auth:${Date.now()}] fetchProfile SUCCESS in ${elapsed}ms: companyName=${data.company_name}, fullName=${data.full_name}`);
         setProfile(data);
+      } else {
+        console.log(`[Auth:${Date.now()}] fetchProfile: no data returned after ${elapsed}ms`);
       }
     } catch (err) {
-      console.error("[Auth] fetchProfile exception:", err);
+      console.error(`[Auth:${Date.now()}] fetchProfile exception:`, err);
     }
+    console.log(`[Auth:${Date.now()}] fetchProfile: setting profileLoaded=true`);
     setProfileLoaded(true);
   };
 

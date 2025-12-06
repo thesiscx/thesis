@@ -42,14 +42,23 @@ export default function FounderSettings() {
 
   // Fetch profile data
   useEffect(() => {
+    console.log(`[FounderSettings] useEffect triggered: authLoading=${authLoading}, profileLoaded=${profileLoaded}, userId=${user?.id?.slice(0, 8) || 'null'}`);
+    
     const fetchProfile = async () => {
-      if (authLoading || !profileLoaded) return;
+      if (authLoading || !profileLoaded) {
+        console.log(`[FounderSettings] fetchProfile: SKIPPED - authLoading=${authLoading}, profileLoaded=${profileLoaded}`);
+        return;
+      }
       
       if (!user) {
+        console.log(`[FounderSettings] fetchProfile: no user, setting loading=false`);
         setLoading(false);
         return;
       }
 
+      console.log(`[FounderSettings] fetchProfile: STARTING query for user ${user.id.slice(0, 8)}`);
+      const start = performance.now();
+      
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -57,21 +66,27 @@ export default function FounderSettings() {
           .eq('id', user.id)
           .maybeSingle();
 
+        console.log(`[FounderSettings] fetchProfile: query completed in ${(performance.now() - start).toFixed(0)}ms`);
+
         if (error) {
-          console.error('Error fetching profile:', error);
+          console.error('[FounderSettings] Error fetching profile:', error);
         }
 
         if (data) {
+          console.log(`[FounderSettings] fetchProfile: got data - companyName=${data.company_name}, slug=${data.company_slug}`);
           setCompanyName(data.company_name || "");
           setCompanySlug(data.company_slug || "");
           setOriginalSlug(data.company_slug || "");
           setDescription(data.description || "");
           setWebsite(data.website || "");
           setAvatarUrl(data.avatar_url || null);
+        } else {
+          console.log(`[FounderSettings] fetchProfile: no data returned`);
         }
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error('[FounderSettings] fetchProfile exception:', error);
       } finally {
+        console.log(`[FounderSettings] fetchProfile: COMPLETE, setting loading=false`);
         setLoading(false);
       }
     };
@@ -243,10 +258,21 @@ export default function FounderSettings() {
     }
   };
 
+  // Log loading guard state
+  console.log(`[FounderSettings] Loading guard: authLoading=${authLoading}, profileLoaded=${profileLoaded}, localLoading=${loading}`);
+  console.log(`[FounderSettings] Blocked by: ${authLoading ? 'authLoading ' : ''}${!profileLoaded ? 'profileLoaded ' : ''}${loading ? 'localLoading' : ''}`);
+
   if (authLoading || !profileLoaded || loading) {
+    const blockingState = authLoading ? "Checking authentication..." : 
+                          !profileLoaded ? "Loading profile data..." : 
+                          "Loading settings...";
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">{blockingState}</span>
+        <span className="text-xs text-muted-foreground/60 font-mono">
+          auth={authLoading ? '⏳' : '✓'} profile={profileLoaded ? '✓' : '⏳'} local={loading ? '⏳' : '✓'}
+        </span>
       </div>
     );
   }
