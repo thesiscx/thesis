@@ -254,6 +254,7 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
 
   return {
     memo,
+    localContent,
     tocItems,
     updateMemo,
     isSaving: saveMutation.isPending,
