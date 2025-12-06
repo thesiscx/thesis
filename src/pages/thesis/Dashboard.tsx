@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useRounds, Round } from "@/hooks/useRounds";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import CreateRoundDialog from "@/components/thesis/CreateRoundDialog";
 const thesisLogo = "/thesis-logo.png";
 import {
@@ -19,6 +19,7 @@ import {
   ChevronsUpDown,
   Home,
   MoreHorizontal,
+  Pencil,
   Trash2,
   ArchiveRestore,
 } from "lucide-react";
@@ -39,16 +40,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { user, isLoading: authLoading, signOut, companyName } = useFounderAuth();
   const { rounds, isLoading: roundsLoading, archiveRound, unarchiveRound, deleteRound } = useRounds();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
+  const [editTargetRaise, setEditTargetRaise] = useState("");
+  const [editInstrumentType, setEditInstrumentType] = useState("");
 
   // Fetch profile for full name
   const { data: profile } = useQuery({
@@ -95,6 +116,36 @@ export default function Dashboard() {
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
+  };
+
+  const handleEditRound = (round: Round) => {
+    setSelectedRound(round);
+    setEditTargetRaise(round.target_raise?.toString() || "");
+    setEditInstrumentType(round.instrument_type || "safe");
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedRound) return;
+    
+    const { error } = await supabase
+      .from("rounds")
+      .update({
+        target_raise: editTargetRaise ? Number(editTargetRaise) : null,
+        instrument_type: editInstrumentType,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", selectedRound.id);
+
+    if (error) {
+      toast({ title: "Failed to update round", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["rounds"] });
+    toast({ title: "Round updated" });
+    setEditDialogOpen(false);
+    setSelectedRound(null);
   };
 
 
@@ -241,6 +292,10 @@ export default function Dashboard() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditRound(round)}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleArchiveRound(round)}>
                               <Archive className="w-4 h-4 mr-2" />
                               Archive
@@ -359,6 +414,50 @@ export default function Dashboard() {
 
       <CreateRoundDialog open={createRoundOpen} onOpenChange={setCreateRoundOpen} />
 
+      {/* Edit Dialog - Target Raise & Instrument Type only */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit {selectedRound?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Instrument type</Label>
+              <Select value={editInstrumentType} onValueChange={setEditInstrumentType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="safe">SAFE</SelectItem>
+                  <SelectItem value="note">Convertible Note</SelectItem>
+                  <SelectItem value="equity">Equity</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Target raise (optional)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  value={editTargetRaise}
+                  onChange={(e) => setEditTargetRaise(e.target.value)}
+                  placeholder="1,000,000"
+                  className="pl-7"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
