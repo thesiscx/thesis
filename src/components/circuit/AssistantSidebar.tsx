@@ -24,8 +24,8 @@ export default function AssistantSidebar({
 }: AssistantSidebarProps) {
   return (
     <aside className="w-96 h-screen bg-[hsl(var(--canvas))] flex flex-col shrink-0">
-      {/* Header with Circuit logo - seamless with cream background */}
-      <div className="h-14 flex items-center px-6 shrink-0 mt-3">
+      {/* Header with Circuit logo - aligned with main header */}
+      <div className="h-14 flex items-center px-6 shrink-0 pt-3">
         <img src={circuitLogo} alt="Circuit" className="h-5" />
       </div>
 
