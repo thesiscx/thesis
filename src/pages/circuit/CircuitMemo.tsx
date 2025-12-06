@@ -176,7 +176,7 @@ export default function ThesisMemo() {
               ) : isEditing ? (
                 <MemoEditor
                   key={`${roundSlug}-${variantSlug}`}
-                  content={memo?.content}
+                  content={localContent ?? memo?.content}
                   onChange={updateMemo}
                 />
               ) : (
