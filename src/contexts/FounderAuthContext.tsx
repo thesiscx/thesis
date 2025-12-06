@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -35,20 +35,27 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  
+  // Use ref to track if init completed (avoids stale closure in timeout)
+  const initCompleted = useRef(false);
 
   const fetchProfile = async (userId: string) => {
     console.log(`[Auth] fetchProfile: querying profile for ${userId.slice(0, 8)}...`);
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, company_slug, company_name, full_name, avatar_url, onboarding_completed")
-      .eq("id", userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, company_slug, company_name, full_name, avatar_url, onboarding_completed")
+        .eq("id", userId)
+        .single();
 
-    if (error) {
-      console.error("[Auth] fetchProfile error:", error.message);
-    } else if (data) {
-      console.log(`[Auth] fetchProfile success: companyName=${data.company_name}, fullName=${data.full_name}`);
-      setProfile(data);
+      if (error) {
+        console.error("[Auth] fetchProfile error:", error.message);
+      } else if (data) {
+        console.log(`[Auth] fetchProfile success: companyName=${data.company_name}, fullName=${data.full_name}`);
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error("[Auth] fetchProfile exception:", err);
     }
     setProfileLoaded(true);
   };
@@ -62,7 +69,7 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Safety timeout: force loading=false after 10 seconds
     const timeoutId = setTimeout(() => {
-      if (isLoading) {
+      if (!initCompleted.current) {
         console.error("[Auth] TIMEOUT: Auth stuck loading for 10s, forcing isLoading=false");
         setIsLoading(false);
         setProfileLoaded(true);
@@ -71,20 +78,22 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
 
     const initAuth = async () => {
       const start = performance.now();
-      console.log("[Auth] Starting getSession...");
+      console.log("[Auth] initAuth starting...");
       
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error(`[Auth] getSession error:`, error);
+        }
+        
         console.log(`[Auth] getSession completed in ${(performance.now() - start).toFixed(0)}ms, hasSession: ${!!session}, userId: ${session?.user?.id?.slice(0, 8) || 'none'}`);
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          const profileStart = performance.now();
-          console.log(`[Auth] Starting fetchProfile for user: ${session.user.id.slice(0, 8)}...`);
           await fetchProfile(session.user.id);
-          console.log(`[Auth] fetchProfile completed in ${(performance.now() - profileStart).toFixed(0)}ms`);
         } else {
           console.log("[Auth] No session, setting profileLoaded=true");
           setProfileLoaded(true);
@@ -93,14 +102,15 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
         console.error("[Auth] Error in initAuth:", error);
         setProfileLoaded(true);
       } finally {
-        console.log("[Auth] Setting isLoading=false");
+        console.log("[Auth] initAuth complete, setting isLoading=false");
+        initCompleted.current = true;
         setIsLoading(false);
       }
     };
 
     initAuth();
 
-    // 2. Listen for auth changes
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log(`[Auth] onAuthStateChange: event=${event}, hasSession=${!!session}`);
