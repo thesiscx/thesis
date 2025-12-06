@@ -9,7 +9,6 @@ import {
   LogOut,
   Home
 } from "lucide-react";
-import circuitLogo from "@/assets/circuit-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,6 +28,7 @@ import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { cn } from "@/lib/utils";
 import ShareButton from "./ShareButton";
 import PublishButton from "./PublishButton";
+import AssistantSidebar from "./AssistantSidebar";
 
 interface Round {
   id: string;
@@ -63,7 +63,7 @@ export default function CircuitLayout({
   const navigate = useNavigate();
   const location = useLocation();
   const { roundSlug, variantSlug } = useParams();
-  const { signOut, user } = useFounderAuth();
+  const { signOut, companyName } = useFounderAuth();
   
   const [investorSearchOpen, setInvestorSearchOpen] = useState(false);
   const [investorSearch, setInvestorSearch] = useState("");
@@ -109,15 +109,18 @@ export default function CircuitLayout({
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header - 4 Segment Navigation */}
-      <header className="h-14 border-b border-border bg-background sticky top-0 z-50 flex items-center justify-between px-6">
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main content area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header - 4 Segment Navigation */}
+          <header className="h-14 border-b border-border bg-background sticky top-0 z-50 flex items-center justify-between px-6 shrink-0">
         <div className="flex items-center gap-1">
-          {/* Segment 1: Circuit Logo/Settings */}
+          {/* Segment 1: Company Name/Settings */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 px-2 gap-1.5">
-                <img src={circuitLogo} alt="Circuit" className="h-4" />
-                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
+              <Button variant="ghost" className="h-8 px-2 gap-1.5 max-w-[180px]">
+                <span className="truncate font-medium">{companyName || "My Company"}</span>
+                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
@@ -322,12 +325,17 @@ export default function CircuitLayout({
             />
           </div>
         )}
-      </header>
+          </header>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-hidden">
-        {children}
-      </main>
+          {/* Main content */}
+          <main className="flex-1 overflow-auto">
+            {children}
+          </main>
+        </div>
+
+        {/* Right Sidebar */}
+        <AssistantSidebar />
+      </div>
 
       {/* All Investors Modal */}
       <Dialog open={investorSearchOpen} onOpenChange={setInvestorSearchOpen}>

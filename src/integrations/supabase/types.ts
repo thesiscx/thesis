@@ -616,6 +616,9 @@ export type Database = {
       }
       rounds: {
         Row: {
+          closed_at: string | null
+          closure_notes: string | null
+          closure_reason: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -630,6 +633,9 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          closed_at?: string | null
+          closure_notes?: string | null
+          closure_reason?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -644,6 +650,9 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          closed_at?: string | null
+          closure_notes?: string | null
+          closure_reason?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
