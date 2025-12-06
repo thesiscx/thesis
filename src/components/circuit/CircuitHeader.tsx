@@ -169,7 +169,7 @@ export default function CircuitHeader({
                 <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-40">
+            <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuItem
                 onClick={() => onToolChange?.("pipeline")}
                 className={cn(activeTool === "pipeline" && "bg-accent")}
