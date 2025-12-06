@@ -1,12 +1,11 @@
-import { useState, useRef, useEffect, useMemo } from "react";
-import { Loader2, Link2, Video, Pencil, FileText, FolderPlus, Lock, Unlock, Check, X, Users, ChevronDown, FileIcon } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Loader2, Link2, Lock, Unlock, Check, X, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Json } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,13 +13,12 @@ import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRounds } from "@/hooks/useRounds";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 
 type PageKey = "stage" | "memo" | "docket" | "pipeline";
 
 interface ActionMessage {
   id: string;
-  message_type: "system" | "action" | "confirmation" | "result" | "bulletin";
+  message_type: "system" | "action" | "confirmation" | "result";
   content: string;
   metadata?: Record<string, unknown>;
   created_at: string;
@@ -30,46 +28,6 @@ interface ActionChatPanelProps {
   pageKey: PageKey;
   roundId?: string;
   roundSlug?: string;
-}
-
-// Bulletin card - prominent accent card for important updates
-function BulletinCard({ content }: { content: string }) {
-  return (
-    <div className="rounded-lg overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-        <FileIcon className="w-3.5 h-3.5" />
-        <span className="text-xs font-medium tracking-wide uppercase">Bulletin</span>
-      </div>
-      <div className="px-4 py-3 bg-[hsl(var(--assistant-accent))] text-[hsl(var(--assistant-accent-foreground))]">
-        <p className="text-sm leading-relaxed">{content}</p>
-      </div>
-    </div>
-  );
-}
-
-// Collapsible initiative/section card
-function InitiativeCard({ 
-  title, 
-  children,
-  defaultOpen = false 
-}: { 
-  title: string; 
-  children?: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="w-full flex items-center justify-between py-2.5 px-1 text-sm hover:bg-muted/50 rounded transition-colors">
-        <span className="font-medium">{title}</span>
-        <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", open && "rotate-180")} />
-      </CollapsibleTrigger>
-      <CollapsibleContent className="pl-4 pb-2">
-        {children}
-      </CollapsibleContent>
-    </Collapsible>
-  );
 }
 
 // Close round flow card
@@ -127,7 +85,7 @@ function CloseRoundFlow({
       </div>
 
       <div className="flex gap-2">
-        <Button size="sm" variant="outline" onClick={onCancel} className="flex-1">
+        <Button size="sm" variant="outline" onClick={onCancel} className="flex-1 h-7 text-xs">
           <X className="w-3 h-3 mr-1" />
           Cancel
         </Button>
@@ -135,7 +93,7 @@ function CloseRoundFlow({
           size="sm" 
           onClick={() => onConfirm(reason, notes)} 
           disabled={!reason}
-          className="flex-1"
+          className="flex-1 h-7 text-xs"
         >
           <Check className="w-3 h-3 mr-1" />
           Close Round
@@ -167,19 +125,19 @@ function GenerateLinkFlow({
           value={investorName}
           onChange={(e) => setInvestorName(e.target.value)}
           placeholder="e.g. Sequoia Capital"
-          className="text-sm"
+          className="text-sm h-8"
         />
       </div>
 
       <div className="flex gap-2">
-        <Button size="sm" variant="outline" onClick={onCancel} className="flex-1" disabled={isLoading}>
+        <Button size="sm" variant="outline" onClick={onCancel} className="flex-1 h-7 text-xs" disabled={isLoading}>
           Cancel
         </Button>
         <Button 
           size="sm" 
           onClick={() => onGenerate(investorName)} 
           disabled={!investorName.trim() || isLoading}
-          className="flex-1"
+          className="flex-1 h-7 text-xs"
         >
           {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Link2 className="w-3 h-3 mr-1" />}
           Generate
@@ -189,40 +147,12 @@ function GenerateLinkFlow({
   );
 }
 
-// Static welcome content for each page - this never clears
-const PAGE_CONTENT: Record<PageKey, { bulletin: string; initiatives: { title: string; description?: string }[] }> = {
-  stage: {
-    bulletin: "Welcome to Circuit. Manage your fundraising rounds here. Open a new round to start raising, or close your current round when complete.",
-    initiatives: [
-      { title: "Open a new round", description: "Start a new fundraising campaign" },
-      { title: "Close current round", description: "Mark your round as complete" },
-      { title: "View round history", description: "See all past rounds" },
-    ]
-  },
-  memo: {
-    bulletin: "Your investor memo editor. Draft your memo, add media, and generate unique share links for each investor.",
-    initiatives: [
-      { title: "Draft your memo", description: "Use the editor to write content" },
-      { title: "Add video content", description: "Embed Loom or YouTube videos" },
-      { title: "Generate share links", description: "Create unique access for investors" },
-    ]
-  },
-  docket: {
-    bulletin: "Your docket contains all deal documents. Prepare documents, add new files, or share secure links with investors.",
-    initiatives: [
-      { title: "Upload documents", description: "Add term sheets, SAFEs, and more" },
-      { title: "Organize files", description: "Categorize your deal documents" },
-      { title: "Share securely", description: "Generate investor-specific links" },
-    ]
-  },
-  pipeline: {
-    bulletin: "Track your investor pipeline. Add investors, update their status, and manage relationships throughout your raise.",
-    initiatives: [
-      { title: "Add investors", description: "Build your pipeline list" },
-      { title: "Track status", description: "Monitor where each investor stands" },
-      { title: "Log interactions", description: "Keep notes on conversations" },
-    ]
-  },
+// Welcome messages for each page
+const WELCOME_MESSAGES: Record<PageKey, string> = {
+  stage: "Welcome to Circuit. Manage your fundraising rounds here.",
+  memo: "Your investor memo editor. Draft, edit, and share.",
+  docket: "Your docket contains all deal documents.",
+  pipeline: "Track your investor pipeline here.",
 };
 
 export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionChatPanelProps) {
@@ -237,10 +167,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
 
   console.log(`[ActionChatPanel] Render: pageKey=${pageKey}, userId=${user?.id?.slice(0, 8) || 'none'}, authLoading=${authLoading}`);
 
-  // Static content for current page - this is always shown
-  const pageContent = useMemo(() => PAGE_CONTENT[pageKey], [pageKey]);
-
-  // Fetch additional messages (results, confirmations) from DB
+  // Fetch messages from DB
   const { data: messages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["action-messages", user?.id, pageKey],
     queryFn: async () => {
@@ -261,16 +188,20 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
       return (data || []) as ActionMessage[];
     },
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 10, // Keep fresh for 10 minutes
-    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
   });
 
-  // Auto-scroll to bottom when new content appears
+  // Display messages with welcome fallback
+  const displayMessages = messages.length === 0 
+    ? [{ id: "welcome", message_type: "system" as const, content: WELCOME_MESSAGES[pageKey], created_at: new Date().toISOString() }]
+    : messages;
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, activeFlow]);
+  }, [displayMessages, activeFlow]);
 
   const addMessage = async (type: ActionMessage["message_type"], content: string, metadata?: Json) => {
     if (!user) return;
@@ -286,7 +217,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
     queryClient.invalidateQueries({ queryKey: ["action-messages", user.id, pageKey] });
   };
 
-  // Stage page actions
+  // Actions
   const handleOpenRound = () => {
     if (hasOpenRound) {
       addMessage("system", "You can only have one open round at a time. Please close your current round before opening a new one.");
@@ -336,7 +267,6 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
     }
   };
 
-  // Memo page actions
   const handleGenerateLink = () => {
     setActiveFlow("generate-link");
   };
@@ -426,7 +356,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
     }
   };
 
-  // Action buttons based on page
+  // Action buttons per page
   const getActionButtons = () => {
     switch (pageKey) {
       case "stage":
@@ -436,11 +366,11 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
         ];
       case "memo":
         return [
-          { label: "Generate Link", icon: Link2, onClick: handleGenerateLink },
+          { label: "Share Link", icon: Link2, onClick: handleGenerateLink },
         ];
       case "docket":
         return [
-          { label: "Generate Link", icon: Link2, onClick: handleGenerateLink },
+          { label: "Share Link", icon: Link2, onClick: handleGenerateLink },
         ];
       case "pipeline":
         return [
@@ -451,9 +381,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
     }
   };
 
-  // Show loading state
   if (authLoading) {
-    console.log("[ActionChatPanel] Showing auth loading spinner");
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -461,9 +389,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
     );
   }
 
-  // Show sign-in message if no user
   if (!user) {
-    console.log("[ActionChatPanel] No user, showing sign-in message");
     return (
       <div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">
         <p className="text-sm font-medium mb-1">Circuit</p>
@@ -472,63 +398,28 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
     );
   }
 
-  const now = new Date();
   const actionButtons = getActionButtons();
 
   return (
     <div className="flex flex-col h-full">
-      {/* Message header with AI indicator and timestamp */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-sm bg-muted flex items-center justify-center">
-            <span className="text-[10px] font-medium">AI</span>
-          </div>
-          <span className="text-xs text-muted-foreground">AI</span>
-        </div>
-        <span className="text-xs text-muted-foreground font-mono">
-          {format(now, "MMM d, h:mm a")}
-        </span>
-      </div>
-
-      {/* Content */}
+      {/* Messages */}
       <ScrollArea className="flex-1 px-5 py-4" ref={scrollRef}>
-        <div className="space-y-4">
-          {/* Bulletin - always shown */}
-          <BulletinCard content={pageContent.bulletin} />
-          
-          {/* Key Initiatives - always shown */}
-          <div className="space-y-1">
-            <div className="text-sm font-medium py-2">Key Initiatives</div>
-            {pageContent.initiatives.map((initiative) => (
-              <InitiativeCard key={initiative.title} title={initiative.title}>
-                {initiative.description && (
-                  <p className="text-xs text-muted-foreground">{initiative.description}</p>
-                )}
-              </InitiativeCard>
-            ))}
-          </div>
-
-          {/* Dynamic messages from database */}
-          {messages.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-border">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={cn(
-                    "rounded-lg px-3 py-2 text-sm",
-                    msg.message_type === "system" && "bg-muted text-muted-foreground",
-                    msg.message_type === "action" && "bg-muted text-foreground",
-                    msg.message_type === "result" && "bg-[hsl(var(--assistant-accent))] text-[hsl(var(--assistant-accent-foreground))]",
-                    msg.message_type === "confirmation" && "bg-muted border border-border"
-                  )}
-                >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                </div>
-              ))}
+        <div className="space-y-3">
+          {displayMessages.map((msg) => (
+            <div
+              key={msg.id}
+              className={cn(
+                "rounded-lg px-3 py-2 text-sm",
+                msg.message_type === "system" && "bg-muted text-muted-foreground",
+                msg.message_type === "action" && "bg-muted text-foreground",
+                msg.message_type === "result" && "bg-[hsl(var(--assistant-accent))] text-[hsl(var(--assistant-accent-foreground))]",
+                msg.message_type === "confirmation" && "bg-muted border border-border"
+              )}
+            >
+              <p className="whitespace-pre-wrap">{msg.content}</p>
             </div>
-          )}
+          ))}
           
-          {/* Active flow card */}
           {renderActiveFlow()}
         </div>
       </ScrollArea>
@@ -541,8 +432,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug }: ActionC
             size="sm"
             onClick={btn.onClick}
             disabled={btn.disabled}
-            className="bg-foreground text-background hover:bg-foreground/90"
+            className="h-7 text-xs bg-foreground text-background hover:bg-foreground/90 gap-1"
           >
+            <btn.icon className="w-3 h-3" />
             {btn.label}
           </Button>
         ))}
