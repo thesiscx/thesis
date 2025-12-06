@@ -50,6 +50,10 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    
+    /* Assistant sidebar accent */
+    --assistant-accent: 220 80% 95%;
+    --assistant-accent-foreground: 220 60% 35%;
   }
 
   .dark {
@@ -95,6 +99,10 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    
+    /* Assistant sidebar accent */
+    --assistant-accent: 220 60% 25%;
+    --assistant-accent-foreground: 220 40% 85%;
   }
 }
 

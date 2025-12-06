@@ -1,4 +1,4 @@
-import circuitLogo from "@/assets/circuit-logo.png";
+import { format } from "date-fns";
 import ActionChatPanel from "./ActionChatPanel";
 
 type PageKey = "stage" | "memo" | "docket" | "pipeline";
@@ -14,11 +14,13 @@ export default function AssistantSidebar({
   roundId, 
   roundSlug 
 }: AssistantSidebarProps) {
+  const now = new Date();
+  
   return (
     <aside className="w-96 h-screen border-l border-border bg-background flex flex-col shrink-0">
-      {/* Header */}
-      <div className="h-14 border-b border-border flex items-center px-4 shrink-0">
-        <img src={circuitLogo} alt="Circuit" className="h-4" />
+      {/* Header - monospace style like reference */}
+      <div className="h-14 border-b border-border flex items-center justify-between px-5 shrink-0">
+        <span className="text-sm font-medium tracking-wide uppercase">Circuit</span>
       </div>
 
       {/* Content */}
