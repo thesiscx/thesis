@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.circuit-action]
 verify_jwt = false
+
+[functions.draft-memo-ai]
+verify_jwt = true

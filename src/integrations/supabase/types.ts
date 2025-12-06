@@ -130,6 +130,10 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          flow_complete: boolean | null
+          flow_data: Json | null
+          flow_step: number | null
+          flow_type: string | null
           id: string
           message_type: string
           metadata: Json | null
@@ -139,6 +143,10 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          flow_complete?: boolean | null
+          flow_data?: Json | null
+          flow_step?: number | null
+          flow_type?: string | null
           id?: string
           message_type: string
           metadata?: Json | null
@@ -148,6 +156,10 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          flow_complete?: boolean | null
+          flow_data?: Json | null
+          flow_step?: number | null
+          flow_type?: string | null
           id?: string
           message_type?: string
           metadata?: Json | null
