@@ -225,19 +225,22 @@ function PublishFlow({
                 </Button>
               </div>
               {publicAccessKey && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Key className="w-3 h-3 shrink-0" />
-                  <span>Access Key:</span>
-                  <code className="font-mono">{publicAccessKey}</code>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    onClick={() => copyToClipboard(publicAccessKey)}
-                    className="h-6 w-6 p-0 ml-auto"
-                    disabled={isHistorical}
-                  >
-                    <Copy className="w-3 h-3" />
-                  </Button>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Access Key</Label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-secondary/50 px-3 py-2 rounded border border-border break-all font-mono">
+                      {publicAccessKey}
+                    </code>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => copyToClipboard(publicAccessKey)}
+                      className="shrink-0 h-8 w-8 p-0"
+                      disabled={isHistorical}
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </>
