@@ -203,7 +203,8 @@ export default function Dashboard() {
     setCreateRoundOpen(true);
   };
 
-  if (authLoading || !profileLoaded || roundsLoading) {
+  // Only block on auth - rounds can load progressively
+  if (authLoading || !profileLoaded) {
     return (
       <div className="h-screen bg-background flex">
         <div className="flex-1 flex flex-col">
