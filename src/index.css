@@ -153,3 +153,17 @@
     @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md;
   }
 }
+
+/* Shimmer animation for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}

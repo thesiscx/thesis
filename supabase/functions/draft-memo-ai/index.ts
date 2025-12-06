@@ -63,6 +63,8 @@ Return the memo as a TipTap JSON document with this exact structure:
     const userPrompt = `Generate a complete investor memo for the following company:
 
 Company Name: ${draftData.companyName || 'Company'}
+One-Liner: ${draftData.oneLiner || 'Not provided'}
+Founded: ${draftData.founded || 'Not specified'}
 Round Type: ${draftData.roundType || 'Seed'}
 Target Raise: ${draftData.targetRaise ? `$${Number(draftData.targetRaise).toLocaleString()}` : 'Not specified'}
 
@@ -72,10 +74,28 @@ ${draftData.problem || 'The founder will provide the problem statement.'}
 Solution:
 ${draftData.solution || 'The founder will provide the solution details.'}
 
-Key Highlights:
-${draftData.highlights || 'The founder will provide key highlights and traction.'}
+Total Addressable Market (TAM):
+${draftData.tam || 'Not specified'}
 
-Generate a professional, compelling investor memo with all 15 sections. Make it specific, data-driven where possible, and compelling for investors.`;
+Market Insight (Why Now):
+${draftData.marketInsight || 'The founder will provide timing insights.'}
+
+Revenue Model:
+${draftData.revenueModel || 'Not specified'}
+
+Pricing:
+${draftData.pricing || 'Not specified'}
+
+Key Metrics & Traction:
+${draftData.keyMetrics || 'The founder will provide traction metrics.'}
+
+Founding Team:
+${draftData.founders || 'The founder will provide team details.'}
+
+Use of Funds:
+${draftData.useOfFunds || 'The founder will provide use of funds.'}
+
+Generate a professional, compelling investor memo with all 15 sections. Use the specific details provided, and where information is not given, write compelling placeholder content that guides the founder on what to add.`;
 
     console.log('Calling Lovable AI for memo generation...');
     

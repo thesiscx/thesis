@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Loader2, Link2, Lock, Unlock, Check, Users, Globe, Key, FileEdit, Copy, Settings, UserPlus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -348,12 +348,27 @@ function DraftMemoFlow({
     }
   }, [step, accumulatedData]);
 
+  // Completed state - collapsed summary
   if (isComplete) {
     return (
-      <FlowCard title="Memo Draft Complete">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="bg-secondary/30 rounded-xl border border-border p-4">
+        <div className="flex items-center gap-2 text-sm">
           <Check className="w-4 h-4 text-green-600" />
-          <span>Your memo structure has been added to the editor.</span>
+          <span className="font-medium">Questionnaire completed</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state - generating memo
+  if (isLoading) {
+    return (
+      <FlowCard title="Draft Memo">
+        <div className="flex flex-col items-center gap-3 py-4">
+          <Loader2 className="w-6 h-6 animate-spin text-foreground" />
+          <span className="text-sm text-muted-foreground animate-pulse">
+            Generating your memo...
+          </span>
         </div>
       </FlowCard>
     );
@@ -397,12 +412,10 @@ function DraftMemoFlow({
       <Button 
         size="sm" 
         onClick={() => onNext(formData)} 
-        disabled={!isStepValid || isLoading}
+        disabled={!isStepValid}
         className="w-full"
       >
-        {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-        ) : step === STEPS.length - 1 ? (
+        {step === STEPS.length - 1 ? (
           <Check className="w-4 h-4 mr-2" />
         ) : null}
         {step === STEPS.length - 1 ? "Generate Memo" : "Continue"}
@@ -806,8 +819,14 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     gcTime: 1000 * 60 * 30,
   });
 
-  // Restore active flow from database on mount
+  // Track if we've already initialized flows to prevent overwriting during processing
+  const hasInitializedFlows = useRef(false);
+
+  // Restore active flow from database on mount ONLY (not on every message change)
   useEffect(() => {
+    // Only run once on initial load, not during processing
+    if (hasInitializedFlows.current || isProcessing) return;
+    
     if (messages.length > 0) {
       // Find the most recent incomplete flow card
       const activeFlowMsg = [...messages]
@@ -815,7 +834,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
         .find(m => m.flow_type && m.flow_complete !== true);
       
       if (activeFlowMsg && activeFlowMsg.flow_type) {
+        hasInitializedFlows.current = true;
         setActiveFlow(activeFlowMsg.flow_type);
+        setCurrentFlowMessageId(activeFlowMsg.id);
         const step = activeFlowMsg.flow_step ?? 0;
         const data = (activeFlowMsg.flow_data || {}) as Record<string, any>;
         
@@ -826,9 +847,11 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
           setTermsStep(step);
           setTermsData(data as TermsData);
         }
+      } else {
+        hasInitializedFlows.current = true;
       }
     }
-  }, [messages]);
+  }, [messages, isProcessing]);
 
   // Display messages with welcome fallback
   const displayMessages = messages.length === 0 
@@ -982,6 +1005,8 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     setDraftStep(0);
     setDraftData({});
     setCurrentFlowMessageId(null);
+    setFlowComplete(prev => ({ ...prev, "draft-memo": false }));
+    hasInitializedFlows.current = true; // Prevent re-initialization
     setActiveFlow("draft-memo");
     await saveFlowCard("draft-memo", 0, {}, false);
   };
@@ -998,57 +1023,74 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       setDraftStep(nextStep);
       await saveFlowCard("draft-memo", nextStep, newDraftData, false);
     } else {
-      // Complete - call AI to generate memo content
+      // Mark flow as complete immediately to prevent reset
+      setFlowComplete(prev => ({ ...prev, "draft-memo": true }));
+      await saveFlowCard("draft-memo", totalSteps, newDraftData, true);
+      
+      // Show responses recorded message
+      await addMessage("confirmation", "Responses recorded. Generating your memo...");
+      
+      // Start AI generation
       setIsProcessing(true);
       try {
         // Prepare data for AI
         const aiPayload = {
           companyName: newDraftData.company_name,
+          oneLiner: newDraftData.one_liner,
+          founded: newDraftData.founded,
           roundType: openRound?.round_type || "seed",
-          targetRaise: openRound?.target_raise?.toString() || "",
+          targetRaise: openRound?.target_raise?.toString() || newDraftData.raising,
           problem: newDraftData.problem,
           solution: newDraftData.solution,
-          highlights: [
-            newDraftData.key_metrics,
-            newDraftData.tam ? `TAM: ${newDraftData.tam}` : "",
-            newDraftData.founders,
-          ].filter(Boolean).join("\n\n"),
+          tam: newDraftData.tam,
+          marketInsight: newDraftData.market_insight,
+          revenueModel: newDraftData.revenue_model,
+          pricing: newDraftData.pricing,
+          keyMetrics: newDraftData.key_metrics,
+          founders: newDraftData.founders,
+          useOfFunds: newDraftData.use_of_funds,
         };
 
-        await addMessage("system", "Generating your memo with AI... This may take a moment.");
+        console.log("[DraftMemo] Calling AI with payload:", aiPayload);
         
         // Call the AI edge function
         const { data: aiResponse, error: aiError } = await supabase.functions.invoke("draft-memo-ai", {
           body: { draftData: aiPayload }
         });
 
-        if (aiError) throw aiError;
+        if (aiError) {
+          console.error("[DraftMemo] AI function error:", aiError);
+          throw aiError;
+        }
+        
+        console.log("[DraftMemo] AI response received:", aiResponse);
         
         if (!aiResponse?.content) {
+          console.error("[DraftMemo] No content in response:", aiResponse);
           throw new Error("No content returned from AI");
         }
 
         // Call the callback to update memo content
         if (onUpdateMemoContent) {
-          onUpdateMemoContent(aiResponse.content);
+          console.log("[DraftMemo] Calling onUpdateMemoContent with content");
+          await onUpdateMemoContent(aiResponse.content);
+        } else {
+          console.error("[DraftMemo] onUpdateMemoContent callback not provided!");
         }
         
-        await saveFlowCard("draft-memo", totalSteps, newDraftData, true);
         await addMessage("result", "Your memo has been drafted by AI. Click 'Edit' to review and customize it.");
-        setFlowComplete(prev => ({ ...prev, "draft-memo": true }));
         toast({ title: "Memo drafted with AI" });
       } catch (error) {
-        console.error("AI memo generation error:", error);
+        console.error("[DraftMemo] AI memo generation error:", error);
         
         // Fallback to template-based generation
         const fallbackContent = generateMemoContent(newDraftData);
         if (onUpdateMemoContent) {
-          onUpdateMemoContent(fallbackContent);
+          console.log("[DraftMemo] Using fallback template");
+          await onUpdateMemoContent(fallbackContent);
         }
         
-        await saveFlowCard("draft-memo", totalSteps, newDraftData, true);
         await addMessage("result", "Your memo structure has been generated. Click 'Edit' to customize your memo.");
-        setFlowComplete(prev => ({ ...prev, "draft-memo": true }));
         toast({ 
           title: "Memo template generated", 
           description: "AI generation failed, using template instead." 
@@ -1382,7 +1424,8 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
                   msg.message_type === "user" 
                     ? "bg-foreground text-background ml-8" 
                     : "bg-secondary/70 text-foreground mr-4",
-                  msg.message_type === "result" && "bg-[hsl(var(--assistant-accent))] text-[hsl(var(--assistant-accent-foreground))]"
+                  msg.message_type === "result" && "bg-[hsl(var(--assistant-accent))] text-[hsl(var(--assistant-accent-foreground))]",
+                  msg.message_type === "confirmation" && "bg-gradient-to-r from-secondary/70 via-secondary to-secondary/70 animate-shimmer bg-[length:200%_100%]"
                 )}
               >
                 <p className="whitespace-pre-wrap">{msg.content}</p>
