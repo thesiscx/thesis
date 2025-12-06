@@ -40,22 +40,36 @@ export default function FounderSettings() {
   const [cropImage, setCropImage] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
-  // Fetch profile data
+  // Safety timeout - force loading=false after 15 seconds
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.error("[FounderSettings] TIMEOUT: Still loading after 15s, forcing loading=false");
+        setLoading(false);
+      }
+    }, 15000);
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  // Fetch profile data - only run once auth is ready
   useEffect(() => {
     console.log(`[FounderSettings] useEffect triggered: authLoading=${authLoading}, profileLoaded=${profileLoaded}, userId=${user?.id?.slice(0, 8) || 'null'}`);
     
-    const fetchProfile = async () => {
-      if (authLoading || !profileLoaded) {
-        console.log(`[FounderSettings] fetchProfile: SKIPPED - authLoading=${authLoading}, profileLoaded=${profileLoaded}`);
-        return;
-      }
-      
-      if (!user) {
-        console.log(`[FounderSettings] fetchProfile: no user, setting loading=false`);
-        setLoading(false);
-        return;
-      }
+    // Don't fetch if auth is still loading - wait for next effect run
+    if (authLoading || !profileLoaded) {
+      console.log(`[FounderSettings] Waiting for auth: authLoading=${authLoading}, profileLoaded=${profileLoaded}`);
+      return;
+    }
+    
+    // No user means not logged in - stop loading
+    if (!user) {
+      console.log(`[FounderSettings] No user, setting loading=false`);
+      setLoading(false);
+      return;
+    }
 
+    // Fetch profile
+    const fetchProfile = async () => {
       console.log(`[FounderSettings] fetchProfile: STARTING query for user ${user.id.slice(0, 8)}`);
       const start = performance.now();
       
