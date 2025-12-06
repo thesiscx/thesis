@@ -12,9 +12,10 @@ import EmailAuth from "./pages/auth/EmailAuth";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Pricing from "./pages/Pricing";
-import Onboarding from "./pages/thesis/Onboarding";
+import Dashboard from "./pages/thesis/Dashboard";
 import ThesisMemo from "./pages/thesis/ThesisMemo";
 import ThesisDocket from "./pages/thesis/ThesisDocket";
+import ThesisCircuit from "./pages/thesis/ThesisCircuit";
 import FounderSettings from "./pages/thesis/FounderSettings";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
@@ -122,8 +123,9 @@ const App = () => (
             <Route path="/auth/email" element={<EmailAuth />} />
             
             {/* Thesis pages (protected) */}
-            <Route path="/thesis" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/thesis" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/thesis/settings" element={<ProtectedRoute><FounderSettings /></ProtectedRoute>} />
+            <Route path="/thesis/:roundSlug/circuit/:variantSlug" element={<ProtectedRoute><ThesisCircuit /></ProtectedRoute>} />
             <Route path="/thesis/:roundSlug/memo/:variantSlug" element={<ProtectedRoute><ThesisMemo /></ProtectedRoute>} />
             <Route path="/thesis/:roundSlug/docket/:variantSlug" element={<ProtectedRoute><ThesisDocket /></ProtectedRoute>} />
           </Route>
