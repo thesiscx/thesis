@@ -789,7 +789,7 @@ function RoundCard({
                 <div>
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-base">{round.name}</CardTitle>
-                    {isActive && <Badge variant="default" className="text-xs">Active</Badge>}
+                    {isActive && <Badge variant="default" className="text-xs">Open</Badge>}
                     {!isActive && <Badge variant="secondary" className="text-xs">Closed</Badge>}
                   </div>
                   <CardDescription className="mt-1">
@@ -944,7 +944,7 @@ export default function RoundsOverview() {
           {/* Active Round */}
           {openRound && (
             <div>
-              <h2 className="text-sm font-medium text-muted-foreground mb-3">Active Round</h2>
+              <h2 className="text-sm font-medium text-muted-foreground mb-3">Open Round</h2>
               <RoundCard 
                 round={openRound} 
                 isActive={true}
