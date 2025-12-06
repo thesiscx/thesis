@@ -40,9 +40,12 @@ interface ActionChatPanelProps {
 }
 
 // Card-based flow component wrapper - no close button, persistent
-function FlowCard({ title, children }: { title: string; children: React.ReactNode }) {
+function FlowCard({ title, children, isHistorical }: { title: string; children: React.ReactNode; isHistorical?: boolean }) {
   return (
-    <div className="bg-secondary/50 rounded-xl border border-border overflow-hidden">
+    <div className={cn(
+      "rounded-xl border border-border overflow-hidden",
+      isHistorical ? "bg-secondary/30 opacity-60" : "bg-secondary/50"
+    )}>
       <div className="px-4 py-3 border-b border-border bg-secondary/30">
         <span className="text-sm font-medium">{title}</span>
       </div>
@@ -58,15 +61,19 @@ function CloseRoundFlow({
   roundName, 
   onConfirm, 
   isLoading,
-  isComplete
+  isComplete,
+  isHistorical,
+  savedData
 }: { 
   roundName: string; 
   onConfirm: (reason: string, notes: string) => void;
   isLoading: boolean;
   isComplete: boolean;
+  isHistorical?: boolean;
+  savedData?: { reason?: string; notes?: string };
 }) {
-  const [reason, setReason] = useState("");
-  const [notes, setNotes] = useState("");
+  const [reason, setReason] = useState(savedData?.reason || "");
+  const [notes, setNotes] = useState(savedData?.notes || "");
 
   const CLOSURE_REASONS = [
     { value: "raised_funding", label: "Successfully raised funding" },
@@ -76,14 +83,17 @@ function CloseRoundFlow({
     { value: "other", label: "Other" },
   ];
 
-  if (isComplete) {
+  if (isComplete || isHistorical) {
+    const displayReason = savedData?.reason || reason;
+    const reasonLabel = CLOSURE_REASONS.find(r => r.value === displayReason)?.label || displayReason;
     return (
-      <FlowCard title={`Close ${roundName}`}>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className={cn("rounded-xl border border-border p-4", isHistorical && "bg-secondary/30 opacity-60")}>
+        <div className="flex items-center gap-2 text-sm">
           <Check className="w-4 h-4 text-green-600" />
-          <span>Round closed successfully</span>
+          <span className="font-medium">Round closed</span>
+          {reasonLabel && <span className="text-muted-foreground">- {reasonLabel}</span>}
         </div>
-      </FlowCard>
+      </div>
     );
   }
 
@@ -141,7 +151,8 @@ function PublishFlow({
   investors,
   onGenerateInvestorLink,
   isLoading,
-  generatedLinks
+  generatedLinks,
+  isHistorical,
 }: {
   roundId: string;
   roundSlug?: string;
@@ -150,6 +161,7 @@ function PublishFlow({
   onGenerateInvestorLink: (investorId: string, investorName: string) => void;
   isLoading: boolean;
   generatedLinks: Record<string, { url: string; key: string }>;
+  isHistorical?: boolean;
 }) {
   const { toast } = useToast();
   const publicUrl = companySlug && roundSlug 
@@ -166,7 +178,7 @@ function PublishFlow({
   };
 
   return (
-    <FlowCard title="Memo Published">
+    <FlowCard title="Memo Published" isHistorical={isHistorical}>
       <div className="space-y-3">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Public Share Link</Label>
@@ -180,6 +192,7 @@ function PublishFlow({
                 variant="outline" 
                 onClick={() => copyToClipboard(publicUrl)}
                 className="shrink-0 h-8 w-8 p-0"
+                disabled={isHistorical}
               >
                 <Copy className="w-3.5 h-3.5" />
               </Button>
@@ -189,57 +202,59 @@ function PublishFlow({
           )}
         </div>
 
-        <div className="border-t border-border pt-3 space-y-2">
-          <Label className="text-xs text-muted-foreground">Create Individual Investor Links</Label>
-          {investors.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No investors in your pipeline yet.</p>
-          ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {investors.map((inv) => {
-                const linkData = generatedLinks[inv.id];
-                return (
-                  <div key={inv.id} className="p-3 rounded-lg bg-background border border-border space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{inv.name}</span>
-                      {!linkData && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onGenerateInvestorLink(inv.id, inv.name)}
-                          disabled={isLoading}
-                          className="h-7 text-xs"
-                        >
-                          {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate Link"}
-                        </Button>
+        {!isHistorical && (
+          <div className="border-t border-border pt-3 space-y-2">
+            <Label className="text-xs text-muted-foreground">Create Individual Investor Links</Label>
+            {investors.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No investors in your pipeline yet.</p>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {investors.map((inv) => {
+                  const linkData = generatedLinks[inv.id];
+                  return (
+                    <div key={inv.id} className="p-3 rounded-lg bg-background border border-border space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{inv.name}</span>
+                        {!linkData && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onGenerateInvestorLink(inv.id, inv.name)}
+                            disabled={isLoading}
+                            className="h-7 text-xs"
+                          >
+                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate Link"}
+                          </Button>
+                        )}
+                      </div>
+                      {linkData && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 text-xs bg-secondary px-2 py-1.5 rounded break-all">
+                              {linkData.url}
+                            </code>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => copyToClipboard(linkData.url)}
+                              className="shrink-0 h-7 w-7 p-0"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Key className="w-3 h-3" />
+                            <span>Access Key: {linkData.key}</span>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    {linkData && (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <code className="flex-1 text-xs bg-secondary px-2 py-1.5 rounded break-all">
-                            {linkData.url}
-                          </code>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            onClick={() => copyToClipboard(linkData.url)}
-                            className="shrink-0 h-7 w-7 p-0"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Key className="w-3 h-3" />
-                          <span>Access Key: {linkData.key}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </FlowCard>
   );
@@ -269,12 +284,14 @@ function DraftMemoFlow({
   isLoading,
   isComplete,
   accumulatedData,
+  isHistorical,
 }: {
   step: number;
   onNext: (data: Record<string, string>) => void;
   isLoading: boolean;
   isComplete: boolean;
   accumulatedData: DraftData;
+  isHistorical?: boolean;
 }) {
   const [formData, setFormData] = useState<Record<string, string>>({});
 
@@ -349,12 +366,15 @@ function DraftMemoFlow({
   }, [step, accumulatedData]);
 
   // Completed state - collapsed summary
-  if (isComplete) {
+  if (isComplete || isHistorical) {
     return (
-      <div className="bg-secondary/30 rounded-xl border border-border p-4">
+      <div className={cn("rounded-xl border border-border p-4", isHistorical && "bg-secondary/30 opacity-60")}>
         <div className="flex items-center gap-2 text-sm">
           <Check className="w-4 h-4 text-green-600" />
           <span className="font-medium">Questionnaire completed</span>
+          {accumulatedData.company_name && (
+            <span className="text-muted-foreground">- {accumulatedData.company_name}</span>
+          )}
         </div>
       </div>
     );
@@ -508,12 +528,14 @@ function DocketTermsFlow({
   isLoading,
   isComplete,
   accumulatedData,
+  isHistorical,
 }: {
   step: number;
   onNext: (data: Record<string, any>) => void;
   isLoading: boolean;
   isComplete: boolean;
   accumulatedData: TermsData;
+  isHistorical?: boolean;
 }) {
   const [formData, setFormData] = useState<Record<string, any>>({});
 
@@ -561,14 +583,17 @@ function DocketTermsFlow({
     }
   }, [step, accumulatedData]);
 
-  if (isComplete) {
+  if (isComplete || isHistorical) {
     return (
-      <FlowCard title="Terms Setup Complete">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className={cn("rounded-xl border border-border p-4", isHistorical && "bg-secondary/30 opacity-60")}>
+        <div className="flex items-center gap-2 text-sm">
           <Check className="w-4 h-4 text-green-600" />
-          <span>Your round terms have been saved.</span>
+          <span className="font-medium">Terms configured</span>
+          {accumulatedData.valuation_cap && (
+            <span className="text-muted-foreground">- ${Number(accumulatedData.valuation_cap).toLocaleString()} cap</span>
+          )}
         </div>
-      </FlowCard>
+      </div>
     );
   }
 
@@ -662,23 +687,31 @@ function AddInvestorFlow({
   onSubmit,
   isLoading,
   isComplete,
+  isHistorical,
+  savedData,
 }: {
   onSubmit: (data: InvestorFormData) => void;
   isLoading: boolean;
   isComplete: boolean;
+  isHistorical?: boolean;
+  savedData?: InvestorFormData;
 }) {
   const [formData, setFormData] = useState<InvestorFormData>({
     entity_type: "individual",
+    ...savedData,
   });
 
-  if (isComplete) {
+  if (isComplete || isHistorical) {
     return (
-      <FlowCard title="Add Investor">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className={cn("rounded-xl border border-border p-4", isHistorical && "bg-secondary/30 opacity-60")}>
+        <div className="flex items-center gap-2 text-sm">
           <Check className="w-4 h-4 text-green-600" />
-          <span>Investor added to your pipeline.</span>
+          <span className="font-medium">Investor added</span>
+          {(savedData?.name || formData.name) && (
+            <span className="text-muted-foreground">- {savedData?.name || formData.name}</span>
+          )}
         </div>
-      </FlowCard>
+      </div>
     );
   }
 
@@ -789,10 +822,12 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   const { investors } = useInvestors();
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  const [activeFlow, setActiveFlow] = useState<string | null>(null);
+  // Track which flow card ID is currently being edited (interactive)
+  const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
-  const [flowComplete, setFlowComplete] = useState<Record<string, boolean>>({});
+  
+  // Local state for the currently active flow
   const [draftStep, setDraftStep] = useState(0);
   const [draftData, setDraftData] = useState<DraftData>({});
   const [termsStep, setTermsStep] = useState(0);
@@ -819,37 +854,32 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     gcTime: 1000 * 60 * 30,
   });
 
-  // Track if we've already initialized flows to prevent overwriting during processing
-  const hasInitializedFlows = useRef(false);
-
-  // Restore active flow from database on mount ONLY (not on every message change)
+  // On mount, restore the active flow from database if there's an incomplete one
+  const hasInitialized = useRef(false);
   useEffect(() => {
-    // Only run once on initial load, not during processing
-    if (hasInitializedFlows.current || isProcessing) return;
+    if (hasInitialized.current || isProcessing || messages.length === 0) return;
     
-    if (messages.length > 0) {
-      // Find the most recent incomplete flow card
-      const activeFlowMsg = [...messages]
-        .reverse()
-        .find(m => m.flow_type && m.flow_complete !== true);
+    // Find the most recent incomplete flow card
+    const incompleteFlow = [...messages]
+      .reverse()
+      .find(m => m.message_type === "card" && m.flow_type && m.flow_complete !== true);
+    
+    if (incompleteFlow) {
+      hasInitialized.current = true;
+      setActiveFlowId(incompleteFlow.id);
       
-      if (activeFlowMsg && activeFlowMsg.flow_type) {
-        hasInitializedFlows.current = true;
-        setActiveFlow(activeFlowMsg.flow_type);
-        setCurrentFlowMessageId(activeFlowMsg.id);
-        const step = activeFlowMsg.flow_step ?? 0;
-        const data = (activeFlowMsg.flow_data || {}) as Record<string, any>;
-        
-        if (activeFlowMsg.flow_type === "draft-memo") {
-          setDraftStep(step);
-          setDraftData(data as DraftData);
-        } else if (activeFlowMsg.flow_type === "setup-terms") {
-          setTermsStep(step);
-          setTermsData(data as TermsData);
-        }
-      } else {
-        hasInitializedFlows.current = true;
+      const step = incompleteFlow.flow_step ?? 0;
+      const data = (incompleteFlow.flow_data || {}) as Record<string, any>;
+      
+      if (incompleteFlow.flow_type === "draft-memo") {
+        setDraftStep(step);
+        setDraftData(data as DraftData);
+      } else if (incompleteFlow.flow_type === "setup-terms") {
+        setTermsStep(step);
+        setTermsData(data as TermsData);
       }
+    } else {
+      hasInitialized.current = true;
     }
   }, [messages, isProcessing]);
 
@@ -862,10 +892,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [displayMessages, activeFlow]);
-
-  // Track current flow message ID for updates
-  const [currentFlowMessageId, setCurrentFlowMessageId] = useState<string | null>(null);
+  }, [displayMessages, activeFlowId]);
 
   const addMessage = async (type: ActionMessage["message_type"], content: string, metadata?: Json) => {
     if (!user) return;
@@ -881,42 +908,39 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     queryClient.invalidateQueries({ queryKey: ["action-messages", user.id, pageKey] });
   };
 
-  const saveFlowCard = async (flowType: string, step: number, data: Record<string, any>, complete: boolean) => {
+  const createFlowCard = async (flowType: string): Promise<string | null> => {
     if (!user) return null;
     
-    if (currentFlowMessageId) {
-      // Update existing flow card
-      await supabase
-        .from("action_messages")
-        .update({
-          flow_step: step,
-          flow_data: data,
-          flow_complete: complete,
-        })
-        .eq("id", currentFlowMessageId);
-    } else {
-      // Create new flow card
-      const { data: inserted } = await supabase
-        .from("action_messages")
-        .insert({
-          user_id: user.id,
-          page_key: pageKey,
-          message_type: "card",
-          content: `Started ${flowType} flow`,
-          flow_type: flowType,
-          flow_step: step,
-          flow_data: data,
-          flow_complete: complete,
-        })
-        .select("id")
-        .single();
-      
-      if (inserted) {
-        setCurrentFlowMessageId(inserted.id);
-      }
-    }
+    const { data: inserted } = await supabase
+      .from("action_messages")
+      .insert({
+        user_id: user.id,
+        page_key: pageKey,
+        message_type: "card",
+        content: `Started ${flowType}`,
+        flow_type: flowType,
+        flow_step: 0,
+        flow_data: {},
+        flow_complete: false,
+      })
+      .select("id")
+      .single();
     
     queryClient.invalidateQueries({ queryKey: ["action-messages", user.id, pageKey] });
+    return inserted?.id || null;
+  };
+
+  const updateFlowCard = async (messageId: string, step: number, data: Record<string, any>, complete: boolean) => {
+    await supabase
+      .from("action_messages")
+      .update({
+        flow_step: step,
+        flow_data: data,
+        flow_complete: complete,
+      })
+      .eq("id", messageId);
+    
+    queryClient.invalidateQueries({ queryKey: ["action-messages", user?.id, pageKey] });
   };
 
   // Actions
@@ -935,13 +959,14 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       addMessage("system", "You don't have an open round to close.");
       return;
     }
-    setCurrentFlowMessageId(null);
-    setActiveFlow("close-round");
-    await saveFlowCard("close-round", 0, {}, false);
+    const cardId = await createFlowCard("close-round");
+    if (cardId) {
+      setActiveFlowId(cardId);
+    }
   };
 
   const confirmCloseRound = async (reason: string, notes: string) => {
-    if (!openRound) return;
+    if (!openRound || !activeFlowId) return;
     setIsProcessing(true);
     setProcessingAction("close-round");
     
@@ -959,9 +984,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
 
       if (error) throw error;
 
-      await saveFlowCard("close-round", 1, { reason, notes }, true);
+      await updateFlowCard(activeFlowId, 1, { reason, notes }, true);
       await addMessage("result", `Round "${openRound.name}" has been closed successfully.`);
-      setFlowComplete(prev => ({ ...prev, "close-round": true }));
+      setActiveFlowId(null);
       queryClient.invalidateQueries({ queryKey: ["rounds"] });
       toast({ title: "Round closed" });
     } catch (error) {
@@ -986,8 +1011,12 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     setProcessingAction("publish");
     
     try {
+      const cardId = await createFlowCard("publish");
+      if (cardId) {
+        await updateFlowCard(cardId, 0, {}, false);
+        setActiveFlowId(cardId);
+      }
       await addMessage("result", "Your memo has been published to your share subdomain.");
-      setActiveFlow("publish");
       toast({ title: "Published successfully" });
     } catch (error) {
       toast({ 
@@ -1004,14 +1033,16 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   const handleDraftMemo = async () => {
     setDraftStep(0);
     setDraftData({});
-    setCurrentFlowMessageId(null);
-    setFlowComplete(prev => ({ ...prev, "draft-memo": false }));
-    hasInitializedFlows.current = true; // Prevent re-initialization
-    setActiveFlow("draft-memo");
-    await saveFlowCard("draft-memo", 0, {}, false);
+    hasInitialized.current = true; // Prevent re-initialization
+    const cardId = await createFlowCard("draft-memo");
+    if (cardId) {
+      setActiveFlowId(cardId);
+    }
   };
 
   const handleDraftNext = async (data: Record<string, string>) => {
+    if (!activeFlowId) return;
+    
     const totalSteps = 8;
     
     // Accumulate data across steps
@@ -1021,11 +1052,11 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     if (draftStep < totalSteps - 1) {
       const nextStep = draftStep + 1;
       setDraftStep(nextStep);
-      await saveFlowCard("draft-memo", nextStep, newDraftData, false);
+      await updateFlowCard(activeFlowId, nextStep, newDraftData, false);
     } else {
-      // Mark flow as complete immediately to prevent reset
-      setFlowComplete(prev => ({ ...prev, "draft-memo": true }));
-      await saveFlowCard("draft-memo", totalSteps, newDraftData, true);
+      // Mark flow as complete
+      await updateFlowCard(activeFlowId, totalSteps, newDraftData, true);
+      setActiveFlowId(null);
       
       // Show responses recorded message
       await addMessage("confirmation", "Responses recorded. Generating your memo...");
@@ -1104,12 +1135,15 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   const handleSetupTerms = async () => {
     setTermsStep(0);
     setTermsData({});
-    setCurrentFlowMessageId(null);
-    setActiveFlow("setup-terms");
-    await saveFlowCard("setup-terms", 0, {}, false);
+    const cardId = await createFlowCard("setup-terms");
+    if (cardId) {
+      setActiveFlowId(cardId);
+    }
   };
 
   const handleTermsNext = async (data: Record<string, any>) => {
+    if (!activeFlowId) return;
+    
     const totalSteps = 4;
     
     // Accumulate data across steps
@@ -1119,7 +1153,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     if (termsStep < totalSteps - 1) {
       const nextStep = termsStep + 1;
       setTermsStep(nextStep);
-      await saveFlowCard("setup-terms", nextStep, newTermsData, false);
+      await updateFlowCard(activeFlowId, nextStep, newTermsData, false);
     } else {
       // Complete - save terms to database
       setIsProcessing(true);
@@ -1141,9 +1175,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
 
         if (error) throw error;
         
-        await saveFlowCard("setup-terms", totalSteps, newTermsData, true);
+        await updateFlowCard(activeFlowId, totalSteps, newTermsData, true);
         await addMessage("result", "Your round terms have been saved. You can now create dockets for investors.");
-        setFlowComplete(prev => ({ ...prev, "setup-terms": true }));
+        setActiveFlowId(null);
         queryClient.invalidateQueries({ queryKey: ["round-terms"] });
         toast({ title: "Terms saved" });
       } catch (error) {
@@ -1159,13 +1193,14 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   };
 
   const handleAddInvestor = async () => {
-    setCurrentFlowMessageId(null);
-    setActiveFlow("add-investor");
-    await saveFlowCard("add-investor", 0, {}, false);
+    const cardId = await createFlowCard("add-investor");
+    if (cardId) {
+      setActiveFlowId(cardId);
+    }
   };
 
   const confirmAddInvestor = async (data: InvestorFormData) => {
-    if (!openRound || !data.name?.trim()) return;
+    if (!openRound || !data.name?.trim() || !activeFlowId) return;
     
     setIsProcessing(true);
     setProcessingAction("add-investor");
@@ -1189,9 +1224,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
 
       if (error) throw error;
 
-      await saveFlowCard("add-investor", 1, data, true);
+      await updateFlowCard(activeFlowId, 1, data, true);
       await addMessage("result", `${data.name} has been added to your pipeline.`);
-      setFlowComplete(prev => ({ ...prev, "add-investor": true }));
+      setActiveFlowId(null);
       queryClient.invalidateQueries({ queryKey: ["investors"] });
       toast({ title: "Investor added" });
     } catch (error) {
@@ -1243,56 +1278,69 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
-  // Render active flow - no close buttons, persistent
-  const renderActiveFlow = () => {
-    switch (activeFlow) {
+  // Render a flow card from a database message
+  const renderFlowCard = (msg: ActionMessage) => {
+    const isActive = msg.id === activeFlowId && !msg.flow_complete;
+    const isComplete = msg.flow_complete === true;
+    const isHistorical = !isActive && isComplete;
+    const flowData = (msg.flow_data || {}) as Record<string, any>;
+    const step = msg.flow_step ?? 0;
+
+    switch (msg.flow_type) {
       case "close-round":
-        return openRound && (
+        return (
           <CloseRoundFlow
-            roundName={openRound.name}
+            roundName={openRound?.name || "Round"}
             onConfirm={confirmCloseRound}
-            isLoading={isProcessing}
-            isComplete={flowComplete["close-round"] || false}
+            isLoading={isProcessing && isActive}
+            isComplete={isComplete}
+            isHistorical={isHistorical}
+            savedData={flowData as { reason?: string; notes?: string }}
           />
         );
       case "publish":
-        return roundId && (
+        return roundId ? (
           <PublishFlow
             roundId={roundId}
             roundSlug={roundSlug}
             companySlug={profile?.company_slug || undefined}
             investors={investors}
             onGenerateInvestorLink={generateInvestorLink}
-            isLoading={isProcessing}
+            isLoading={isProcessing && isActive}
             generatedLinks={generatedLinks}
+            isHistorical={isHistorical}
           />
-        );
+        ) : null;
       case "draft-memo":
         return (
           <DraftMemoFlow
-            step={draftStep}
+            step={isActive ? draftStep : step}
             onNext={handleDraftNext}
-            isLoading={isProcessing}
-            isComplete={flowComplete["draft-memo"] || false}
-            accumulatedData={draftData}
+            isLoading={isProcessing && isActive}
+            isComplete={isComplete}
+            accumulatedData={isActive ? draftData : (flowData as DraftData)}
+            isHistorical={isHistorical}
           />
         );
       case "setup-terms":
         return (
           <DocketTermsFlow
-            step={termsStep}
+            step={isActive ? termsStep : step}
             onNext={handleTermsNext}
-            isLoading={isProcessing}
-            isComplete={flowComplete["setup-terms"] || false}
-            accumulatedData={termsData}
+            isLoading={isProcessing && isActive}
+            isComplete={isComplete}
+            accumulatedData={isActive ? termsData : (flowData as TermsData)}
+            isHistorical={isHistorical}
           />
         );
       case "add-investor":
         return (
           <AddInvestorFlow
             onSubmit={confirmAddInvestor}
-            isLoading={isProcessing}
-            isComplete={flowComplete["add-investor"] || false}
+            isLoading={isProcessing && isActive}
+            isComplete={isComplete}
+            isHistorical={isHistorical}
+            savedData={flowData as InvestorFormData}
           />
         );
       default:
@@ -1304,6 +1352,13 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   const getActionButtons = () => {
     const isButtonDisabled = (actionKey: string) => {
       return isProcessing && processingAction === actionKey;
+    };
+
+    // Check if there's an active flow for this action type
+    const hasActiveFlow = (flowType: string) => {
+      if (!activeFlowId) return false;
+      const activeMsg = messages.find(m => m.id === activeFlowId);
+      return activeMsg?.flow_type === flowType && activeMsg?.flow_complete !== true;
     };
 
     switch (pageKey) {
@@ -1321,7 +1376,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             label: "Close Round", 
             icon: Lock, 
             onClick: handleCloseRound, 
-            disabled: !hasOpenRound || isButtonDisabled("close-round") || activeFlow === "close-round"
+            disabled: !hasOpenRound || isButtonDisabled("close-round") || hasActiveFlow("close-round")
           },
         ];
       case "memo":
@@ -1331,14 +1386,14 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             label: "Draft Memo", 
             icon: FileEdit, 
             onClick: handleDraftMemo,
-            disabled: isButtonDisabled("draft-memo") || activeFlow === "draft-memo"
+            disabled: isButtonDisabled("draft-memo") || hasActiveFlow("draft-memo")
           },
           { 
             key: "publish",
             label: "Publish", 
             icon: Globe, 
             onClick: handlePublish,
-            disabled: isButtonDisabled("publish") || activeFlow === "publish"
+            disabled: isButtonDisabled("publish") || hasActiveFlow("publish")
           },
         ];
       case "docket":
@@ -1348,14 +1403,14 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             label: "Setup Terms", 
             icon: Settings, 
             onClick: handleSetupTerms,
-            disabled: isButtonDisabled("setup-terms") || activeFlow === "setup-terms"
+            disabled: isButtonDisabled("setup-terms") || hasActiveFlow("setup-terms")
           },
           { 
             key: "publish",
             label: "Publish", 
             icon: Globe, 
             onClick: handlePublish,
-            disabled: isButtonDisabled("publish") || activeFlow === "publish"
+            disabled: isButtonDisabled("publish") || hasActiveFlow("publish")
           },
         ];
       case "pipeline":
@@ -1365,7 +1420,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             label: "Add Investor", 
             icon: UserPlus, 
             onClick: handleAddInvestor,
-            disabled: !hasOpenRound || isButtonDisabled("add-investor") || activeFlow === "add-investor"
+            disabled: !hasOpenRound || isButtonDisabled("add-investor") || hasActiveFlow("add-investor")
           },
         ];
       default:
@@ -1408,37 +1463,44 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
         <div className="space-y-6">
           {displayMessages.map((msg) => (
             <div key={msg.id} className="space-y-1.5">
-              {/* Header with Circuit label and timestamp */}
-              {msg.message_type !== "user" && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">Circuit</span>
-                  <span>·</span>
-                  <span>{formatTime(msg.created_at)}</span>
+              {/* Card type messages - render the flow component */}
+              {msg.message_type === "card" && msg.flow_type ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">Circuit</span>
+                    <span>·</span>
+                    <span>{formatTime(msg.created_at)}</span>
+                  </div>
+                  {renderFlowCard(msg)}
                 </div>
+              ) : (
+                <>
+                  {/* Header with Circuit label and timestamp */}
+                  {msg.message_type !== "user" && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">Circuit</span>
+                      <span>·</span>
+                      <span>{formatTime(msg.created_at)}</span>
+                    </div>
+                  )}
+                  
+                  {/* Message bubble */}
+                  <div
+                    className={cn(
+                      "rounded-xl px-4 py-3 text-sm leading-relaxed",
+                      msg.message_type === "user" 
+                        ? "bg-foreground text-background ml-8" 
+                        : "bg-secondary/70 text-foreground mr-4",
+                      msg.message_type === "result" && "bg-[hsl(var(--assistant-accent))] text-[hsl(var(--assistant-accent-foreground))]",
+                      msg.message_type === "confirmation" && "bg-gradient-to-r from-secondary/70 via-secondary to-secondary/70 animate-shimmer bg-[length:200%_100%]"
+                    )}
+                  >
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </>
               )}
-              
-              {/* Message bubble */}
-              <div
-                className={cn(
-                  "rounded-xl px-4 py-3 text-sm leading-relaxed",
-                  msg.message_type === "user" 
-                    ? "bg-foreground text-background ml-8" 
-                    : "bg-secondary/70 text-foreground mr-4",
-                  msg.message_type === "result" && "bg-[hsl(var(--assistant-accent))] text-[hsl(var(--assistant-accent-foreground))]",
-                  msg.message_type === "confirmation" && "bg-gradient-to-r from-secondary/70 via-secondary to-secondary/70 animate-shimmer bg-[length:200%_100%]"
-                )}
-              >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-              </div>
             </div>
           ))}
-          
-          {/* Active flow cards - persistent, no close */}
-          {activeFlow && (
-            <div className="pt-2">
-              {renderActiveFlow()}
-            </div>
-          )}
         </div>
       </ScrollArea>
 
