@@ -111,33 +111,31 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
     enabled: !!memo?.id,
   });
 
-  // Set local content when memo loads or updates from DB
-  // Track memo ID to detect when we're loading a different memo vs same memo being updated
-  const lastMemoId = useRef<string | null>(null);
+  // Track which memo ID we've initialized to detect memo changes
+  const initializedMemoId = useRef<string | null>(null);
   
+  // Sync local content with memo from DB
   useEffect(() => {
     if (memo?.content) {
-      const isSameMemo = lastMemoId.current === memo.id;
-      const isFirstLoad = !hasInitializedContent.current;
+      const isNewMemo = initializedMemoId.current !== memo.id;
       
-      // Initialize on first load OR when memo content changes from external source (AI edit, version restore)
-      // Only skip if user is actively editing (has pending changes)
-      if (isFirstLoad || (!isSameMemo) || (!pendingContent && !isSameMemo)) {
+      // Always sync on first load or when memo ID changes
+      if (isNewMemo) {
+        initializedMemoId.current = memo.id;
         hasInitializedContent.current = true;
-        lastMemoId.current = memo.id;
         setLocalContent(memo.content);
-        console.log('[Memo] Synced content from DB for memo:', memo.id, { isFirstLoad, isSameMemo });
-      } else if (isSameMemo && !pendingContent) {
-        // Same memo, no pending edits - check if DB content is newer (e.g., AI edit)
+        console.log('[Memo] Set content from DB for memo:', memo.id);
+      } else if (!pendingContent) {
+        // Same memo, no pending edits - sync if DB content differs (AI edit, version restore)
         const localStr = JSON.stringify(localContent);
         const dbStr = JSON.stringify(memo.content);
         if (localStr !== dbStr) {
           setLocalContent(memo.content);
-          console.log('[Memo] Updated local content from DB (external change detected)');
+          console.log('[Memo] Synced external change from DB');
         }
       }
     }
-  }, [memo?.content, memo?.id, pendingContent]);
+  }, [memo?.content, memo?.id, pendingContent, localContent]);
 
   // Save mutation with error handling
   const saveMutation = useMutation({

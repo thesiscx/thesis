@@ -167,23 +167,23 @@ export default function MemoEditor({
 
   // Set content when editor is ready or content prop changes
   useEffect(() => {
-    if (editor && content) {
+    if (!editor) return;
+    
+    // If content is provided, always ensure editor has it
+    if (content) {
       const currentContent = JSON.stringify(editor.getJSON());
       const newContent = JSON.stringify(content);
       
-      // Always set content if it's different from what's in the editor
       if (currentContent !== newContent) {
-        console.log('[MemoEditor] Setting content from prop', { hasInitialized: hasInitialized.current });
+        console.log('[MemoEditor] Setting content from prop');
         editor.commands.setContent(content as any);
         
         const headings = extractHeadings(editor);
-        // Only call onChange on initial load to avoid loops
         if (!hasInitialized.current) {
           hasInitialized.current = true;
           onChange(content, headings);
         }
       } else if (!hasInitialized.current) {
-        // Content matches but we need to mark as initialized
         hasInitialized.current = true;
       }
     }
