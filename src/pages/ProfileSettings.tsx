@@ -193,7 +193,7 @@ export default function ProfileSettings() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Unable to load user profile</p>
-          <Button onClick={() => navigate("/overview")}>Return to Dashboard</Button>
+          <Button onClick={() => navigate("/circuit")}>Return to Stage</Button>
         </div>
       </div>
     );
@@ -201,19 +201,19 @@ export default function ProfileSettings() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-4xl py-8 px-6">
+      <div className="container mx-auto max-w-2xl py-8 px-6">
         <Button 
           variant="ghost" 
-          onClick={() => navigate("/overview")}
+          onClick={() => navigate("/circuit")}
           className="mb-6 -ml-2 hover:bg-secondary"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
+          Back to Stage
         </Button>
         
         <div className="mb-8">
-          <h1 className="text-3xl font-heading font-bold mb-2">Profile Settings</h1>
-          <p className="text-muted-foreground">Manage your account settings and preferences</p>
+          <h1 className="text-2xl font-heading font-semibold mb-1">Profile Settings</h1>
+          <p className="text-muted-foreground text-sm">Manage your account settings</p>
         </div>
 
       <div className="grid gap-6">

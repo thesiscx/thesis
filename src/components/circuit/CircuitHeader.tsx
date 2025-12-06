@@ -9,7 +9,11 @@ import {
   Users,
   FileText,
   FolderOpen,
-  Pencil
+  Pencil,
+  Globe,
+  Building2,
+  User,
+  LayoutList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,9 +22,11 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 interface Round {
   id: string;
@@ -99,18 +105,38 @@ export default function CircuitHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuItem onClick={() => navigate("/circuit")}>
-              <Home className="w-4 h-4 mr-2" />
-              Stage
+            {/* Header with logo and company name */}
+            <div className="px-3 py-4 flex flex-col items-center gap-2 border-b mb-1">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
+              ) : (
+                <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-lg font-medium text-muted-foreground">
+                  {companyName?.charAt(0)?.toUpperCase() || "C"}
+                </div>
+              )}
+              <span className="font-medium text-sm">{companyName || "My Company"}</span>
+            </div>
+
+            <DropdownMenuItem onClick={() => navigate("/circuit/settings/rounds")}>
+              <LayoutList className="w-4 h-4 mr-2" />
+              Rounds Overview
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/circuit/settings/domain")}>
+              <Globe className="w-4 h-4 mr-2" />
+              Custom Domain
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/circuit/settings")}>
-              <Settings className="w-4 h-4 mr-2" />
-              Workspace Settings
+              <Building2 className="w-4 h-4 mr-2" />
+              Company Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/circuit/settings/profile")}>
+              <User className="w-4 h-4 mr-2" />
+              Profile Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
               <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
+              Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

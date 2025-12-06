@@ -18,6 +18,9 @@ import CircuitMemo from "./pages/circuit/CircuitMemo";
 import CircuitDocket from "./pages/circuit/CircuitDocket";
 import Pipeline from "./pages/circuit/Pipeline";
 import FounderSettings from "./pages/circuit/FounderSettings";
+import RoundsOverview from "./pages/circuit/settings/RoundsOverview";
+import CustomDomain from "./pages/circuit/settings/CustomDomain";
+import ProfileSettings from "./pages/ProfileSettings";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
@@ -148,6 +151,9 @@ const App = () => {
               {/* Circuit pages (protected) */}
               <Route path="/circuit" element={<><RouteLogger name="circuit:dashboard" /><ProtectedRoute routeName="dashboard"><Dashboard /></ProtectedRoute></>} />
               <Route path="/circuit/settings" element={<><RouteLogger name="circuit:settings" /><ProtectedRoute routeName="settings"><FounderSettings /></ProtectedRoute></>} />
+              <Route path="/circuit/settings/rounds" element={<><RouteLogger name="circuit:settings:rounds" /><ProtectedRoute routeName="rounds-overview"><RoundsOverview /></ProtectedRoute></>} />
+              <Route path="/circuit/settings/domain" element={<><RouteLogger name="circuit:settings:domain" /><ProtectedRoute routeName="custom-domain"><CustomDomain /></ProtectedRoute></>} />
+              <Route path="/circuit/settings/profile" element={<><RouteLogger name="circuit:settings:profile" /><ProtectedRoute routeName="profile-settings"><ProfileSettings /></ProtectedRoute></>} />
               <Route path="/circuit/:roundSlug/pipeline/:variantSlug" element={<><RouteLogger name="circuit:pipeline" /><ProtectedRoute routeName="pipeline"><Pipeline /></ProtectedRoute></>} />
               <Route path="/circuit/:roundSlug/memo/:variantSlug" element={<><RouteLogger name="circuit:memo" /><ProtectedRoute routeName="memo"><CircuitMemo /></ProtectedRoute></>} />
               <Route path="/circuit/:roundSlug/docket/:variantSlug" element={<><RouteLogger name="circuit:docket" /><ProtectedRoute routeName="docket"><CircuitDocket /></ProtectedRoute></>} />
