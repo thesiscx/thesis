@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import CloseRoundDialog from "@/components/circuit/CloseRoundDialog";
 import { 
   ArrowLeft, 
   Loader2, 
@@ -29,7 +30,9 @@ import {
   Eye,
   Upload,
   Building2,
-  CreditCard
+  CreditCard,
+  Archive,
+  RotateCcw
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -744,8 +747,34 @@ function RoundTermsEditor({ round }: { round: Round }) {
   );
 }
 
-function RoundCard({ round, isActive }: { round: Round; isActive: boolean }) {
+function RoundCard({ 
+  round, 
+  isActive,
+  onCloseRound,
+  onReopenRound,
+  hasOpenRound,
+}: { 
+  round: Round; 
+  isActive: boolean;
+  onCloseRound: (round: Round) => void;
+  onReopenRound: (round: Round) => void;
+  hasOpenRound: boolean;
+}) {
   const [isOpen, setIsOpen] = useState(isActive);
+  const { toast } = useToast();
+
+  const handleReopenClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hasOpenRound) {
+      toast({
+        title: "Cannot reopen round",
+        description: "You must close your current round before reopening another",
+        variant: "destructive",
+      });
+      return;
+    }
+    onReopenRound(round);
+  };
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -766,11 +795,13 @@ function RoundCard({ round, isActive }: { round: Round; isActive: boolean }) {
                   </CardDescription>
                 </div>
               </div>
-              {round.target_raise && (
-                <div className="text-sm text-muted-foreground">
-                  Target: ${round.target_raise.toLocaleString()}
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                {round.target_raise && (
+                  <div className="text-sm text-muted-foreground">
+                    Target: ${round.target_raise.toLocaleString()}
+                  </div>
+                )}
+              </div>
             </div>
           </CardHeader>
         </CollapsibleTrigger>
@@ -788,6 +819,35 @@ function RoundCard({ round, isActive }: { round: Round; isActive: boolean }) {
               <h4 className="font-medium mb-4">Round Terms</h4>
               <RoundTermsEditor round={round} />
             </div>
+
+            <Separator />
+
+            {/* Close/Reopen Actions */}
+            <div className="flex justify-end gap-3">
+              {isActive ? (
+                <Button 
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCloseRound(round);
+                  }}
+                  className="gap-2 text-destructive hover:text-destructive"
+                >
+                  <Archive className="w-4 h-4" />
+                  Close Round
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline"
+                  onClick={handleReopenClick}
+                  className="gap-2"
+                  disabled={hasOpenRound}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Reopen Round
+                </Button>
+              )}
+            </div>
           </CardContent>
         </CollapsibleContent>
       </Card>
@@ -797,10 +857,49 @@ function RoundCard({ round, isActive }: { round: Round; isActive: boolean }) {
 
 export default function RoundsOverview() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { user, isLoading: authLoading, profileLoaded } = useFounderAuth();
-  const { rounds, isLoading: roundsLoading, openRound } = useRounds();
+  const { rounds, isLoading: roundsLoading, openRound, closeRound, reopenRound, hasOpenRound } = useRounds();
+  
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [selectedRound, setSelectedRound] = useState<Round | null>(null);
 
   const closedRounds = rounds.filter(r => r.state === "closed");
+
+  const handleCloseRound = (round: Round) => {
+    setSelectedRound(round);
+    setCloseDialogOpen(true);
+  };
+
+  const confirmCloseRound = async (reason: string, notes: string) => {
+    if (!selectedRound) return;
+    
+    try {
+      await supabase
+        .from("rounds")
+        .update({ 
+          state: "closed",
+          closure_reason: reason,
+          closure_notes: notes,
+          closed_at: new Date().toISOString(),
+        })
+        .eq("id", selectedRound.id);
+
+      queryClient.invalidateQueries({ queryKey: ["rounds"] });
+      toast({ title: "Round closed successfully" });
+    } catch (error: any) {
+      toast({ title: "Failed to close round", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleReopenRound = async (round: Round) => {
+    try {
+      await reopenRound.mutateAsync(round.id);
+    } catch (error) {
+      // Error handled by mutation
+    }
+  };
 
   if (authLoading || !profileLoaded) {
     return (
@@ -843,7 +942,13 @@ export default function RoundsOverview() {
           {openRound && (
             <div>
               <h2 className="text-sm font-medium text-muted-foreground mb-3">Active Round</h2>
-              <RoundCard round={openRound} isActive={true} />
+              <RoundCard 
+                round={openRound} 
+                isActive={true}
+                onCloseRound={handleCloseRound}
+                onReopenRound={handleReopenRound}
+                hasOpenRound={hasOpenRound}
+              />
             </div>
           )}
 
@@ -853,7 +958,14 @@ export default function RoundsOverview() {
               <h2 className="text-sm font-medium text-muted-foreground mb-3">Past Rounds</h2>
               <div className="space-y-3">
                 {closedRounds.map(round => (
-                  <RoundCard key={round.id} round={round} isActive={false} />
+                  <RoundCard 
+                    key={round.id} 
+                    round={round} 
+                    isActive={false}
+                    onCloseRound={handleCloseRound}
+                    onReopenRound={handleReopenRound}
+                    hasOpenRound={hasOpenRound}
+                  />
                 ))}
               </div>
             </div>
@@ -872,6 +984,14 @@ export default function RoundsOverview() {
           )}
         </div>
       </div>
+
+      {/* Close Round Dialog */}
+      <CloseRoundDialog
+        open={closeDialogOpen}
+        onOpenChange={setCloseDialogOpen}
+        roundName={selectedRound?.name || ""}
+        onConfirm={confirmCloseRound}
+      />
     </div>
   );
 }
