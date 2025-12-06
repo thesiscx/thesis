@@ -158,6 +158,9 @@ export default function CircuitHeader({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 px-2 gap-1.5 capitalize">
+                  {activeTool === "pipeline" && <Users className="w-4 h-4" />}
+                  {activeTool === "memo" && <FileText className="w-4 h-4" />}
+                  {activeTool === "docket" && <FolderOpen className="w-4 h-4" />}
                   {activeTool}
                   <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
                 </Button>
