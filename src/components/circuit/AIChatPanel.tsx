@@ -6,6 +6,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
+import ActionCard from "./ActionCard";
+
+interface ToolCall {
+  id: string;
+  name: string;
+  arguments: string;
+}
 
 interface Message {
   id: string;
@@ -13,10 +20,27 @@ interface Message {
   content: string;
   created_at: string;
   is_archived: boolean;
+  toolCalls?: ToolCall[];
+  toolCallsHandled?: boolean;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/circuit-chat`;
 const PAGE_SIZE = 20;
+
+// Parse tool calls from message content
+function parseToolCalls(content: string): { toolCalls: ToolCall[]; cleanContent: string } {
+  const toolCallMatch = content.match(/__TOOL_CALLS__(.*?)__END_TOOL_CALLS__/s);
+  if (toolCallMatch) {
+    try {
+      const toolCalls = JSON.parse(toolCallMatch[1]) as ToolCall[];
+      const cleanContent = content.replace(/__TOOL_CALLS__.*?__END_TOOL_CALLS__/s, "").trim();
+      return { toolCalls, cleanContent };
+    } catch {
+      return { toolCalls: [], cleanContent: content };
+    }
+  }
+  return { toolCalls: [], cleanContent: content };
+}
 
 export default function AIChatPanel() {
   const { toast } = useToast();
@@ -28,7 +52,6 @@ export default function AIChatPanel() {
   const [hasMore, setHasMore] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Load initial messages
   const loadMessages = useCallback(async (loadMore = false) => {
@@ -59,11 +82,17 @@ export default function AIChatPanel() {
       if (error) throw error;
 
       if (data) {
-        // Reverse to get chronological order and cast role type
-        const newMessages: Message[] = data.reverse().map(m => ({
-          ...m,
-          role: m.role as "user" | "assistant",
-        }));
+        // Reverse to get chronological order and parse tool calls
+        const newMessages: Message[] = data.reverse().map(m => {
+          const { toolCalls, cleanContent } = parseToolCalls(m.content);
+          return {
+            ...m,
+            role: m.role as "user" | "assistant",
+            content: cleanContent,
+            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+            toolCallsHandled: true, // DB messages have already been handled
+          };
+        });
         
         if (loadMore) {
           setMessages(prev => [...newMessages, ...prev]);
@@ -125,28 +154,6 @@ export default function AIChatPanel() {
     }
   };
 
-  const saveAssistantMessage = async (content: string): Promise<Message | null> => {
-    if (!user) return null;
-    
-    try {
-      const { data, error } = await supabase
-        .from("circuit_chat_messages")
-        .insert({
-          user_id: user.id,
-          role: "assistant",
-          content,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data ? { ...data, role: data.role as "user" | "assistant" } : null;
-    } catch (error) {
-      console.error("Error saving assistant message:", error);
-      return null;
-    }
-  };
-
   const streamChat = async (allMessages: Message[]) => {
     const resp = await fetch(CHAT_URL, {
       method: "POST",
@@ -172,6 +179,8 @@ export default function AIChatPanel() {
     const decoder = new TextDecoder();
     let textBuffer = "";
     let assistantContent = "";
+    let toolCalls: ToolCall[] = [];
+    let currentToolCall: { id?: string; name?: string; arguments?: string } = {};
 
     while (true) {
       const { done, value } = await reader.read();
@@ -193,18 +202,15 @@ export default function AIChatPanel() {
 
         try {
           const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          const delta = parsed.choices?.[0]?.delta;
+          
+          // Handle content
+          const content = delta?.content as string | undefined;
           if (content) {
             assistantContent += content;
             setMessages((prev) => {
               const last = prev[prev.length - 1];
-              if (last?.role === "assistant" && !last.id.startsWith("temp-")) {
-                // Update the streaming message
-                return prev.map((m, i) =>
-                  i === prev.length - 1 ? { ...m, content: assistantContent } : m
-                );
-              }
-              if (last?.role === "assistant") {
+              if (last?.role === "assistant" && last.id.startsWith("temp-")) {
                 return prev.map((m, i) =>
                   i === prev.length - 1 ? { ...m, content: assistantContent } : m
                 );
@@ -215,18 +221,69 @@ export default function AIChatPanel() {
                 content: assistantContent,
                 created_at: new Date().toISOString(),
                 is_archived: false,
+                toolCallsHandled: false,
               }];
             });
           }
+          
+          // Handle tool calls
+          if (delta?.tool_calls) {
+            for (const toolCall of delta.tool_calls) {
+              if (toolCall.id) {
+                // New tool call starting
+                if (currentToolCall.id) {
+                  toolCalls.push({
+                    id: currentToolCall.id,
+                    name: currentToolCall.name || "",
+                    arguments: currentToolCall.arguments || ""
+                  });
+                }
+                currentToolCall = {
+                  id: toolCall.id,
+                  name: toolCall.function?.name || "",
+                  arguments: toolCall.function?.arguments || ""
+                };
+              } else if (toolCall.function) {
+                if (toolCall.function.name) {
+                  currentToolCall.name = (currentToolCall.name || "") + toolCall.function.name;
+                }
+                if (toolCall.function.arguments) {
+                  currentToolCall.arguments = (currentToolCall.arguments || "") + toolCall.function.arguments;
+                }
+              }
+            }
+          }
         } catch {
-          // Incomplete JSON, wait for more data
           textBuffer = line + "\n" + textBuffer;
           break;
         }
       }
     }
 
-    return assistantContent;
+    // Push the last tool call
+    if (currentToolCall.id) {
+      toolCalls.push({
+        id: currentToolCall.id,
+        name: currentToolCall.name || "",
+        arguments: currentToolCall.arguments || ""
+      });
+    }
+
+    return { content: assistantContent, toolCalls };
+  };
+
+  const handleToolCallComplete = (messageId: string, toolCallId: string) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id === messageId && m.toolCalls) {
+        const remainingCalls = m.toolCalls.filter(tc => tc.id !== toolCallId);
+        return {
+          ...m,
+          toolCalls: remainingCalls.length > 0 ? remainingCalls : undefined,
+          toolCallsHandled: true,
+        };
+      }
+      return m;
+    }));
   };
 
   const handleSubmit = async () => {
@@ -254,17 +311,18 @@ export default function AIChatPanel() {
     setMessages(newMessages);
 
     try {
-      const assistantContent = await streamChat(newMessages);
+      const { content, toolCalls } = await streamChat(newMessages);
       
-      // Save assistant message to DB
-      const savedAssistantMessage = await saveAssistantMessage(assistantContent);
-      
-      if (savedAssistantMessage) {
-        // Replace temp message with saved one
-        setMessages(prev => prev.map(m => 
-          m.id.startsWith("temp-") ? savedAssistantMessage : m
-        ));
-      }
+      // Update the temp message with final content and tool calls
+      setMessages(prev => prev.map(m => 
+        m.id.startsWith("temp-") ? {
+          ...m,
+          id: "final-" + crypto.randomUUID(),
+          content,
+          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+          toolCallsHandled: false,
+        } : m
+      ));
     } catch (error) {
       console.error("Chat error:", error);
       toast({
@@ -272,7 +330,6 @@ export default function AIChatPanel() {
         description: error instanceof Error ? error.message : "Failed to get response",
         variant: "destructive",
       });
-      // Keep user message but remove failed assistant message
       setMessages(prev => prev.filter(m => !m.id.startsWith("temp-")));
     } finally {
       setIsLoading(false);
@@ -334,7 +391,7 @@ export default function AIChatPanel() {
             </div>
             <p className="text-sm font-medium mb-1">Circuit</p>
             <p className="text-xs text-muted-foreground max-w-[200px]">
-              Ask me about your fundraise, get help with memos, or explore fundraising best practices.
+              Ask me to add investors, create memos, or help with your fundraise.
             </p>
           </div>
         ) : (
@@ -342,19 +399,33 @@ export default function AIChatPanel() {
             {messages.map((message) => {
               const stale = isStale(message.created_at);
               return (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} ${stale ? "opacity-50" : ""}`}
-                >
+                <div key={message.id} className={stale ? "opacity-50" : ""}>
                   <div
-                    className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
+                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    {message.content}
+                    <div
+                      className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
+                      {message.content}
+                    </div>
                   </div>
+                  
+                  {/* Tool call action cards */}
+                  {message.toolCalls && !message.toolCallsHandled && (
+                    <div className="mt-2 space-y-2 ml-0">
+                      {message.toolCalls.map((toolCall) => (
+                        <ActionCard
+                          key={toolCall.id}
+                          toolCall={toolCall}
+                          onComplete={() => handleToolCallComplete(message.id, toolCall.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -380,7 +451,7 @@ export default function AIChatPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask Circuit..."
+            placeholder="Ask Circuit to add investors, create memos..."
             rows={2}
             className="resize-none pr-10 text-sm"
             disabled={isLoading}
