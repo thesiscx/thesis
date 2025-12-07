@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
@@ -28,6 +28,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { logActivity } from "@/lib/activityLogger";
 
 interface GlobalDocketProps {
   roundSlug?: string;
@@ -61,11 +62,70 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
   const { user, profile } = useFounderAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeFilters, setActiveFilters] = useState<StatusValue[]>([
     "drafted", "viewed", "signed", "executed", "funded"
   ]);
   const [sortField, setSortField] = useState<SortField>("updated");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  // Void docket handler
+  const handleVoidDocket = async (docket: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase
+        .from("dockets")
+        .update({ status: "voided" })
+        .eq("id", docket.id);
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ["dockets", roundData?.id] });
+      toast({ title: "Docket voided" });
+      
+      if (user?.id && roundData?.id) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "docket_voided",
+          roundId: roundData.id,
+          docketId: docket.id,
+          investorId: docket.investor_id,
+          metadata: { investor_name: docket.investors?.name || docket.investor_name || "Unknown" },
+        });
+      }
+    } catch (error) {
+      toast({ title: "Failed to void docket", variant: "destructive" });
+    }
+  };
+
+  // Archive docket handler
+  const handleArchiveDocket = async (docket: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase
+        .from("dockets")
+        .update({ status: "archived" })
+        .eq("id", docket.id);
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ["dockets", roundData?.id] });
+      toast({ title: "Docket archived" });
+      
+      if (user?.id && roundData?.id) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "docket_archived",
+          roundId: roundData.id,
+          docketId: docket.id,
+          investorId: docket.investor_id,
+          metadata: { investor_name: docket.investors?.name || docket.investor_name || "Unknown" },
+        });
+      }
+    } catch (error) {
+      toast({ title: "Failed to archive docket", variant: "destructive" });
+    }
+  };
 
   // Fetch round and dockets
   const { data: roundData } = useQuery({
@@ -512,7 +572,7 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
-                                  onClick={(e) => e.stopPropagation()}
+                                  onClick={(e) => handleVoidDocket(docket, e)}
                                   className="text-destructive"
                                 >
                                   <XCircle className="w-4 h-4 mr-2" />
@@ -523,7 +583,7 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                             {actions.includes("archive") && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem onClick={(e) => handleArchiveDocket(docket, e)}>
                                   <Archive className="w-4 h-4 mr-2" />
                                   Archive Docket
                                 </DropdownMenuItem>
