@@ -54,7 +54,7 @@ export default function Index() {
           
           <div className="text-center space-y-2">
             <img src={circuitLogo} alt="Circuit" className="h-8 mx-auto" />
-            <p className="text-muted-foreground font-medium text-[1.35rem] tracking-wide">
+            <p className="text-muted-foreground font-medium text-[1.35rem]">
               Raise Clarity
             </p>
           </div>
