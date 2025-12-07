@@ -14,35 +14,39 @@ export default function About() {
         </Link>
 
         <h1 className="text-3xl font-bold mb-4">About Circuit</h1>
-        <p className="text-muted-foreground mb-12">
-          Fundraising without friction.
-        </p>
-        
+        <p className="text-muted-foreground mb-12">Fundraising without friction.</p>
+
         <div className="space-y-6 text-sm leading-relaxed text-foreground/90">
           <p>
-            Circuit is an invisible agent and automated fundraising platform built for founders who want speed and clarity in one place. It replaces scattered emails and improvised workflows with a single environment that shows where every investor stands, maintains your materials, and closes your round—automatically.
+            Circuit is an invisible agent and automated fundraising platform built for founders who want speed and
+            clarity in one place. It replaces scattered emails and improvised workflows with a single environment that
+            shows where every investor stands, maintains your materials, and closes your round—automatically.
           </p>
 
           <p>
-            Circuit pulls your pipeline directly from Gmail, giving you a real-time, AI-curated view of every investor conversation, touchpoint, and lead. Momentum is visible instantly, with zero manual entry.
+            Circuit pulls your pipeline directly from Gmail, giving you a real-time, AI-curated view of every investor
+            conversation, touchpoint, and lead. Momentum is visible instantly, with zero manual entry.
           </p>
 
           <p>
-            Circuit also drafts and updates your investment memo. Publish through your branded subdomain and share secure dockets with investor-specific access keys.
+            Circuit also drafts and updates your investment memo. Publish through your branded subdomain and share
+            secure dockets with investor-specific access keys.
           </p>
 
           <p>
-            Execution is built directly into the docket. Investors review the agreement, enter their details and amount, and sign digitally. Circuit applies your pre-authorized counter-signature, issues wire instructions, and tracks incoming funds. Once confirmed, the investment finalizes and the investor is added to your shareholder register.
+            Execution is built directly into the docket. Investors review the agreement, enter their details and amount,
+            and sign digitally. Circuit applies your pre-authorized counter-signature, issues wire instructions, and
+            tracks incoming funds. Once confirmed, the investment finalizes and the investor is added to your
+            shareholder register.
           </p>
 
           <p className="font-medium text-foreground">
-            Circuit is fundraising without friction. Automated pipeline. Automated memo. Automated execution. Built to close.
+            Circuit is fundraising without friction. Automated pipeline. Automated memo. Automated execution. Built to
+            close.
           </p>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-12">
-          Questions? Reach out at hello@circuit.run
-        </p>
+        <p className="text-center text-sm text-muted-foreground mt-12">Questions? Reach out at contact@circuit.cx</p>
       </div>
     </div>
   );
