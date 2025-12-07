@@ -4,6 +4,7 @@ import { useRounds } from "@/hooks/useRounds";
 import CircuitHeader from "@/components/circuit/CircuitHeader";
 import { ActivityFeed } from "@/components/circuit/ActivityFeed";
 import { Users, FileText, FolderOpen, ArrowRight } from "lucide-react";
+import circuitLogo from "@/assets/circuit-logo.png";
 
 const tools = [
   {
@@ -44,15 +45,17 @@ export default function Homepage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <CircuitHeader
-        activeTool="home"
-        hideRoundPicker
-      />
+    <div className="h-screen bg-[hsl(var(--canvas))] flex overflow-hidden p-3 pr-0">
+      {/* Main content area - white rounded box */}
+      <div className="flex-1 flex flex-col overflow-hidden bg-background rounded-2xl shadow-sm">
+        {/* Header - inside white box */}
+        <CircuitHeader
+          activeTool="home"
+          hideRoundPicker
+        />
 
-      <div className="flex-1 flex">
-        {/* Left content - Welcome + Navigation Cards */}
-        <div className="flex-1 p-8 lg:p-12">
+        {/* Content */}
+        <main className="flex-1 overflow-auto p-8 lg:p-12">
           <div className="max-w-2xl">
             {/* Welcome message */}
             <div className="mb-10">
@@ -110,18 +113,23 @@ export default function Homepage() {
               </p>
             )}
           </div>
-        </div>
+        </main>
+      </div>
 
-        {/* Right sidebar - Activity Feed */}
-        <div className="w-80 border-l border-border bg-muted/20 flex flex-col">
-          <div className="p-4 border-b border-border">
-            <h2 className="text-sm font-medium text-foreground">Activity</h2>
+      {/* Right Sidebar - Activity Feed */}
+      <aside className="w-80 flex flex-col p-3">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Sidebar Header with Circuit branding */}
+          <div className="py-3 px-4 flex items-center gap-2">
+            <img src={circuitLogo} alt="Circuit" className="h-4" />
           </div>
-          <div className="flex-1 overflow-hidden">
+
+          {/* Activity Feed Content */}
+          <div className="flex-1 overflow-hidden flex flex-col">
             <ActivityFeed />
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }
