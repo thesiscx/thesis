@@ -77,27 +77,23 @@ export default function DealTermsCard() {
         onClick={handleReviewClick}
         className="group relative w-28 h-28 bg-background border border-border rounded-2xl shadow-lg hover:shadow-xl transition-all hover:border-primary/50 overflow-hidden"
       >
-        {/* Large contract icon - centered and cut off at bottom */}
-        <div className="absolute inset-0 flex items-center justify-center pt-4">
-          <img 
-            src={contractIcon}
-            alt="Contract"
-            className="w-16 h-16 transition-transform duration-300 ease-out group-hover:rotate-12" 
-          />
-        </div>
-        
-        {/* Label overlay at top */}
-        <div className="absolute inset-x-0 top-0 p-3 bg-gradient-to-b from-background via-background/90 to-transparent">
-          <span className="font-heading font-medium text-foreground text-sm">
+        {/* Label at top with subtext */}
+        <div className="absolute inset-x-0 top-0 p-3 z-10 bg-gradient-to-b from-background via-background/80 to-transparent">
+          <span className="font-heading font-medium text-foreground text-sm block">
             Deal Terms
           </span>
-        </div>
-        
-        {/* Bottom hint */}
-        <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-background via-background/90 to-transparent">
           <span className="text-[10px] text-muted-foreground">
             View & Invest →
           </span>
+        </div>
+        
+        {/* Large contract icon - positioned at bottom, cut off, extra large for tilt */}
+        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 transition-transform duration-300 ease-out group-hover:rotate-12 origin-center">
+          <img 
+            src={contractIcon}
+            alt="Contract"
+            className="w-24 h-24" 
+          />
         </div>
       </button>
     </div>
