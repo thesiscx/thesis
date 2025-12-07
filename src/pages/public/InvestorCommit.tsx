@@ -253,7 +253,7 @@ export default function InvestorCommit() {
         // Find existing docket and restore state
         const query = supabase
           .from('dockets')
-          .select('id, custom_terms, commitment_flow_state, wire_received, wire_received_at, investor_email')
+          .select('id, amount, custom_terms, commitment_flow_state, wire_received, wire_received_at, investor_email')
           .eq('round_id', investorSession.roundId);
 
         if (investorSession.investorId) {
@@ -285,12 +285,18 @@ export default function InvestorCommit() {
             if (flowState.investor_details) {
               setInvestorDetails(flowState.investor_details as InvestorDetails);
             }
+            // Use flow state amount or fall back to docket amount
             if (flowState.investment_amount) {
               setInvestmentAmount(flowState.investment_amount);
+            } else if (docket.amount) {
+              setInvestmentAmount(Number(docket.amount));
             }
             if (flowState.document_html) {
               setDocumentHtml(flowState.document_html);
             }
+          } else if (docket.amount) {
+            // No flow state but docket has amount
+            setInvestmentAmount(Number(docket.amount));
           }
 
           // CRITICAL: If wire_received is true and execute step was completed, force finalize
