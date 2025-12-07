@@ -13,6 +13,7 @@ import EmailAuth from "./pages/auth/EmailAuth";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Pricing from "./pages/Pricing";
+import About from "./pages/About";
 import CircuitMemo from "./pages/circuit/CircuitMemo";
 import CircuitDocket from "./pages/circuit/CircuitDocket";
 import Pipeline from "./pages/circuit/Pipeline";
@@ -147,6 +148,7 @@ const App = () => {
             <Route path="/terms" element={<><RouteLogger name="terms" /><Terms /></>} />
             <Route path="/privacy" element={<><RouteLogger name="privacy" /><Privacy /></>} />
             <Route path="/pricing" element={<><RouteLogger name="pricing" /><Pricing /></>} />
+            <Route path="/about" element={<><RouteLogger name="about" /><About /></>} />
             
             {/* Root - handles auth check internally, shows landing or redirects to app */}
             <Route path="/" element={<><RouteLogger name="root" /><Index /></>} />
