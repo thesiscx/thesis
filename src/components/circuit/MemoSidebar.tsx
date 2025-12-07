@@ -67,6 +67,13 @@ export default function MemoSidebar({
     setIsGeneratingPreview(true);
     
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in");
+        return;
+      }
+
       // Check if preview link already exists
       const { data: existingLink, error: fetchError } = await supabase
         .from('share_links')
@@ -91,6 +98,7 @@ export default function MemoSidebar({
             memo_id: memoId,
             token,
             permissions: 'preview',
+            created_by: user.id,
           });
 
         if (insertError) throw insertError;
@@ -98,6 +106,7 @@ export default function MemoSidebar({
 
       // Open preview in new tab
       const previewUrl = `${window.location.origin}/preview/memo/${token}`;
+      window.open(previewUrl, '_blank');
       window.open(previewUrl, '_blank');
     } catch (error) {
       console.error('Error generating preview link:', error);
