@@ -1,13 +1,15 @@
-import { Check, FileText, User, DollarSign, FileSignature, Sparkles, CheckCircle2 } from "lucide-react";
+import { Check, FileText, User, DollarSign, FileSignature, Sparkles, Stamp, Landmark, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type CommitmentStep = 
-  | 'review-terms' 
-  | 'your-details' 
-  | 'investment-amount' 
-  | 'generate-document' 
-  | 'sign-agreement' 
-  | 'confirmation';
+  | 'terms' 
+  | 'details' 
+  | 'amount' 
+  | 'generate' 
+  | 'sign' 
+  | 'execute'
+  | 'wire'
+  | 'finalize';
 
 interface Step {
   id: CommitmentStep;
@@ -16,12 +18,14 @@ interface Step {
 }
 
 const steps: Step[] = [
-  { id: 'review-terms', label: 'Review Terms', icon: FileText },
-  { id: 'your-details', label: 'Your Details', icon: User },
-  { id: 'investment-amount', label: 'Amount', icon: DollarSign },
-  { id: 'generate-document', label: 'Generate', icon: Sparkles },
-  { id: 'sign-agreement', label: 'Sign', icon: FileSignature },
-  { id: 'confirmation', label: 'Done', icon: CheckCircle2 },
+  { id: 'terms', label: 'Terms', icon: FileText },
+  { id: 'details', label: 'Details', icon: User },
+  { id: 'amount', label: 'Amount', icon: DollarSign },
+  { id: 'generate', label: 'Generate', icon: Sparkles },
+  { id: 'sign', label: 'Sign', icon: FileSignature },
+  { id: 'execute', label: 'Execute', icon: Stamp },
+  { id: 'wire', label: 'Wire', icon: Landmark },
+  { id: 'finalize', label: 'Finalize', icon: CheckCircle2 },
 ];
 
 interface CommitmentStepsProps {
