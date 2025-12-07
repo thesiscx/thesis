@@ -91,7 +91,7 @@ function CloseRoundFlow({
     const displayReason = savedData?.reason || reason;
     const reasonLabel = CLOSURE_REASONS.find(r => r.value === displayReason)?.label || displayReason;
     return (
-      <div className={cn("rounded-xl border border-border p-4", isHistorical && "bg-secondary/30 opacity-60")}>
+      <div className={cn("rounded-xl border border-border p-4", "bg-secondary/30 opacity-60")}>
         <div className="flex items-center gap-2 text-sm">
           <Check className="w-4 h-4 text-green-600" />
           <span className="font-medium">Round closed</span>
@@ -424,10 +424,10 @@ function DraftMemoFlow({
     }
   }, [step, accumulatedData]);
 
-  // Completed state - collapsed summary
+  // Completed state - collapsed summary (always greyed out)
   if (isComplete || isHistorical) {
     return (
-      <div className={cn("rounded-xl border border-border p-4", isHistorical && "bg-secondary/30 opacity-60")}>
+      <div className={cn("rounded-xl border border-border p-4", "bg-secondary/30 opacity-60")}>
         <div className="flex items-center gap-2 text-sm">
           <Check className="w-4 h-4 text-green-600" />
           <span className="font-medium">Questionnaire completed</span>
@@ -585,19 +585,33 @@ function EditMemoFlow({
   savedData?: { prompt?: string };
 }) {
   const [prompt, setPrompt] = useState(savedData?.prompt || "");
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
+  const handleSubmit = () => {
+    if (!prompt.trim()) return;
+    setHasSubmitted(true);
+    onSubmit(prompt);
+  };
+
+  // Completed state - show collapsed card with what was requested
   if (isComplete || isHistorical) {
     return (
-      <div className={cn("rounded-xl border border-border p-4", isHistorical && "bg-secondary/30 opacity-60")}>
-        <div className="flex items-center gap-2 text-sm">
-          <Check className="w-4 h-4 text-green-600" />
-          <span className="font-medium">Memo updated</span>
+      <div className={cn("rounded-xl border border-border p-4", "bg-secondary/30 opacity-60")}>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-sm">
+            <Check className="w-4 h-4 text-green-600" />
+            <span className="font-medium">Memo updated</span>
+          </div>
+          {savedData?.prompt && (
+            <p className="text-xs text-muted-foreground pl-6 line-clamp-2">"{savedData.prompt}"</p>
+          )}
         </div>
       </div>
     );
   }
 
-  if (isLoading) {
+  // Loading/processing state - card is locked
+  if (isLoading || hasSubmitted) {
     return (
       <FlowCard title="Edit Memo">
         <div className="flex flex-col items-center gap-3 py-4">
@@ -626,12 +640,12 @@ function EditMemoFlow({
       </div>
       <Button 
         size="sm" 
-        onClick={() => onSubmit(prompt)} 
+        onClick={handleSubmit} 
         disabled={!prompt.trim()}
         className="w-full"
       >
         <Check className="w-4 h-4 mr-2" />
-        Apply Changes
+        Request Changes
       </Button>
     </FlowCard>
   );
@@ -709,9 +723,10 @@ function DocketTermsFlow({
     }
   }, [step, accumulatedData]);
 
+  // Completed state - always greyed out
   if (isComplete || isHistorical) {
     return (
-      <div className={cn("rounded-xl border border-border p-4", isHistorical && "bg-secondary/30 opacity-60")}>
+      <div className={cn("rounded-xl border border-border p-4", "bg-secondary/30 opacity-60")}>
         <div className="flex items-center gap-2 text-sm">
           <Check className="w-4 h-4 text-green-600" />
           <span className="font-medium">Terms configured</span>
@@ -827,9 +842,10 @@ function AddInvestorFlow({
     ...savedData,
   });
 
+  // Completed state - always greyed out
   if (isComplete || isHistorical) {
     return (
-      <div className={cn("rounded-xl border border-border p-4", isHistorical && "bg-secondary/30 opacity-60")}>
+      <div className={cn("rounded-xl border border-border p-4", "bg-secondary/30 opacity-60")}>
         <div className="flex items-center gap-2 text-sm">
           <Check className="w-4 h-4 text-green-600" />
           <span className="font-medium">Investor added</span>
