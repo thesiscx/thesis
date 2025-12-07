@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,23 +15,50 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
-import { FileText, Copy, ExternalLink, FileSignature, MoreHorizontal } from "lucide-react";
+import { FileText, Copy, ExternalLink, FileSignature, MoreHorizontal, XCircle, Archive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface GlobalDocketProps {
   roundSlug?: string;
 }
 
+// Status definitions
+const STATUSES = [
+  { value: "drafted", label: "Drafted" },
+  { value: "shared", label: "Shared" },
+  { value: "viewed", label: "Viewed" },
+  { value: "signed", label: "Signed" },
+  { value: "executed", label: "Executed" },
+  { value: "funded", label: "Funded" },
+  { value: "voided", label: "Voided" },
+] as const;
+
+type StatusValue = typeof STATUSES[number]["value"];
+
+// Map old statuses to new
+const STATUS_MAP: Record<string, StatusValue> = {
+  draft: "drafted",
+  sent: "shared",
+  investor_signed: "signed",
+  executed: "executed",
+  expired: "voided",
+};
+
 export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
   const { user, profile } = useFounderAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [activeFilters, setActiveFilters] = useState<StatusValue[]>([
+    "drafted", "shared", "viewed", "signed", "executed", "funded"
+  ]);
 
   // Fetch round and dockets
   const { data: roundData } = useQuery({
@@ -106,22 +134,25 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
     enabled: !!roundData?.id,
   });
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      draft: "outline",
-      sent: "secondary",
-      investor_signed: "default",
-      executed: "default",
-      expired: "destructive",
+  // Normalize status to new values
+  const normalizeStatus = (status: string, wireReceived?: boolean): StatusValue => {
+    if (wireReceived) return "funded";
+    return STATUS_MAP[status] || (status as StatusValue) || "drafted";
+  };
+
+  const getStatusBadge = (status: StatusValue) => {
+    const config: Record<StatusValue, { variant: "default" | "secondary" | "destructive" | "outline"; className?: string }> = {
+      drafted: { variant: "outline" },
+      shared: { variant: "secondary" },
+      viewed: { variant: "secondary", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+      signed: { variant: "default", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
+      executed: { variant: "default", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
+      funded: { variant: "default", className: "bg-green-600/10 text-green-700 border-green-600/20" },
+      voided: { variant: "destructive", className: "bg-muted text-muted-foreground" },
     };
-    const labels: Record<string, string> = {
-      draft: "Draft",
-      sent: "Sent",
-      investor_signed: "Signed",
-      executed: "Executed",
-      expired: "Expired",
-    };
-    return <Badge variant={variants[status] || "outline"}>{labels[status] || status}</Badge>;
+    const label = STATUSES.find(s => s.value === status)?.label || status;
+    const { variant, className } = config[status] || { variant: "outline" };
+    return <Badge variant={variant} className={className}>{label}</Badge>;
   };
 
   const formatAmount = (amount: number | null) => {
@@ -164,6 +195,49 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
     }
   };
 
+  const toggleFilter = (status: StatusValue) => {
+    setActiveFilters(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  // Filter and sort dockets
+  const filteredDockets = dockets
+    .map((d: any) => ({
+      ...d,
+      normalizedStatus: normalizeStatus(d.status, d.wire_received)
+    }))
+    .filter((d: any) => activeFilters.includes(d.normalizedStatus))
+    .sort((a: any, b: any) => {
+      // Put funded at top, voided at bottom
+      if (a.normalizedStatus === "funded" && b.normalizedStatus !== "funded") return -1;
+      if (b.normalizedStatus === "funded" && a.normalizedStatus !== "funded") return 1;
+      if (a.normalizedStatus === "voided" && b.normalizedStatus !== "voided") return 1;
+      if (b.normalizedStatus === "voided" && a.normalizedStatus !== "voided") return -1;
+      return 0;
+    });
+
+  // Get available actions based on status
+  const getAvailableActions = (status: StatusValue) => {
+    switch (status) {
+      case "drafted":
+        return ["view", "void"];
+      case "shared":
+      case "viewed":
+        return ["view", "void"];
+      case "signed":
+      case "executed":
+      case "funded":
+        return ["view", "archive"];
+      case "voided":
+        return ["view"];
+      default:
+        return ["view"];
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="h-[calc(100vh-3.5rem)] p-8">
@@ -183,6 +257,25 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
           </p>
         </div>
 
+        {/* Status Filter Bar */}
+        <div className="flex flex-wrap gap-2">
+          {STATUSES.map(status => (
+            <Button
+              key={status.value}
+              variant={activeFilters.includes(status.value) ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => toggleFilter(status.value)}
+              className={cn(
+                "text-xs",
+                activeFilters.includes(status.value) && status.value === "funded" && "bg-green-100 text-green-700 hover:bg-green-200",
+                activeFilters.includes(status.value) && status.value === "voided" && "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              {status.label}
+            </Button>
+          ))}
+        </div>
+
         {dockets.length === 0 ? (
           <div className="border border-dashed border-border/50 rounded-xl p-12 text-center">
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
@@ -191,6 +284,16 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
             <h3 className="font-medium mb-2">No dockets yet</h3>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               Use "Add Docket" in the sidebar to create dockets for individual investors.
+            </p>
+          </div>
+        ) : filteredDockets.length === 0 ? (
+          <div className="border border-dashed border-border/50 rounded-xl p-12 text-center">
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <FileText className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <h3 className="font-medium mb-2">No matching dockets</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Try adjusting your filters to see more dockets.
             </p>
           </div>
         ) : (
@@ -208,18 +311,25 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dockets.map((docket: any) => {
+                {filteredDockets.map((docket: any) => {
                   const accessKey = getAccessKeyForDocket(docket);
                   const shareUrl = getShareUrl(docket);
+                  const status = docket.normalizedStatus;
+                  const actions = getAvailableActions(status);
                   
                   return (
                     <TableRow 
                       key={docket.id} 
-                      className="cursor-pointer hover:bg-muted/30 transition-colors"
+                      className={cn(
+                        "cursor-pointer transition-colors",
+                        status === "funded" && "bg-green-50/50 hover:bg-green-50",
+                        status === "voided" && "opacity-50 bg-muted/30 hover:bg-muted/40",
+                        status !== "funded" && status !== "voided" && "hover:bg-muted/30"
+                      )}
                       onClick={() => handleRowClick(docket)}
                     >
                       <TableCell className="font-medium">
-                        <div className="flex flex-col">
+                        <div className={cn("flex flex-col", status === "voided" && "line-through")}>
                           <span>{getInvestorName(docket)}</span>
                           {(docket.investors?.email || docket.investor_email) && (
                             <span className="text-xs text-muted-foreground">
@@ -231,7 +341,7 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                       <TableCell className="text-muted-foreground">
                         {formatAmount(docket.amount)}
                       </TableCell>
-                      <TableCell>{getStatusBadge(docket.status)}</TableCell>
+                      <TableCell>{getStatusBadge(status)}</TableCell>
                       <TableCell>
                         {accessKey ? (
                           <div className="flex items-center gap-1">
@@ -299,6 +409,27 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                                 <Copy className="w-4 h-4 mr-2" />
                                 Copy Access Key
                               </DropdownMenuItem>
+                            )}
+                            {actions.includes("void") && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-destructive"
+                                >
+                                  <XCircle className="w-4 h-4 mr-2" />
+                                  Void Docket
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {actions.includes("archive") && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                  <Archive className="w-4 h-4 mr-2" />
+                                  Archive Docket
+                                </DropdownMenuItem>
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>

@@ -19,6 +19,11 @@ interface Investor {
   name: string;
 }
 
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
 interface CircuitLayoutProps {
   children: ReactNode;
   rounds: Round[];
@@ -27,6 +32,7 @@ interface CircuitLayoutProps {
   onUpdateMemoContent?: (content: any) => void;
   hasMemoContent?: boolean;
   currentMemoContent?: any;
+  breadcrumb?: BreadcrumbItem;
 }
 
 export default function CircuitLayout({
@@ -37,6 +43,7 @@ export default function CircuitLayout({
   onUpdateMemoContent,
   hasMemoContent,
   currentMemoContent,
+  breadcrumb,
 }: CircuitLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -102,6 +109,7 @@ export default function CircuitLayout({
             rounds={rounds}
             activeRoundSlug={roundSlug}
             activeTool={activeTool}
+            breadcrumb={breadcrumb}
             onRoundChange={handleRoundChange}
             onToolChange={handleToolChange}
             onCreateRound={onCreateRound}

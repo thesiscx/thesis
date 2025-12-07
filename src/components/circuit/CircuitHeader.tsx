@@ -38,12 +38,19 @@ interface Round {
   round_number?: number;
 }
 
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
 interface CircuitHeaderProps {
   // Navigation context
   rounds?: Round[];
   activeRoundSlug?: string;
   activeTool?: "pipeline" | "memo" | "docket" | "stage";
   customDomain?: string | null;
+  // Breadcrumb for subpages
+  breadcrumb?: BreadcrumbItem;
   // Callbacks
   onRoundChange?: (round: Round) => void;
   onToolChange?: (tool: "pipeline" | "memo" | "docket") => void;
@@ -59,6 +66,7 @@ export default function CircuitHeader({
   activeRoundSlug,
   activeTool = "stage",
   customDomain,
+  breadcrumb,
   onRoundChange,
   onToolChange,
   onCreateRound,
@@ -193,6 +201,14 @@ export default function CircuitHeader({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        )}
+
+        {/* Breadcrumb for subpages */}
+        {breadcrumb && (
+          <>
+            <span className="text-muted-foreground/50">/</span>
+            <span className="text-sm font-medium pl-1">{breadcrumb.label}</span>
+          </>
         )}
       </div>
 

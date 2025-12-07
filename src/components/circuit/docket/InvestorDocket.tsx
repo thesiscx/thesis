@@ -14,7 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { 
-  ArrowLeft, 
   FileSignature, 
   Check, 
   Copy, 
@@ -283,18 +282,6 @@ export default function InvestorDocket({ roundSlug, investorSlug }: InvestorDock
     <div className="h-[calc(100vh-3.5rem)] overflow-y-auto">
       <div className="max-w-4xl mx-auto p-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/${roundSlug}/docket`)}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
-        </div>
-
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-heading text-2xl font-semibold mb-1">
