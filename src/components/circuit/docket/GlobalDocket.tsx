@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,8 +14,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { FileText, Copy, ExternalLink, FileSignature, MoreHorizontal, XCircle, Archive } from "lucide-react";
+import { FileText, Copy, ExternalLink, MoreHorizontal, XCircle, Archive, Filter, ArrowUpDown, ArrowUp, ArrowDown, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -23,6 +24,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +55,9 @@ const STATUS_MAP: Record<string, StatusValue> = {
   expired: "voided",
 };
 
+type SortField = "investor" | "amount" | "status" | "url" | "key" | "updated";
+type SortDirection = "asc" | "desc";
+
 export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
   const { user, profile } = useFounderAuth();
   const navigate = useNavigate();
@@ -59,6 +65,8 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
   const [activeFilters, setActiveFilters] = useState<StatusValue[]>([
     "drafted", "shared", "viewed", "signed", "executed", "funded"
   ]);
+  const [sortField, setSortField] = useState<SortField>("updated");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   // Fetch round and dockets
   const { data: roundData } = useQuery({
@@ -203,21 +211,34 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
     );
   };
 
-  // Filter and sort dockets
-  const filteredDockets = dockets
-    .map((d: any) => ({
-      ...d,
-      normalizedStatus: normalizeStatus(d.status, d.wire_received)
-    }))
-    .filter((d: any) => activeFilters.includes(d.normalizedStatus))
-    .sort((a: any, b: any) => {
-      // Put funded at top, voided at bottom
-      if (a.normalizedStatus === "funded" && b.normalizedStatus !== "funded") return -1;
-      if (b.normalizedStatus === "funded" && a.normalizedStatus !== "funded") return 1;
-      if (a.normalizedStatus === "voided" && b.normalizedStatus !== "voided") return 1;
-      if (b.normalizedStatus === "voided" && a.normalizedStatus !== "voided") return -1;
-      return 0;
-    });
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+    <TableHead 
+      className="font-medium cursor-pointer select-none hover:bg-muted/50 transition-colors"
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {children}
+        {sortField === field ? (
+          sortDirection === "asc" ? (
+            <ArrowUp className="w-3 h-3" />
+          ) : (
+            <ArrowDown className="w-3 h-3" />
+          )
+        ) : (
+          <ArrowUpDown className="w-3 h-3 opacity-30" />
+        )}
+      </div>
+    </TableHead>
+  );
 
   // Get available actions based on status
   const getAvailableActions = (status: StatusValue) => {
@@ -238,6 +259,52 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
     }
   };
 
+  // Filter, sort, and transform dockets
+  const filteredDockets = useMemo(() => {
+    const processed = dockets
+      .map((d: any) => ({
+        ...d,
+        normalizedStatus: normalizeStatus(d.status, d.wire_received),
+        accessKey: getAccessKeyForDocket(d),
+        shareUrl: getShareUrl(d),
+      }))
+      .filter((d: any) => activeFilters.includes(d.normalizedStatus));
+
+    // Sort
+    processed.sort((a: any, b: any) => {
+      let comparison = 0;
+      
+      switch (sortField) {
+        case "investor":
+          comparison = getInvestorName(a).localeCompare(getInvestorName(b));
+          break;
+        case "amount":
+          comparison = (a.amount || 0) - (b.amount || 0);
+          break;
+        case "status":
+          const statusOrder = STATUSES.map(s => s.value);
+          comparison = statusOrder.indexOf(a.normalizedStatus) - statusOrder.indexOf(b.normalizedStatus);
+          break;
+        case "url":
+          comparison = (a.shareUrl || "").localeCompare(b.shareUrl || "");
+          break;
+        case "key":
+          comparison = (a.accessKey || "").localeCompare(b.accessKey || "");
+          break;
+        case "updated":
+          comparison = new Date(a.updated_at || 0).getTime() - new Date(b.updated_at || 0).getTime();
+          break;
+      }
+      
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+
+    return processed;
+  }, [dockets, activeFilters, sortField, sortDirection, accessKeys, profile, roundData]);
+
+  const activeFilterCount = activeFilters.length;
+  const allFiltersActive = activeFilterCount === STATUSES.length;
+
   if (isLoading) {
     return (
       <div className="h-[calc(100vh-3.5rem)] p-8">
@@ -250,30 +317,54 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
   return (
     <div className="h-[calc(100vh-3.5rem)] overflow-y-auto">
       <div className="max-w-6xl mx-auto p-8 space-y-6">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold mb-2">Dockets</h1>
-          <p className="text-muted-foreground">
-            Manage deal documents and track investor commitments
-          </p>
-        </div>
-
-        {/* Status Filter Bar */}
-        <div className="flex flex-wrap gap-2">
-          {STATUSES.map(status => (
-            <Button
-              key={status.value}
-              variant={activeFilters.includes(status.value) ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => toggleFilter(status.value)}
-              className={cn(
-                "text-xs",
-                activeFilters.includes(status.value) && status.value === "funded" && "bg-green-100 text-green-700 hover:bg-green-200",
-                activeFilters.includes(status.value) && status.value === "voided" && "bg-muted text-muted-foreground hover:bg-muted/80"
-              )}
-            >
-              {status.label}
-            </Button>
-          ))}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-heading text-2xl font-semibold mb-2">Dockets</h1>
+            <p className="text-muted-foreground">
+              Manage deal documents and track investor commitments
+            </p>
+          </div>
+          
+          {/* Filter Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="w-4 h-4" />
+                Filter
+                {!allFiltersActive && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {STATUSES.map(status => (
+                <DropdownMenuCheckboxItem
+                  key={status.value}
+                  checked={activeFilters.includes(status.value)}
+                  onCheckedChange={() => toggleFilter(status.value)}
+                >
+                  {status.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => setActiveFilters(STATUSES.map(s => s.value))}
+                className="text-xs text-muted-foreground"
+              >
+                Show all
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setActiveFilters([])}
+                className="text-xs text-muted-foreground"
+              >
+                Clear all
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {dockets.length === 0 ? (
@@ -301,19 +392,17 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="font-medium">Investor</TableHead>
-                  <TableHead className="font-medium">Amount</TableHead>
-                  <TableHead className="font-medium">Status</TableHead>
-                  <TableHead className="font-medium">Access Key</TableHead>
-                  <TableHead className="font-medium">Side Letter</TableHead>
-                  <TableHead className="font-medium">Last Updated</TableHead>
+                  <SortableHeader field="investor">Investor</SortableHeader>
+                  <SortableHeader field="amount">Amount</SortableHeader>
+                  <SortableHeader field="status">Status</SortableHeader>
+                  <SortableHeader field="url">Share Link</SortableHeader>
+                  <SortableHeader field="key">Access Key</SortableHeader>
+                  <SortableHeader field="updated">Last Updated</SortableHeader>
                   <TableHead className="font-medium text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredDockets.map((docket: any) => {
-                  const accessKey = getAccessKeyForDocket(docket);
-                  const shareUrl = getShareUrl(docket);
                   const status = docket.normalizedStatus;
                   const actions = getAvailableActions(status);
                   
@@ -343,18 +432,19 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                       </TableCell>
                       <TableCell>{getStatusBadge(status)}</TableCell>
                       <TableCell>
-                        {accessKey ? (
+                        {docket.shareUrl && docket.accessKey ? (
                           <div className="flex items-center gap-1">
-                            <code className="text-xs bg-secondary/50 px-2 py-0.5 rounded font-mono">
-                              {accessKey.slice(0, 8)}...
-                            </code>
+                            <Link className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                              Share link
+                            </span>
                             <Button
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                copyToClipboard(accessKey, "Access key");
+                                copyToClipboard(docket.shareUrl, "Share link");
                               }}
                             >
                               <Copy className="w-3 h-3" />
@@ -365,11 +455,23 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                         )}
                       </TableCell>
                       <TableCell>
-                        {docket.custom_terms ? (
-                          <Badge variant="secondary" className="text-xs">
-                            <FileSignature className="w-3 h-3 mr-1" />
-                            Yes
-                          </Badge>
+                        {docket.accessKey ? (
+                          <div className="flex items-center gap-1">
+                            <code className="text-xs bg-secondary/50 px-2 py-0.5 rounded font-mono">
+                              {docket.accessKey.slice(0, 8)}...
+                            </code>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(docket.accessKey, "Access key");
+                              }}
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
@@ -392,19 +494,19 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                               <ExternalLink className="w-4 h-4 mr-2" />
                               View Docket
                             </DropdownMenuItem>
-                            {shareUrl && accessKey && (
+                            {docket.shareUrl && docket.accessKey && (
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
-                                copyToClipboard(shareUrl, "Share URL");
+                                copyToClipboard(docket.shareUrl, "Share link");
                               }}>
                                 <Copy className="w-4 h-4 mr-2" />
-                                Copy Share URL
+                                Copy Share Link
                               </DropdownMenuItem>
                             )}
-                            {accessKey && (
+                            {docket.accessKey && (
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
-                                copyToClipboard(accessKey, "Access key");
+                                copyToClipboard(docket.accessKey, "Access key");
                               }}>
                                 <Copy className="w-4 h-4 mr-2" />
                                 Copy Access Key
