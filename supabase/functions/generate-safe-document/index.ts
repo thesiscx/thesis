@@ -28,152 +28,63 @@ interface GenerateRequest {
   roundTerms: RoundTerms;
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+// Format currency
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+  }).format(amount);
+}
 
-  try {
-    const { investorDetails, amount, companyName, roundTerms }: GenerateRequest = await req.json();
-    
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+// Format date
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
 
-    const investorName = investorDetails.entityType === 'entity' 
-      ? investorDetails.entityName 
-      : investorDetails.name;
-
-    const formattedAmount = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-    }).format(amount);
-
-    const formattedValuationCap = roundTerms.valuation_cap 
-      ? new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: 0,
-        }).format(roundTerms.valuation_cap)
-      : 'N/A';
-
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
-    // Use AI to generate a professional SAFE document
-    const prompt = `Generate a professional Y Combinator Post-Money SAFE agreement with Valuation Cap. Use this exact format and fill in the details:
-
-INVESTOR DETAILS:
-- Investor Name: ${investorName}
-- Investor Address: ${investorDetails.address || 'To be provided'}
-- Investor Email: ${investorDetails.email}
-- Entity Type: ${investorDetails.entityType === 'entity' ? 'Corporation/Entity' : 'Individual'}
-
-COMPANY DETAILS:
-- Company Name: ${companyName}
-- Valuation Cap: ${formattedValuationCap}
-- Discount Rate: ${roundTerms.discount_rate ? `${roundTerms.discount_rate}%` : 'None'}
-- Pro-Rata Rights: ${roundTerms.pro_rata_enabled ? 'Yes' : 'No'}
-- MFN: ${roundTerms.mfn_enabled ? 'Yes' : 'No'}
-
-INVESTMENT:
-- Purchase Amount: ${formattedAmount}
-- Date: ${currentDate}
-
-Generate ONLY the HTML content (no markdown, no code blocks) for a complete SAFE agreement including:
-1. Header with "SAFE (Simple Agreement for Future Equity)"
-2. Securities disclaimer
-3. The main agreement paragraph with all parties and amounts
-4. Section 1: Events (Equity Financing, Liquidity Event, Dissolution)
-5. Section 2: Definitions (all standard SAFE definitions)
-6. Section 3: Company Representations
-7. Section 4: Investor Representations  
-8. Section 5: Miscellaneous
-9. Signature blocks for both Company and Investor
-
-Use clean HTML with inline styles. Make it look professional and legally formatted. The valuation cap should be prominently featured in the conversion terms.`;
-
-    console.log("Calling Lovable AI to generate SAFE document...");
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { 
-            role: "system", 
-            content: "You are a legal document generator specializing in startup investment agreements. Generate clean, professional HTML for legal documents. Output ONLY valid HTML, no markdown or code blocks." 
-          },
-          { role: "user", content: prompt }
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        console.error("Rate limit exceeded");
-        // Fallback to template-based generation
-        return new Response(JSON.stringify({ 
-          documentHtml: generateFallbackDocument({ investorDetails, amount, companyName, roundTerms, currentDate, formattedAmount, formattedValuationCap, investorName })
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("Failed to generate document with AI");
-    }
-
-    const data = await response.json();
-    let documentHtml = data.choices?.[0]?.message?.content || '';
-
-    // Clean up any markdown code blocks if present
-    documentHtml = documentHtml.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
-
-    console.log("SAFE document generated successfully");
-
-    return new Response(JSON.stringify({ documentHtml }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("Error generating SAFE document:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
-
-// Fallback template-based generation if AI fails
-function generateFallbackDocument({
-  investorDetails,
-  amount,
-  companyName,
-  roundTerms,
-  currentDate,
-  formattedAmount,
-  formattedValuationCap,
-  investorName,
-}: {
-  investorDetails: InvestorDetails;
-  amount: number;
-  companyName: string;
-  roundTerms: RoundTerms;
-  currentDate: string;
-  formattedAmount: string;
-  formattedValuationCap: string;
+// Generate SAFE document using template substitution
+function generateSafeDocument(data: {
   investorName: string;
+  investorAddress: string;
+  investorEmail: string;
+  signerName: string;
+  companyName: string;
+  amount: string;
+  valuationCap: string;
+  discountRate: number | null;
+  proRataEnabled: boolean;
+  currentDate: string;
 }): string {
+  const {
+    investorName,
+    investorAddress,
+    signerName,
+    companyName,
+    amount,
+    valuationCap,
+    discountRate,
+    proRataEnabled,
+    currentDate,
+  } = data;
+
+  const discountSection = discountRate 
+    ? `The "Discount Rate" is <strong>${100 - discountRate}%</strong>.`
+    : '';
+
+  const proRataSection = proRataEnabled ? `
+    <h3 style="font-size: 16px; font-weight: bold; margin-top: 32px; margin-bottom: 16px;">
+      Pro-Rata Rights
+    </h3>
+    <p style="margin-bottom: 12px; text-align: justify; margin-left: 20px;">
+      The Investor shall have a pro-rata right to participate in subsequent Equity Financings to maintain 
+      their ownership percentage in the Company, subject to customary exceptions.
+    </p>
+  ` : '';
+
   return `
     <div style="font-family: 'Times New Roman', Times, serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 1.6; color: #333;">
       <h1 style="text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 8px; letter-spacing: 2px;">
@@ -194,15 +105,15 @@ function generateFallbackDocument({
       
       <p style="margin-bottom: 24px; text-align: justify;">
         <strong>${companyName}</strong>, a Delaware corporation (the "Company"), hereby certifies that in exchange for 
-        the payment by <strong>${investorName}</strong> (the "Investor") of <strong>${formattedAmount}</strong> 
+        the payment by <strong>${investorName}</strong> (the "Investor") of <strong>${amount}</strong> 
         (the "Purchase Amount") on or about ${currentDate}, the Company issues to the Investor 
         the right to certain shares of the Company's Capital Stock, subject to the terms 
         described below.
       </p>
 
       <p style="margin-bottom: 24px; text-align: justify;">
-        The "Valuation Cap" is <strong>${formattedValuationCap}</strong>.
-        ${roundTerms.discount_rate ? `The "Discount Rate" is <strong>${100 - roundTerms.discount_rate}%</strong>.` : ''}
+        The "Valuation Cap" is <strong>${valuationCap}</strong>.
+        ${discountSection}
       </p>
 
       <h3 style="font-size: 16px; font-weight: bold; margin-top: 32px; margin-bottom: 16px;">
@@ -311,15 +222,7 @@ function generateFallbackDocument({
         accordance with the laws of the State of Delaware.
       </p>
 
-      ${roundTerms.pro_rata_enabled ? `
-      <h3 style="font-size: 16px; font-weight: bold; margin-top: 32px; margin-bottom: 16px;">
-        Pro-Rata Rights
-      </h3>
-      <p style="margin-bottom: 12px; text-align: justify; margin-left: 20px;">
-        The Investor shall have a pro-rata right to participate in subsequent Equity Financings to maintain 
-        their ownership percentage in the Company, subject to customary exceptions.
-      </p>
-      ` : ''}
+      ${proRataSection}
 
       <div style="margin-top: 60px; padding-top: 32px; border-top: 2px solid #333;">
         <p style="font-weight: bold; margin-bottom: 24px; text-align: center;">
@@ -339,9 +242,9 @@ function generateFallbackDocument({
           <div style="flex: 1;">
             <p style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">INVESTOR:</p>
             <p style="margin-bottom: 4px;">${investorName}</p>
-            <p style="font-size: 12px; color: #666; margin-bottom: 4px;">${investorDetails.address || ''}</p>
+            <p style="font-size: 12px; color: #666; margin-bottom: 4px;">${investorAddress}</p>
             <div style="border-bottom: 1px solid #000; margin-top: 32px; margin-bottom: 4px;"></div>
-            <p style="font-size: 12px; color: #666;">By: ${investorDetails.name}</p>
+            <p style="font-size: 12px; color: #666;">By: ${signerName}</p>
             <p style="font-size: 12px; color: #666; margin-top: 4px;">Date: ${currentDate}</p>
           </div>
         </div>
@@ -349,3 +252,54 @@ function generateFallbackDocument({
     </div>
   `;
 }
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { investorDetails, amount, companyName, roundTerms }: GenerateRequest = await req.json();
+    
+    // Determine investor name based on entity type
+    const investorName = investorDetails.entityType === 'entity' 
+      ? investorDetails.entityName 
+      : investorDetails.name;
+
+    // Format values
+    const formattedAmount = formatCurrency(amount);
+    const formattedValuationCap = roundTerms.valuation_cap 
+      ? formatCurrency(roundTerms.valuation_cap)
+      : 'N/A';
+    const currentDate = formatDate(new Date());
+
+    console.log("Generating SAFE document with template substitution...");
+
+    // Generate document using pure template substitution
+    const documentHtml = generateSafeDocument({
+      investorName,
+      investorAddress: investorDetails.address || '',
+      investorEmail: investorDetails.email,
+      signerName: investorDetails.name,
+      companyName,
+      amount: formattedAmount,
+      valuationCap: formattedValuationCap,
+      discountRate: roundTerms.discount_rate,
+      proRataEnabled: roundTerms.pro_rata_enabled ?? false,
+      currentDate,
+    });
+
+    console.log("SAFE document generated successfully");
+
+    return new Response(JSON.stringify({ documentHtml }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Error generating SAFE document:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
