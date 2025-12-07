@@ -31,7 +31,7 @@ const tools = [
 
 export default function Homepage() {
   const navigate = useNavigate();
-  const { profile, user } = useFounderAuth();
+  const { profile } = useFounderAuth();
   const { openRound, rounds } = useRounds();
 
   // Get the first name from full_name
