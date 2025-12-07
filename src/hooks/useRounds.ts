@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { logActivity } from "@/lib/activityLogger";
 
 export type RoundType = 'ff' | 'ps' | 's' | 'br' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f';
 
@@ -143,9 +144,19 @@ export function useRounds() {
 
       return round;
     },
-    onSuccess: () => {
+    onSuccess: (round) => {
       queryClient.invalidateQueries({ queryKey: ["rounds"] });
       toast({ title: "Round opened successfully" });
+      
+      // Log activity
+      if (user?.id && round) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "round_created",
+          roundId: round.id,
+          metadata: { round_name: round.name },
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -186,10 +197,23 @@ export function useRounds() {
         .eq("id", roundId);
 
       if (error) throw error;
+      
+      return roundId;
     },
-    onSuccess: () => {
+    onSuccess: (roundId) => {
       queryClient.invalidateQueries({ queryKey: ["rounds"] });
       toast({ title: "Round closed" });
+      
+      // Log activity
+      const closedRound = rounds.find(r => r.id === roundId);
+      if (user?.id) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "round_closed",
+          roundId,
+          metadata: { round_name: closedRound?.name || "" },
+        });
+      }
     },
   });
 
@@ -201,16 +225,29 @@ export function useRounds() {
         throw new Error("You must close your current round before reopening another");
       }
 
-      const { error } = await supabase
+      const { data: round, error } = await supabase
         .from("rounds")
         .update({ state: "open" })
-        .eq("id", roundId);
+        .eq("id", roundId)
+        .select()
+        .single();
 
       if (error) throw error;
+      return round;
     },
-    onSuccess: () => {
+    onSuccess: (round) => {
       queryClient.invalidateQueries({ queryKey: ["rounds"] });
       toast({ title: "Round reopened" });
+      
+      // Log activity
+      if (user?.id && round) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "round_reopened",
+          roundId: round.id,
+          metadata: { round_name: round.name },
+        });
+      }
     },
     onError: (error: Error) => {
       toast({

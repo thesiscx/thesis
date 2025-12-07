@@ -55,20 +55,20 @@ export default function Homepage() {
         />
 
         {/* Content */}
-        <main className="flex-1 overflow-auto p-8 lg:p-12">
-          <div className="max-w-2xl">
+        <main className="flex-1 overflow-auto">
+          <div className="max-w-6xl mx-auto p-8">
             {/* Welcome message */}
             <div className="mb-10">
-              <h1 className="text-2xl font-semibold text-foreground mb-2">
+              <h1 className="font-heading text-2xl font-bold">
                 Welcome back, {firstName}
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm mt-1">
                 Your fundraising workspace is ready.
               </p>
             </div>
 
             {/* Navigation Cards */}
-            <div className="space-y-3">
+            <div className="space-y-3 max-w-xl">
               {tools.map((tool) => {
                 const Icon = tool.icon;
                 const isDisabled = !activeRound;
@@ -116,18 +116,16 @@ export default function Homepage() {
         </main>
       </div>
 
-      {/* Right Sidebar - Activity Feed */}
-      <aside className="w-80 flex flex-col p-3">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Sidebar Header with Circuit branding */}
-          <div className="py-3 px-4 flex items-center gap-2">
-            <img src={circuitLogo} alt="Circuit" className="h-4" />
-          </div>
+      {/* Right Sidebar - Activity Feed (matches AssistantSidebar styling) */}
+      <aside className="w-96 h-screen bg-[hsl(var(--canvas))] flex flex-col shrink-0">
+        {/* Header with Circuit logo - vertically aligned with main header */}
+        <div className="h-14 flex items-center px-6 shrink-0">
+          <img src={circuitLogo} alt="Circuit" className="h-5" />
+        </div>
 
-          {/* Activity Feed Content */}
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <ActivityFeed />
-          </div>
+        {/* Activity Feed Content */}
+        <div className="flex-1 overflow-hidden">
+          <ActivityFeed />
         </div>
       </aside>
     </div>

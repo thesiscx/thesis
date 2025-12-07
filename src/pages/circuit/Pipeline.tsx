@@ -34,6 +34,8 @@ import { useInvestors } from "@/hooks/useInvestors";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { logActivity } from "@/lib/activityLogger";
+import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import {
   Search,
   MoreHorizontal,
@@ -76,6 +78,7 @@ export default function ThesisCircuit() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useFounderAuth();
 
   const { rounds, isLoading: roundsLoading } = useRounds();
   const { investors, isLoading: investorsLoading } = useInvestors();
@@ -113,7 +116,7 @@ export default function ThesisCircuit() {
         .replace(/(^-|-$)/g, "")
         .slice(0, 30);
 
-      const { error } = await supabase.from("investors").insert({
+      const { data: newInvestor, error } = await supabase.from("investors").insert({
         name: formData.name.trim(),
         slug,
         email: formData.email.trim() || null,
@@ -121,7 +124,7 @@ export default function ThesisCircuit() {
         entity_type: formData.entity_type || "individual",
         address: formData.address.trim() || null,
         workspace_id: activeRound.workspace_id,
-      });
+      }).select().single();
 
       if (error) throw error;
 
@@ -129,6 +132,17 @@ export default function ThesisCircuit() {
       queryClient.invalidateQueries({ queryKey: ["investors"] });
       setAddInvestorOpen(false);
       resetForm();
+      
+      // Log activity
+      if (user?.id && newInvestor) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "investor_added",
+          roundId: activeRound.id,
+          investorId: newInvestor.id,
+          metadata: { investor_name: newInvestor.name },
+        });
+      }
     } catch (error) {
       console.error("Error adding investor:", error);
       toast({
@@ -164,6 +178,17 @@ export default function ThesisCircuit() {
       queryClient.invalidateQueries({ queryKey: ["investors"] });
       setEditingInvestor(null);
       resetForm();
+      
+      // Log activity
+      if (user?.id && activeRound) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "investor_updated",
+          roundId: activeRound.id,
+          investorId,
+          metadata: { investor_name: formData.name.trim() },
+        });
+      }
     } catch (error) {
       console.error("Error updating investor:", error);
       toast({

@@ -18,6 +18,7 @@ import { useRounds } from "@/hooks/useRounds";
 import { useInvestors } from "@/hooks/useInvestors";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { logActivity } from "@/lib/activityLogger";
 
 type PageKey = "stage" | "memo" | "docket" | "pipeline";
 
@@ -1737,6 +1738,18 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       queryClient.invalidateQueries({ queryKey: ["dockets"] });
       queryClient.invalidateQueries({ queryKey: ["investors"] });
       toast({ title: "Docket created" });
+      
+      // Log activity
+      if (user?.id) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "docket_created",
+          roundId: roundId,
+          investorId: investorId,
+          docketId: newDocket.id,
+          metadata: { investor_name: data.investor_name.trim() },
+        });
+      }
     } catch (error) {
       console.error("Failed to create docket:", error);
       toast({ 
