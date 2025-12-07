@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogOut, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import DealTermsCard from "@/components/public/DealTermsCard";
 
 interface TocItem {
   id: string;
@@ -264,6 +265,9 @@ export default function PublicMemoViewer() {
           </div>
         </main>
       </div>
+
+      {/* Deal Terms Card */}
+      <DealTermsCard />
     </div>
   );
 }
