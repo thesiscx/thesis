@@ -219,6 +219,7 @@ export type Database = {
       }
       dockets: {
         Row: {
+          access_key_id: string | null
           amount: number | null
           commitment_flow_state: Json | null
           commitment_status: string | null
@@ -240,8 +241,10 @@ export type Database = {
           status: string
           updated_at: string
           wire_received: boolean | null
+          wire_received_at: string | null
         }
         Insert: {
+          access_key_id?: string | null
           amount?: number | null
           commitment_flow_state?: Json | null
           commitment_status?: string | null
@@ -263,8 +266,10 @@ export type Database = {
           status?: string
           updated_at?: string
           wire_received?: boolean | null
+          wire_received_at?: string | null
         }
         Update: {
+          access_key_id?: string | null
           amount?: number | null
           commitment_flow_state?: Json | null
           commitment_status?: string | null
@@ -286,8 +291,16 @@ export type Database = {
           status?: string
           updated_at?: string
           wire_received?: boolean | null
+          wire_received_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "dockets_access_key_id_fkey"
+            columns: ["access_key_id"]
+            isOneToOne: false
+            referencedRelation: "access_keys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "dockets_investor_id_fkey"
             columns: ["investor_id"]
