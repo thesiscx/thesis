@@ -963,15 +963,24 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   // Edit memo state
   const [editMemoPrompt, setEditMemoPrompt] = useState("");
 
-  // Fetch messages from DB
+  // Fetch messages from DB - filtered by round
   const { data: messages = [] } = useQuery({
-    queryKey: ["action-messages", user?.id, pageKey],
+    queryKey: ["action-messages", user?.id, pageKey, roundId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("action_messages")
         .select("*")
         .eq("user_id", user!.id)
-        .eq("page_key", pageKey)
+        .eq("page_key", pageKey);
+      
+      // Filter by round if available
+      if (roundId) {
+        query = query.eq("round_id", roundId);
+      } else {
+        query = query.is("round_id", null);
+      }
+      
+      const { data, error } = await query
         .order("created_at", { ascending: true })
         .limit(50);
 
@@ -1036,9 +1045,10 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       message_type: type,
       content,
       metadata: metadata || {},
+      round_id: roundId || null,
     });
     
-    queryClient.invalidateQueries({ queryKey: ["action-messages", user.id, pageKey] });
+    queryClient.invalidateQueries({ queryKey: ["action-messages", user.id, pageKey, roundId] });
   };
 
   const createFlowCard = async (flowType: string): Promise<string | null> => {
@@ -1055,11 +1065,12 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
         flow_step: 0,
         flow_data: {},
         flow_complete: false,
+        round_id: roundId || null,
       })
       .select("id")
       .single();
     
-    queryClient.invalidateQueries({ queryKey: ["action-messages", user.id, pageKey] });
+    queryClient.invalidateQueries({ queryKey: ["action-messages", user.id, pageKey, roundId] });
     return inserted?.id || null;
   };
 
@@ -1073,7 +1084,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       })
       .eq("id", messageId);
     
-    queryClient.invalidateQueries({ queryKey: ["action-messages", user?.id, pageKey] });
+    queryClient.invalidateQueries({ queryKey: ["action-messages", user?.id, pageKey, roundId] });
   };
 
   // Actions

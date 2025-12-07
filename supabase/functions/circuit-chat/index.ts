@@ -158,7 +158,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, roundId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -350,6 +350,7 @@ serve(async (req) => {
                 user_id: userId,
                 role: "assistant",
                 content: contentToSave,
+                round_id: roundId || null,
               });
               if (error) {
                 console.error("Failed to save assistant message:", error);
