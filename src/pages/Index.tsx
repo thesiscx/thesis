@@ -54,8 +54,8 @@ export default function Index() {
           
           <div className="text-center space-y-2">
             <img src={circuitLogo} alt="Circuit" className="h-8 mx-auto" />
-            <p className="text-muted-foreground font-medium">
-              Run Your Raise
+            <p className="text-muted-foreground font-medium text-sm">
+              Automate Your Raise
             </p>
           </div>
 
@@ -75,7 +75,8 @@ export default function Index() {
           © 2025 Circuit.{" "}
           <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>.{" "}
           <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>.{" "}
-          <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>.
+          <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>.{" "}
+          <Link to="/about" className="hover:text-foreground transition-colors">About</Link>.
         </p>
       </footer>
     </div>
