@@ -538,68 +538,136 @@ export default function InvestorDocket({ roundSlug, investorSlug }: InvestorDock
           </CardContent>
         </Card>
 
-        {/* Signature Status */}
+        {/* Deal Progress */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Signature Status</CardTitle>
+            <CardTitle className="text-base">Deal Progress</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Investor Signature */}
-            <div className="flex items-center justify-between py-3 border-b">
-              <div className="flex items-center gap-3">
-                {investorSignature ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                ) : (
-                  <Clock className="h-5 w-5 text-muted-foreground" />
-                )}
-                <div>
-                  <p className="font-medium text-sm">Investor Signature</p>
-                  <p className="text-xs text-muted-foreground">
-                    {investorSignature 
-                      ? `Signed by ${investorSignature.signer_name} on ${format(new Date(investorSignature.signed_at), "MMM d, yyyy 'at' h:mm a")}`
-                      : 'Awaiting signature'
-                    }
-                  </p>
-                </div>
+          <CardContent className="space-y-3">
+            {/* Step 1: Docket Created */}
+            <div className="flex items-center gap-3 py-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+              <div>
+                <p className="font-medium text-sm">Docket Created</p>
+                <p className="text-xs text-muted-foreground">
+                  Link sent to investor
+                </p>
               </div>
             </div>
 
-            {/* Company Signature */}
-            <div className="flex items-center justify-between py-3">
-              <div className="flex items-center gap-3">
-                {companySignature ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                ) : investorSignature ? (
-                  <Clock className="h-5 w-5 text-amber-500" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-muted-foreground" />
-                )}
-                <div>
-                  <p className="font-medium text-sm">Company Countersignature</p>
-                  <p className="text-xs text-muted-foreground">
-                    {companySignature 
-                      ? `Signed by ${companySignature.signer_name} on ${format(new Date(companySignature.signed_at), "MMM d, yyyy 'at' h:mm a")}`
-                      : investorSignature
-                        ? 'Awaiting countersignature'
-                        : 'Pending investor signature first'
-                    }
-                  </p>
-                </div>
+            {/* Step 2: Terms Reviewed */}
+            <div className="flex items-center gap-3 py-2">
+              {investorSignature ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+              ) : (
+                <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+              )}
+              <div>
+                <p className="font-medium text-sm">Terms Reviewed</p>
+                <p className="text-xs text-muted-foreground">
+                  {investorSignature ? 'Investor reviewed terms' : 'Awaiting investor review'}
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3: Agreement Signed */}
+            <div className="flex items-center gap-3 py-2">
+              {investorSignature ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+              ) : (
+                <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+              )}
+              <div>
+                <p className="font-medium text-sm">Agreement Signed</p>
+                <p className="text-xs text-muted-foreground">
+                  {investorSignature 
+                    ? `Signed by ${investorSignature.signer_name} on ${format(new Date(investorSignature.signed_at), "MMM d, yyyy 'at' h:mm a")}`
+                    : 'Awaiting investor signature'
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Step 4: Agreement Executed (auto counter-signature) */}
+            <div className="flex items-center gap-3 py-2">
+              {investorSignature ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+              ) : (
+                <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+              )}
+              <div>
+                <p className="font-medium text-sm">Agreement Executed</p>
+                <p className="text-xs text-muted-foreground">
+                  {investorSignature 
+                    ? 'Counter-signature applied automatically'
+                    : 'Pending investor signature'
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Step 5: Funds Received */}
+            <div className="flex items-center gap-3 py-2">
+              {docket?.wire_received ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+              ) : investorSignature ? (
+                <Clock className="h-5 w-5 text-amber-500 shrink-0" />
+              ) : (
+                <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+              )}
+              <div>
+                <p className="font-medium text-sm">Funds Received</p>
+                <p className="text-xs text-muted-foreground">
+                  {docket?.wire_received && docket?.wire_received_at
+                    ? `Wire received on ${format(new Date(docket.wire_received_at), "MMM d, yyyy 'at' h:mm a")}`
+                    : investorSignature
+                      ? 'Awaiting wire transfer'
+                      : 'Pending earlier steps'
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Step 6: Deal Complete */}
+            <div className="flex items-center gap-3 py-2">
+              {docket?.wire_received ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+              ) : (
+                <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+              )}
+              <div>
+                <p className="font-medium text-sm">Deal Complete</p>
+                <p className="text-xs text-muted-foreground">
+                  {docket?.wire_received
+                    ? 'Investment finalized'
+                    : 'Pending fund receipt'
+                  }
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Agreement Preview */}
+        {/* Agreement */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Agreement Preview</CardTitle>
+            <CardTitle className="text-base">
+              {docket?.wire_received ? 'Executed Agreement' : 'Agreement Preview'}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[400px] rounded-md border p-6 bg-secondary/30">
               <div className="prose prose-sm max-w-none text-foreground">
                 <h2 className="text-center font-heading">SIMPLE AGREEMENT FOR FUTURE EQUITY</h2>
                 <p className="text-center text-muted-foreground text-sm">("SAFE")</p>
+                
+                {docket?.wire_received && (
+                  <div className="my-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-center">
+                    <p className="text-green-700 dark:text-green-400 font-medium text-sm">
+                      ✓ Fully Executed Agreement - Funds Received
+                    </p>
+                  </div>
+                )}
                 
                 <p className="mt-6">
                   THIS INSTRUMENT CERTIFIES THAT in exchange for the payment by{" "}
