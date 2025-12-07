@@ -268,13 +268,25 @@ export default function InvestorCommit() {
             }
           }
 
-          // CRITICAL: If wire_received is true and wire step was completed, force finalize
-          // This overrides any stored current_step to ensure funded dockets go to finalize
-          if (docket.wire_received && restoredCompleted.includes('wire')) {
+          // CRITICAL: If wire_received is true and execute step was completed, force finalize
+          // This handles the case where founder marks wire_received externally
+          if (docket.wire_received && restoredCompleted.includes('execute')) {
             restoredStep = 'finalize';
+            // Ensure wire step is marked complete
+            if (!restoredCompleted.includes('wire')) {
+              restoredCompleted = [...restoredCompleted, 'wire'];
+            }
             if (!restoredCompleted.includes('finalize')) {
               restoredCompleted = [...restoredCompleted, 'finalize'];
             }
+            // Save the corrected state to database
+            await saveFlowState(
+              'finalize',
+              restoredCompleted,
+              investorDetails,
+              investmentAmount,
+              documentHtml
+            );
           }
           
           setCurrentStep(restoredStep);
