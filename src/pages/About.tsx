@@ -29,8 +29,8 @@ export default function About() {
           </p>
 
           <p>
-            Circuit also drafts and updates your investment memo. Publish through your branded subdomain and share
-            secure dockets with investor-specific access keys.
+            Circuit also drafts and updates your investment memo. Publishes through your subdomain and shares secure
+            dockets with investor-specific access keys.
           </p>
 
           <p>
