@@ -671,7 +671,7 @@ export default function InvestorCommit() {
         <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex overflow-hidden mt-6">
           {/* Sidebar - No border-r, PoweredByCircuit at absolute bottom */}
           <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0">
-            <div className="flex-1 pt-4">
+            <div className="flex-1 pt-8">
               <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
                 Investment Process
               </h2>
@@ -679,7 +679,7 @@ export default function InvestorCommit() {
             </div>
             
             {/* PoweredByCircuit at bottom of sidebar */}
-            <div className="pr-6">
+            <div className="pr-6 pb-4">
               <PoweredByCircuit variant="inline" />
             </div>
           </aside>
