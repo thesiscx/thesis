@@ -1,6 +1,7 @@
 import { Copy, Check, Landmark, AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WireInstructions {
   wire_bank_name: string | null;
@@ -16,12 +17,14 @@ interface WireStepProps {
   amount: number;
   companyName: string;
   wireInstructions: WireInstructions | null;
+  docketId?: string | null;
 }
 
 export default function WireStep({ 
   amount, 
   companyName, 
   wireInstructions,
+  docketId,
 }: WireStepProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -37,6 +40,36 @@ export default function WireStep({
     toast.success('Copied to clipboard');
     setTimeout(() => setCopiedField(null), 2000);
   };
+
+  // Realtime subscription for wire_received updates
+  useEffect(() => {
+    if (!docketId) return;
+
+    const channel = supabase
+      .channel(`wire-watch-${docketId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'dockets',
+          filter: `id=eq.${docketId}`,
+        },
+        (payload) => {
+          const newData = payload.new as { wire_received?: boolean };
+          if (newData.wire_received) {
+            // Parent component handles auto-advance via its own subscription
+            // This is a backup notification
+            toast.success('Wire transfer confirmed!');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [docketId]);
 
   const hasWireInstructions = wireInstructions && (
     wireInstructions.wire_bank_name ||

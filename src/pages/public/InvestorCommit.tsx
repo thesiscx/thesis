@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import CommitmentSteps, { CommitmentStep } from "@/components/public/CommitmentSteps";
@@ -44,6 +44,10 @@ interface CompanyInfo {
   address: string | null;
 }
 
+// FlowState stored as JSON - using 'any' for Supabase Json compatibility
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FlowStateJson = any;
+
 export default function InvestorCommit() {
   const navigate = useNavigate();
   const { companySlug, roundCode } = useParams();
@@ -57,6 +61,8 @@ export default function InvestorCommit() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [docketId, setDocketId] = useState<string | null>(null);
+  const [wireReceivedAt, setWireReceivedAt] = useState<string | null>(null);
   const [roundInfo, setRoundInfo] = useState<{ name: string; targetRaise: number | null }>({
     name: '',
     targetRaise: null,
@@ -80,6 +86,96 @@ export default function InvestorCommit() {
   });
   const [investmentAmount, setInvestmentAmount] = useState<number>(0);
   const [documentHtml, setDocumentHtml] = useState<string>('');
+  
+  // Ref to track if state has been restored
+  const stateRestored = useRef(false);
+
+  // Save flow state to database
+  const saveFlowState = useCallback(async (
+    step: CommitmentStep,
+    completed: CommitmentStep[],
+    details: InvestorDetails,
+    amount: number,
+    html: string,
+    existingDocketId?: string | null
+  ) => {
+    if (!investorSession?.roundId) return;
+
+    const flowState: FlowStateJson = {
+      current_step: step,
+      completed_steps: completed,
+      investor_details: details,
+      investment_amount: amount,
+      document_html: html,
+    };
+
+    try {
+      // Use existing docketId or find/create one
+      let targetDocketId = existingDocketId || docketId;
+
+      if (!targetDocketId) {
+        // Find existing docket by investor_id or access_key_id
+        let existingDocket: { id: string; wire_received?: boolean | null; wire_received_at?: string | null } | null = null;
+        
+        if (investorSession.investorId) {
+          const { data } = await supabase
+            .from('dockets')
+            .select('id, wire_received, wire_received_at')
+            .eq('round_id', investorSession.roundId)
+            .eq('investor_id', investorSession.investorId)
+            .maybeSingle();
+          existingDocket = data;
+        } else if (investorSession.accessKeyId) {
+          const { data } = await supabase
+            .from('dockets')
+            .select('id, wire_received, wire_received_at')
+            .eq('round_id', investorSession.roundId)
+            .eq('access_key_id', investorSession.accessKeyId)
+            .maybeSingle();
+          existingDocket = data;
+        }
+
+        if (existingDocket) {
+          targetDocketId = existingDocket.id;
+          setDocketId(existingDocket.id);
+          if (existingDocket.wire_received_at) {
+            setWireReceivedAt(existingDocket.wire_received_at);
+          }
+        } else {
+          // Create new docket with flow state
+          const { data: newDocket, error } = await supabase
+            .from('dockets')
+            .insert({
+              round_id: investorSession.roundId,
+              investor_id: investorSession.investorId || null,
+              access_key_id: investorSession.accessKeyId || null,
+              commitment_flow_state: flowState,
+              commitment_status: 'in_progress',
+              is_global: !investorSession.investorId,
+            })
+            .select('id')
+            .single();
+
+          if (error) {
+            console.error('Error creating docket:', error);
+            return;
+          }
+          targetDocketId = newDocket.id;
+          setDocketId(newDocket.id);
+        }
+      }
+
+      // Update the docket with flow state
+      if (targetDocketId) {
+        await supabase
+          .from('dockets')
+          .update({ commitment_flow_state: flowState })
+          .eq('id', targetDocketId);
+      }
+    } catch (error) {
+      console.error('Error saving flow state:', error);
+    }
+  }, [investorSession, docketId]);
 
   // Redirect if no session
   useEffect(() => {
@@ -88,10 +184,10 @@ export default function InvestorCommit() {
     }
   }, [isAuthLoading, investorSession, companySlug, roundCode, navigate]);
 
-  // Fetch terms and docket settings
+  // Fetch terms and restore flow state
   useEffect(() => {
     const fetchData = async () => {
-      if (!investorSession?.roundId) return;
+      if (!investorSession?.roundId || stateRestored.current) return;
 
       try {
         // Fetch round terms
@@ -103,7 +199,6 @@ export default function InvestorCommit() {
 
         if (roundTerms) {
           setTerms(roundTerms);
-          // Set company info from terms
           setCompanyInfo(prev => ({
             ...prev,
             entityType: roundTerms.entity_type,
@@ -126,17 +221,52 @@ export default function InvestorCommit() {
           });
         }
 
-        // Check for investor-specific docket with custom terms
-        if (investorSession.investorId) {
-          const { data: docket } = await supabase
-            .from('dockets')
-            .select('custom_terms')
-            .eq('round_id', investorSession.roundId)
-            .eq('investor_id', investorSession.investorId)
-            .maybeSingle();
+        // Find existing docket and restore state
+        const query = supabase
+          .from('dockets')
+          .select('id, custom_terms, commitment_flow_state, wire_received, wire_received_at')
+          .eq('round_id', investorSession.roundId);
 
-          if (docket?.custom_terms) {
+        if (investorSession.investorId) {
+          query.eq('investor_id', investorSession.investorId);
+        } else if (investorSession.accessKeyId) {
+          query.eq('access_key_id', investorSession.accessKeyId);
+        }
+
+        const { data: docket } = await query.maybeSingle();
+
+        if (docket) {
+          setDocketId(docket.id);
+          if (docket.custom_terms) {
             setCustomTerms(docket.custom_terms);
+          }
+          if (docket.wire_received_at) {
+            setWireReceivedAt(docket.wire_received_at);
+          }
+
+          // Restore flow state if exists
+          const flowState = docket.commitment_flow_state as FlowStateJson;
+          if (flowState && flowState.current_step) {
+            setCurrentStep(flowState.current_step as CommitmentStep);
+            setCompletedSteps((flowState.completed_steps || []) as CommitmentStep[]);
+            if (flowState.investor_details) {
+              setInvestorDetails(flowState.investor_details as InvestorDetails);
+            }
+            if (flowState.investment_amount) {
+              setInvestmentAmount(flowState.investment_amount);
+            }
+            if (flowState.document_html) {
+              setDocumentHtml(flowState.document_html);
+            }
+
+            // If wire received, go to finalize
+            const completedArr = (flowState.completed_steps || []) as CommitmentStep[];
+            if (docket.wire_received && completedArr.includes('wire')) {
+              setCurrentStep('finalize');
+              if (!completedArr.includes('finalize')) {
+                setCompletedSteps([...completedArr, 'finalize']);
+              }
+            }
           }
         }
 
@@ -147,13 +277,15 @@ export default function InvestorCommit() {
           logo: investorSession.companyLogo || null,
         }));
 
-        // Pre-fill investor details if available
-        if (investorSession.investorName) {
+        // Pre-fill investor details if available and not restored
+        if (investorSession.investorName && !stateRestored.current) {
           setInvestorDetails(prev => ({
             ...prev,
-            name: investorSession.investorName || '',
+            name: prev.name || investorSession.investorName || '',
           }));
         }
+
+        stateRestored.current = true;
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load terms');
@@ -165,39 +297,98 @@ export default function InvestorCommit() {
     fetchData();
   }, [investorSession]);
 
-  const markStepComplete = (step: CommitmentStep) => {
-    if (!completedSteps.includes(step)) {
-      setCompletedSteps(prev => [...prev, step]);
-    }
-  };
+  // Realtime subscription for wire_received updates
+  useEffect(() => {
+    if (!docketId || currentStep !== 'wire') return;
 
-  const goToStep = (step: CommitmentStep) => {
+    const channel = supabase
+      .channel(`docket-${docketId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'dockets',
+          filter: `id=eq.${docketId}`,
+        },
+        (payload) => {
+          const newData = payload.new as { wire_received?: boolean; wire_received_at?: string };
+          if (newData.wire_received) {
+            setWireReceivedAt(newData.wire_received_at || new Date().toISOString());
+            // Auto-advance to finalize
+            const newCompleted = [...completedSteps];
+            if (!newCompleted.includes('wire')) {
+              newCompleted.push('wire');
+            }
+            setCompletedSteps(newCompleted);
+            setCurrentStep('finalize');
+            toast.success('Wire transfer confirmed!');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [docketId, currentStep, completedSteps]);
+
+  const markStepComplete = useCallback((step: CommitmentStep) => {
+    setCompletedSteps(prev => {
+      if (!prev.includes(step)) {
+        return [...prev, step];
+      }
+      return prev;
+    });
+  }, []);
+
+  const goToStep = useCallback((step: CommitmentStep) => {
     setCurrentStep(step);
-  };
+  }, []);
 
-  // Step handlers
+  // Step handlers with state persistence
   const handleTermsContinue = () => {
-    markStepComplete('terms');
-    goToStep('details');
+    const newCompleted = [...completedSteps];
+    if (!newCompleted.includes('terms')) {
+      newCompleted.push('terms');
+    }
+    setCompletedSteps(newCompleted);
+    setCurrentStep('details');
+    saveFlowState('details', newCompleted, investorDetails, investmentAmount, documentHtml);
   };
 
   const handleDetailsContinue = (details: InvestorDetails) => {
     setInvestorDetails(details);
-    markStepComplete('details');
-    goToStep('amount');
+    const newCompleted = [...completedSteps];
+    if (!newCompleted.includes('details')) {
+      newCompleted.push('details');
+    }
+    setCompletedSteps(newCompleted);
+    setCurrentStep('amount');
+    saveFlowState('amount', newCompleted, details, investmentAmount, documentHtml);
   };
 
   const handleAmountContinue = (amount: number) => {
     setInvestmentAmount(amount);
-    markStepComplete('amount');
-    goToStep('generate');
+    const newCompleted = [...completedSteps];
+    if (!newCompleted.includes('amount')) {
+      newCompleted.push('amount');
+    }
+    setCompletedSteps(newCompleted);
+    setCurrentStep('generate');
+    saveFlowState('generate', newCompleted, investorDetails, amount, documentHtml);
   };
 
   const handleDocumentGenerated = useCallback((html: string) => {
     setDocumentHtml(html);
-    markStepComplete('generate');
-    goToStep('sign');
-  }, []);
+    const newCompleted = [...completedSteps];
+    if (!newCompleted.includes('generate')) {
+      newCompleted.push('generate');
+    }
+    setCompletedSteps(newCompleted);
+    setCurrentStep('sign');
+    saveFlowState('sign', newCompleted, investorDetails, investmentAmount, html);
+  }, [completedSteps, investorDetails, investmentAmount, saveFlowState]);
 
   const handleSign = async (signature: string) => {
     if (!investorSession) return;
@@ -208,6 +399,7 @@ export default function InvestorCommit() {
       const docketData = {
         round_id: investorSession.roundId,
         investor_id: investorSession.investorId,
+        access_key_id: investorSession.accessKeyId || null,
         amount: investmentAmount,
         status: 'investor_signed',
         commitment_status: 'signed',
@@ -217,45 +409,63 @@ export default function InvestorCommit() {
         investor_address: investorDetails.address,
         investor_entity_name: investorDetails.entityType === 'entity' ? investorDetails.entityName : null,
         investor_entity_type: investorDetails.entityType,
-        is_global: false,
+        is_global: !investorSession.investorId,
       };
 
-      // Check if docket exists
-      const { data: existingDocket } = await supabase
-        .from('dockets')
-        .select('id')
-        .eq('round_id', investorSession.roundId)
-        .eq('investor_id', investorSession.investorId)
-        .maybeSingle();
+      let targetDocketId = docketId;
 
-      let docketId: string;
-
-      if (existingDocket) {
+      if (targetDocketId) {
         // Update existing docket
         const { error } = await supabase
           .from('dockets')
           .update(docketData)
-          .eq('id', existingDocket.id);
+          .eq('id', targetDocketId);
 
         if (error) throw error;
-        docketId = existingDocket.id;
       } else {
-        // Create new docket
-        const { data: newDocket, error } = await supabase
+        // Check if docket exists
+        const query = supabase
           .from('dockets')
-          .insert(docketData)
           .select('id')
-          .single();
+          .eq('round_id', investorSession.roundId);
 
-        if (error) throw error;
-        docketId = newDocket.id;
+        if (investorSession.investorId) {
+          query.eq('investor_id', investorSession.investorId);
+        } else if (investorSession.accessKeyId) {
+          query.eq('access_key_id', investorSession.accessKeyId);
+        }
+
+        const { data: existingDocket } = await query.maybeSingle();
+
+        if (existingDocket) {
+          // Update existing docket
+          const { error } = await supabase
+            .from('dockets')
+            .update(docketData)
+            .eq('id', existingDocket.id);
+
+          if (error) throw error;
+          targetDocketId = existingDocket.id;
+          setDocketId(existingDocket.id);
+        } else {
+          // Create new docket
+          const { data: newDocket, error } = await supabase
+            .from('dockets')
+            .insert(docketData)
+            .select('id')
+            .single();
+
+          if (error) throw error;
+          targetDocketId = newDocket.id;
+          setDocketId(newDocket.id);
+        }
       }
 
       // Record signature
       const { error: sigError } = await supabase
         .from('signatures')
         .insert({
-          docket_id: docketId,
+          docket_id: targetDocketId!,
           signer_type: 'investor',
           signer_name: signature,
           signer_email: investorDetails.email,
@@ -265,8 +475,13 @@ export default function InvestorCommit() {
 
       if (sigError) throw sigError;
 
-      markStepComplete('sign');
-      goToStep('execute');
+      const newCompleted = [...completedSteps];
+      if (!newCompleted.includes('sign')) {
+        newCompleted.push('sign');
+      }
+      setCompletedSteps(newCompleted);
+      setCurrentStep('execute');
+      saveFlowState('execute', newCompleted, investorDetails, investmentAmount, documentHtml, targetDocketId);
       toast.success('Agreement signed successfully');
     } catch (error) {
       console.error('Error signing agreement:', error);
@@ -277,12 +492,14 @@ export default function InvestorCommit() {
   };
 
   const handleExecuteComplete = useCallback(() => {
-    markStepComplete('execute');
-    goToStep('wire');
-  }, []);
-
-  // Wire step no longer has continue - finalize only accessible when wire_received is true
-  // For now, mark wire complete when execute completes since we show awaiting status
+    const newCompleted = [...completedSteps];
+    if (!newCompleted.includes('execute')) {
+      newCompleted.push('execute');
+    }
+    setCompletedSteps(newCompleted);
+    setCurrentStep('wire');
+    saveFlowState('wire', newCompleted, investorDetails, investmentAmount, documentHtml);
+  }, [completedSteps, investorDetails, investmentAmount, documentHtml, saveFlowState]);
 
   const handleClose = () => {
     navigate(`/share/${companySlug}/${roundCode}/memo/view`);
@@ -412,6 +629,7 @@ export default function InvestorCommit() {
                   amount={investmentAmount}
                   companyName={investorSession.companyName || ''}
                   wireInstructions={terms}
+                  docketId={docketId}
                 />
               )}
 
@@ -421,6 +639,7 @@ export default function InvestorCommit() {
                   companyName={investorSession.companyName || ''}
                   documentHtml={documentHtml}
                   signatoryName={terms?.signatory_name || undefined}
+                  wireReceivedAt={wireReceivedAt}
                 />
               )}
             </div>
