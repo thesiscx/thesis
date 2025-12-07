@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Json } from "@/integrations/supabase/types";
+import { logActivity } from "@/lib/activityLogger";
 
 interface TocItem {
   id: string;
@@ -188,9 +189,18 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       setLastSaved(new Date());
       console.log('[Memo] Save successful');
+      
+      // Log activity
+      if (user?.id) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "memo_updated",
+          memoId: variables.memoId,
+        });
+      }
     },
     onError: (error) => {
       console.error('[Memo] Save failed:', error);
