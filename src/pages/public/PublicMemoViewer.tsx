@@ -233,8 +233,8 @@ export default function PublicMemoViewer() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 min-w-0">
-          <div className="max-w-3xl py-10 px-12 lg:px-16">
+        <main className="flex-1 min-w-0 pt-10">
+          <div className="max-w-3xl pb-10 px-12 lg:px-16">
             {isLoading ? (
               <div className="space-y-6">
                 <Skeleton className="h-10 w-3/4" />
