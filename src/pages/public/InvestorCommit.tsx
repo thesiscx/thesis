@@ -306,8 +306,8 @@ export default function InvestorCommit() {
       </div>
 
       {/* Centered Card Container - Intentionally extends past viewport bottom */}
-      <div className="flex-1 flex items-start justify-center pt-12 pb-0 px-8">
-        <div className="bg-background rounded-xl shadow-sm border w-full max-w-4xl flex min-h-[600px]">
+      <div className="flex-1 flex items-start justify-center pt-16 pb-0 px-8">
+        <div className="bg-background rounded-xl shadow-sm border w-full max-w-5xl flex min-h-[600px]">
           {/* Sidebar - Now part of the card with PoweredByCircuit at bottom */}
           <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0 border-r border-border/50">
             <div className="flex-1">
@@ -324,8 +324,8 @@ export default function InvestorCommit() {
           </aside>
 
           {/* Main Content - Always scrollable to ensure buttons are accessible */}
-          <main className="flex-1 min-w-0 py-8 px-6 lg:px-8 overflow-y-auto max-h-[calc(100vh-6rem)]">
-            <div className="max-w-lg pb-8">
+          <main className="flex-1 min-w-0 py-8 px-6 lg:px-10 overflow-y-auto max-h-[calc(100vh-6rem)]">
+            <div className="max-w-2xl pb-8">
               {currentStep === 'review-terms' && (
                 <ReviewTermsStep
                   terms={terms}
