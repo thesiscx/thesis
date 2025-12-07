@@ -207,10 +207,10 @@ export default function PublicMemoViewer() {
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex max-w-7xl mx-auto">
         {/* TOC Sidebar */}
-        <aside className="hidden lg:block w-64 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto pt-12">
-          <nav className="pl-8 pr-4">
+        <aside className="hidden lg:block w-56 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto pt-10">
+          <nav className="pr-6">
             {tocItems.length > 0 && (
               <ul className="space-y-1">
                 {tocItems.map((item) => (
@@ -237,7 +237,7 @@ export default function PublicMemoViewer() {
 
         {/* Main Content */}
         <main className="flex-1 min-w-0 pt-10">
-          <div className="max-w-3xl pb-10 px-6 lg:px-8">
+          <div className="max-w-3xl pb-10">
             {isLoading ? (
               <div className="space-y-6">
                 <Skeleton className="h-10 w-3/4" />
