@@ -113,7 +113,7 @@ export default function MemoEditor({
       }),
       Citation,
     ],
-    content: (content as any) || '',
+    content: '', // Start empty, content is set via useEffect
     editorProps: {
       attributes: {
         class: 'tiptap-editor min-h-[500px] focus:outline-none',
@@ -169,25 +169,19 @@ export default function MemoEditor({
   useEffect(() => {
     if (!editor) return;
     
-    // If content is provided, always ensure editor has it
+    // Always set content when available
     if (content) {
       const currentContent = JSON.stringify(editor.getJSON());
       const newContent = JSON.stringify(content);
       
+      // Only update if actually different to prevent cursor jumping
       if (currentContent !== newContent) {
         console.log('[MemoEditor] Setting content from prop');
         editor.commands.setContent(content as any);
-        
-        const headings = extractHeadings(editor);
-        if (!hasInitialized.current) {
-          hasInitialized.current = true;
-          onChange(content, headings);
-        }
-      } else if (!hasInitialized.current) {
         hasInitialized.current = true;
       }
     }
-  }, [editor, content, extractHeadings, onChange]);
+  }, [editor, content]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

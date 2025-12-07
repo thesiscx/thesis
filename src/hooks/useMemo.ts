@@ -45,6 +45,9 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
     hasInitializedContent.current = false;
   }, [roundSlug, variantSlug]);
 
+  // Track last known updated_at to detect external changes
+  const lastUpdatedAt = useRef<string | null>(null);
+
   // Fetch memo
   const { data: memo, isLoading } = useQuery({
     queryKey: ["memo", roundSlug, variantSlug, user?.id],
@@ -64,7 +67,7 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
       // Then get the memo
       let query = supabase
         .from("memos")
-        .select("*")
+        .select("id, content, round_id, investor_id, is_global, version, updated_at, created_at, created_by")
         .eq("round_id", round.id);
 
       if (isGlobal) {
@@ -114,28 +117,22 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
   // Track which memo ID we've initialized to detect memo changes
   const initializedMemoId = useRef<string | null>(null);
   
-  // Sync local content with memo from DB
+  // Sync local content with memo from DB - force update when updated_at changes (AI edits)
   useEffect(() => {
     if (memo?.content) {
       const isNewMemo = initializedMemoId.current !== memo.id;
+      const isExternalUpdate = memo.updated_at !== lastUpdatedAt.current;
       
-      // Always sync on first load or when memo ID changes
-      if (isNewMemo) {
+      // Force sync on: new memo, external update (AI edit), or initial load
+      if (isNewMemo || isExternalUpdate) {
         initializedMemoId.current = memo.id;
+        lastUpdatedAt.current = memo.updated_at;
         hasInitializedContent.current = true;
         setLocalContent(memo.content);
-        console.log('[Memo] Set content from DB for memo:', memo.id);
-      } else if (!pendingContent) {
-        // Same memo, no pending edits - sync if DB content differs (AI edit, version restore)
-        const localStr = JSON.stringify(localContent);
-        const dbStr = JSON.stringify(memo.content);
-        if (localStr !== dbStr) {
-          setLocalContent(memo.content);
-          console.log('[Memo] Synced external change from DB');
-        }
+        console.log('[Memo] Set content from DB', { isNewMemo, isExternalUpdate, memoId: memo.id });
       }
     }
-  }, [memo?.content, memo?.id, pendingContent, localContent]);
+  }, [memo?.content, memo?.id, memo?.updated_at]);
 
   // Save mutation with error handling
   const saveMutation = useMutation({
