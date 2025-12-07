@@ -178,7 +178,7 @@ export default function CircuitHeader({
         {/* Separator and Tool Selector - only show when not on home */}
         {activeTool !== "home" && activeTool !== "stage" && (
           <>
-            <span className="text-muted-foreground/50 mx-1">/</span>
+            <span className="text-muted-foreground/50 mx-2">/</span>
 
             {/* Tool Selector */}
             <div className="flex items-center">
@@ -232,15 +232,15 @@ export default function CircuitHeader({
         {/* Stage label - only when on stage */}
         {activeTool === "stage" && (
           <>
-            <span className="text-muted-foreground/50 mx-1">/</span>
-            <span className="text-sm text-muted-foreground pl-1">Stage</span>
+            <span className="text-muted-foreground/50 mx-2">/</span>
+            <span className="text-sm text-muted-foreground">Stage</span>
           </>
         )}
 
         {/* Breadcrumb for subpages */}
         {breadcrumb && (
           <>
-            <span className="text-muted-foreground/50 mx-1">/</span>
+            <span className="text-muted-foreground/50 mx-2">/</span>
             <span className="text-sm font-medium">{breadcrumb.label}</span>
           </>
         )}
