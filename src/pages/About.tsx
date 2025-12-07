@@ -41,9 +41,8 @@ export default function About() {
           </p>
 
           <p className="font-medium text-foreground">
-            Circuit is fundraising without friction.
+            Circuit is fundraising without friction. Automated pipeline. Automated memo. Automated execution.
             <br />
-            Automated pipeline. Automated memo. Automated execution.
             <br />
             Raise Clarity.
           </p>
