@@ -1,5 +1,4 @@
-import { Copy, Check, Landmark } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Copy, Check, Landmark, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -17,14 +16,12 @@ interface WireStepProps {
   amount: number;
   companyName: string;
   wireInstructions: WireInstructions | null;
-  onContinue: () => void;
 }
 
 export default function WireStep({ 
   amount, 
   companyName, 
   wireInstructions,
-  onContinue,
 }: WireStepProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -40,6 +37,12 @@ export default function WireStep({
     toast.success('Copied to clipboard');
     setTimeout(() => setCopiedField(null), 2000);
   };
+
+  const hasWireInstructions = wireInstructions && (
+    wireInstructions.wire_bank_name ||
+    wireInstructions.wire_account_name ||
+    wireInstructions.wire_account_number
+  );
 
   return (
     <div className="space-y-6">
@@ -57,7 +60,7 @@ export default function WireStep({
       </div>
 
       {/* Wire Instructions */}
-      {wireInstructions && (
+      {hasWireInstructions ? (
         <div className="bg-muted/30 rounded-lg divide-y divide-border">
           {wireInstructions.wire_bank_name && (
             <WireField
@@ -116,28 +119,38 @@ export default function WireStep({
             />
           )}
         </div>
-      )}
-
-      {!wireInstructions && (
+      ) : (
         <div className="bg-muted/30 rounded-lg p-6 text-center">
           <p className="text-muted-foreground text-sm">
-            Wire instructions will be provided by {companyName}.
+            Wire instructions will be provided by {companyName} shortly. Please check back or contact the company directly.
           </p>
         </div>
       )}
 
       {/* Important Notice */}
-      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-        <p className="text-sm text-blue-900 leading-relaxed">
+      <div className="bg-primary/5 border border-primary/10 rounded-lg p-4">
+        <p className="text-sm text-foreground leading-relaxed">
           Please include your name and "{companyName} Investment" in the wire memo for identification.
         </p>
       </div>
 
-      {/* Continue Button */}
-      <div className="flex justify-end pt-2">
-        <Button onClick={onContinue} className="px-6">
-          Continue
-        </Button>
+      {/* 72-hour Disclaimer */}
+      <div className="flex items-start gap-3 bg-muted/50 rounded-lg p-4">
+        <AlertTriangle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          If funds are not received within 72 hours of signing, the company reserves the right to void this agreement at its discretion.
+        </p>
+      </div>
+
+      {/* Awaiting Funds Status */}
+      <div className="text-center pt-4">
+        <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+          </span>
+          Awaiting wire transfer confirmation...
+        </div>
       </div>
     </div>
   );
@@ -160,13 +173,16 @@ function WireField({
         <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
         <p className="text-sm font-medium text-foreground mt-0.5">{value}</p>
       </div>
-      <Button variant="ghost" size="sm" onClick={onCopy} className="h-8 w-8 p-0">
+      <button 
+        onClick={onCopy} 
+        className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted transition-colors"
+      >
         {copied ? (
           <Check className="w-4 h-4 text-green-600" />
         ) : (
           <Copy className="w-4 h-4 text-muted-foreground" />
         )}
-      </Button>
+      </button>
     </div>
   );
 }

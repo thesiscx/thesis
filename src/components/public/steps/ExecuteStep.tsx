@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Stamp, Check, AlertCircle, Shield } from "lucide-react";
+import { Loader2, Stamp, Check, AlertCircle, Shield, CheckCircle2 } from "lucide-react";
 
 interface ExecuteStepProps {
   onComplete: () => void;
@@ -23,6 +23,7 @@ export default function ExecuteStep({
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showComplete, setShowComplete] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,8 +37,14 @@ export default function ExecuteStep({
         setCompletedSteps(prev => [...prev, i]);
       }
 
-      // Small delay before completing
+      // Show "Fully Executed" animation
       await new Promise(resolve => setTimeout(resolve, 300));
+      if (!cancelled) {
+        setShowComplete(true);
+      }
+
+      // Wait for user to see the success state
+      await new Promise(resolve => setTimeout(resolve, 1500));
       if (!cancelled) {
         onComplete();
       }
@@ -63,6 +70,30 @@ export default function ExecuteStep({
           <p className="text-muted-foreground mt-2">
             {error}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (showComplete) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center animate-fade-in">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-6">
+            <CheckCircle2 className="w-8 h-8 text-green-600" />
+          </div>
+          <h1 className="text-2xl font-heading font-semibold text-foreground">
+            Agreement Fully Executed
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Both parties have signed. Proceeding to wire instructions...
+          </p>
+        </div>
+
+        {/* Security Badge */}
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <Shield className="w-3.5 h-3.5" />
+          <span>E-Sign Act & UETA Compliant</span>
         </div>
       </div>
     );

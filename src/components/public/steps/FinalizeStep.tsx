@@ -1,18 +1,20 @@
-import { CheckCircle2, Download, Clock, ExternalLink } from "lucide-react";
+import { CheckCircle2, Download, UserPlus, Calendar, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FinalizeStepProps {
   amount: number;
   companyName: string;
-  documentHtml: string;
+  documentHtml?: string;
   signatoryName?: string;
+  wireReceivedAt?: string;
 }
 
 export default function FinalizeStep({ 
   amount, 
-  companyName, 
+  companyName,
   documentHtml,
   signatoryName,
+  wireReceivedAt,
 }: FinalizeStepProps) {
   const formattedAmount = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -20,7 +22,23 @@ export default function FinalizeStep({
     minimumFractionDigits: 0,
   }).format(amount);
 
+  const formattedDate = wireReceivedAt 
+    ? new Date(wireReceivedAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
   const handleDownload = () => {
+    if (!documentHtml) return;
+    
     const blob = new Blob([`
       <!DOCTYPE html>
       <html>
@@ -36,11 +54,10 @@ export default function FinalizeStep({
         </body>
       </html>
     `], { type: 'text/html' });
-    
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `SAFE-Agreement-${companyName.replace(/\s+/g, '-')}.html`;
+    a.download = `SAFE-Agreement-${companyName.replace(/\s+/g, '-')}-Executed.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -48,82 +65,69 @@ export default function FinalizeStep({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Status Header */}
+    <div className="space-y-8">
+      {/* Success Header */}
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-100 mb-4">
-          <Clock className="w-7 h-7 text-amber-600 animate-pulse" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-6">
+          <CheckCircle2 className="w-8 h-8 text-green-600" />
         </div>
         <h1 className="text-2xl font-heading font-semibold text-foreground">
-          Awaiting Funds
+          Investment Complete
         </h1>
         <p className="text-muted-foreground mt-2">
-          Your {formattedAmount} commitment to {companyName} is pending wire receipt.
+          Your investment in {companyName} has been finalized.
         </p>
       </div>
 
-      {/* Execution Status */}
-      <div className="bg-muted/30 rounded-lg p-4 space-y-3">
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+      {/* Investment Details */}
+      <div className="bg-muted/30 rounded-lg divide-y divide-border">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <DollarSign className="w-4 h-4 text-primary" />
+          </div>
           <div>
-            <p className="font-medium text-foreground text-sm">Your signature recorded</p>
-            <p className="text-xs text-muted-foreground">Timestamp, IP address, and document hash captured</p>
+            <p className="text-xs text-muted-foreground">Investment Amount</p>
+            <p className="text-sm font-semibold text-foreground">{formattedAmount}</p>
           </div>
         </div>
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="font-medium text-foreground text-sm">Counter-signed by {companyName}</p>
-            <p className="text-xs text-muted-foreground">
-              {signatoryName ? `Signed by ${signatoryName}` : 'Pre-authorized signature applied'}
-            </p>
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Calendar className="w-4 h-4 text-primary" />
           </div>
-        </div>
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-medium text-foreground text-sm">Agreement fully executed</p>
-            <p className="text-xs text-muted-foreground">Pending fund receipt to close</p>
+            <p className="text-xs text-muted-foreground">Funds Received</p>
+            <p className="text-sm font-medium text-foreground">{formattedDate}</p>
           </div>
         </div>
       </div>
 
-      {/* Important Notice */}
-      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-        <p className="text-sm text-blue-900 leading-relaxed">
-          The agreement is fully executed but will only close upon confirmed receipt of funds. 
-          Once cleared, you will be automatically recorded in the shareholder register.
+      {/* Download Button */}
+      {documentHtml && (
+        <Button 
+          onClick={handleDownload}
+          variant="outline" 
+          className="w-full"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Download Executed Agreement
+        </Button>
+      )}
+
+      {/* Create Account CTA */}
+      <div className="bg-primary/5 border border-primary/10 rounded-lg p-6 text-center">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+          <UserPlus className="w-6 h-6 text-primary" />
+        </div>
+        <h3 className="font-heading font-medium text-foreground mb-2">
+          Create Your Investor Account
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Track your investment, access documents, and manage your portfolio in one place.
         </p>
-      </div>
-
-      {/* Download Agreement */}
-      <div className="bg-muted/30 rounded-lg p-4 flex items-center justify-between">
-        <div>
-          <p className="font-medium text-foreground text-sm">Executed Agreement</p>
-          <p className="text-xs text-muted-foreground">Download your fully signed agreement</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
-          <Download className="w-4 h-4" />
-          Download
+        <Button className="w-full">
+          Create Account
         </Button>
       </div>
-
-      {/* Account Setup CTA */}
-      <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 text-center">
-        <p className="text-sm text-foreground mb-3">
-          Set up your Circuit account to manage your shareholdings and receive updates.
-        </p>
-        <Button variant="outline" size="sm" className="gap-2">
-          <ExternalLink className="w-4 h-4" />
-          Create Investor Account
-        </Button>
-      </div>
-
-      {/* Contact Note */}
-      <p className="text-xs text-center text-muted-foreground">
-        Questions about your investment? Contact the {companyName} team directly.
-      </p>
     </div>
   );
 }

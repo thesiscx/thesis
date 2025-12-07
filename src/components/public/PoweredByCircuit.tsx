@@ -20,7 +20,10 @@ export function PoweredByCircuit({ variant = 'footer' }: PoweredByCircuitProps) 
 
   if (variant === 'inline') {
     return (
-      <div className="flex flex-col gap-1">
+      <div className="group relative flex flex-col gap-1 overflow-hidden rounded-md px-2 py-1.5 cursor-pointer">
+        {/* Shine overlay */}
+        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+        
         <a 
           href="https://circuit.cx" 
           target="_blank" 
@@ -36,7 +39,10 @@ export function PoweredByCircuit({ variant = 'footer' }: PoweredByCircuitProps) 
   }
 
   return (
-    <div className="flex flex-col items-center gap-1 py-6">
+    <div className="group relative flex flex-col items-center gap-1 py-6 overflow-hidden cursor-pointer">
+      {/* Shine overlay */}
+      <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+      
       <a 
         href="https://circuit.cx" 
         target="_blank" 
