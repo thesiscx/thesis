@@ -244,13 +244,13 @@ export function ActivityFeed() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-4">
         {sortedGroups.map((group) => (
           <div key={group}>
-            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 px-1">
               {group}
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {groupedLogs[group].map((log) => {
                 const config = ACTION_CONFIG[log.action_type];
                 if (!config) return null;
@@ -259,17 +259,22 @@ export function ActivityFeed() {
                 const label = config.label(log.metadata);
 
                 return (
-                  <div key={log.id} className="flex gap-3 items-start">
-                    <div className="w-7 h-7 rounded-full bg-muted/70 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground leading-snug">
-                        {label}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                      </p>
+                  <div 
+                    key={log.id} 
+                    className="bg-muted/40 rounded-lg px-3.5 py-2.5"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-6 h-6 rounded-full bg-background flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Icon className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground leading-snug">
+                          {label}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 );
