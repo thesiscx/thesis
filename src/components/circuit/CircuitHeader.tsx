@@ -99,71 +99,86 @@ export default function CircuitHeader({
 
   return (
     <header className="h-14 bg-background sticky top-0 z-50 flex items-center justify-between px-4 shrink-0">
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0">
         {/* Segment 1: Company Logo + Name */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 px-2 gap-1.5 max-w-[180px]">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="h-5 w-5 rounded-sm object-cover" />
-              ) : (
-                <div className="h-5 w-5 rounded-sm bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
-                  {companyName?.charAt(0)?.toUpperCase() || "C"}
-                </div>
-              )}
-              <span className="truncate font-medium">{companyName || "My Company"}</span>
-              <ChevronsUpDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-64">
-            {/* Header with logo and company name */}
-            <div className="px-3 py-4 flex flex-col items-center gap-2 border-b mb-1">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
-              ) : (
-                <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-lg font-medium text-muted-foreground">
-                  {companyName?.charAt(0)?.toUpperCase() || "C"}
-                </div>
-              )}
-              <span className="font-medium text-sm">{companyName || "My Company"}</span>
-            </div>
+        <div className="flex items-center">
+          {/* Logo + Name - clickable to go home */}
+          <button 
+            onClick={() => {
+              if (activeRoundSlug) {
+                navigate(`/${activeRoundSlug}/pipeline`);
+              } else if (openRounds.length > 0) {
+                navigate(`/${openRounds[0].slug}/pipeline`);
+              }
+            }}
+            className="h-8 px-2 flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="h-5 w-5 rounded-sm object-cover" />
+            ) : (
+              <div className="h-5 w-5 rounded-sm bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                {companyName?.charAt(0)?.toUpperCase() || "C"}
+              </div>
+            )}
+            <span className="truncate font-medium max-w-[140px]">{companyName || "My Company"}</span>
+          </button>
+          {/* Chevron - opens settings dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="h-7 w-7 flex items-center justify-center rounded-md bg-secondary/50 hover:bg-secondary transition-colors">
+                <ChevronsUpDown className="w-3.5 h-3.5 opacity-60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              {/* Header with logo and company name */}
+              <div className="px-3 py-4 flex flex-col items-center gap-2 border-b mb-1">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                ) : (
+                  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-lg font-medium text-muted-foreground">
+                    {companyName?.charAt(0)?.toUpperCase() || "C"}
+                  </div>
+                )}
+                <span className="font-medium text-sm">{companyName || "My Company"}</span>
+              </div>
 
-            {/* Subdomain box - copy only */}
-            <div 
-              className="mx-2 mb-1 px-2 py-1.5 rounded border bg-muted/30 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => {
-                const domain = customDomain || "investor.company.com";
-                navigator.clipboard.writeText(domain);
-              }}
-              title="Click to copy"
-            >
-              <span className="text-xs font-mono text-muted-foreground truncate">
-                {customDomain || "investor.company.com"}
-              </span>
-              <Copy className="w-3 h-3 text-muted-foreground shrink-0 ml-2" />
-            </div>
+              {/* Subdomain box - copy only */}
+              <div 
+                className="mx-2 mb-1 px-2 py-1.5 rounded border bg-muted/30 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => {
+                  const domain = customDomain || "investor.company.com";
+                  navigator.clipboard.writeText(domain);
+                }}
+                title="Click to copy"
+              >
+                <span className="text-xs font-mono text-muted-foreground truncate">
+                  {customDomain || "investor.company.com"}
+                </span>
+                <Copy className="w-3 h-3 text-muted-foreground shrink-0 ml-2" />
+              </div>
 
-            <DropdownMenuItem onClick={() => navigate("/settings/domain")}>
-              <Globe className="w-4 h-4 mr-2" />
-              Custom Domain
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/settings")}>
-              <Building2 className="w-4 h-4 mr-2" />
-              Company Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/settings/profile")}>
-              <User className="w-4 h-4 mr-2" />
-              Profile Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-              <LogOut className="w-4 h-4 mr-2" />
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem onClick={() => navigate("/settings/domain")}>
+                <Globe className="w-4 h-4 mr-2" />
+                Custom Domain
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/settings")}>
+                <Building2 className="w-4 h-4 mr-2" />
+                Company Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/settings/profile")}>
+                <User className="w-4 h-4 mr-2" />
+                Profile Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                <LogOut className="w-4 h-4 mr-2" />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-        <span className="text-muted-foreground/50">/</span>
+        <span className="text-muted-foreground/50 mx-1">/</span>
 
         {/* Segment 2: Tool Selector (or Stage label) */}
         {activeTool === "stage" ? (
@@ -171,9 +186,8 @@ export default function CircuitHeader({
         ) : (
           <div className="flex items-center">
             {/* Tool name - clickable to navigate back */}
-            <Button 
-              variant="ghost" 
-              className="h-8 px-2 gap-1.5 capitalize pr-0.5"
+            <button 
+              className="h-8 px-2 flex items-center gap-1.5 capitalize hover:opacity-70 transition-opacity text-sm font-medium"
               onClick={() => {
                 if (activeRoundSlug) {
                   navigate(`/${activeRoundSlug}/${activeTool}`);
@@ -182,13 +196,13 @@ export default function CircuitHeader({
             >
               {getToolIcon(activeTool)}
               {activeTool}
-            </Button>
+            </button>
             {/* Chevron - opens tool switcher dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-6 p-0">
-                  <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
-                </Button>
+                <button className="h-7 w-7 flex items-center justify-center rounded-md bg-secondary/50 hover:bg-secondary transition-colors">
+                  <ChevronsUpDown className="w-3.5 h-3.5 opacity-60" />
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuItem
@@ -220,8 +234,8 @@ export default function CircuitHeader({
         {/* Breadcrumb for subpages */}
         {breadcrumb && (
           <>
-            <span className="text-muted-foreground/50">/</span>
-            <span className="text-sm font-medium pl-1">{breadcrumb.label}</span>
+            <span className="text-muted-foreground/50 mx-1">/</span>
+            <span className="text-sm font-medium">{breadcrumb.label}</span>
           </>
         )}
       </div>
