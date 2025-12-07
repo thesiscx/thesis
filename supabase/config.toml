@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.draft-memo-ai]
 verify_jwt = true
+
+[functions.generate-safe-document]
+verify_jwt = false
