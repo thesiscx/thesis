@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileSignature } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
-
+import contractIcon from "@/assets/contract-icon.svg";
 interface RoundTerms {
   valuation_cap: number | null;
   discount_rate: number | null;
@@ -78,11 +77,12 @@ export default function DealTermsCard() {
         onClick={handleReviewClick}
         className="group relative w-28 h-28 bg-background border border-border rounded-2xl shadow-lg hover:shadow-xl transition-all hover:border-primary/50 overflow-hidden"
       >
-        {/* Large icon - centered and cut off at bottom */}
-        <div className="absolute inset-0 flex items-center justify-center pt-2">
-          <FileSignature 
-            className="w-20 h-20 text-muted-foreground/20 transition-transform duration-300 ease-out group-hover:rotate-12 group-hover:text-primary/30" 
-            strokeWidth={1.5}
+        {/* Large contract icon - centered and cut off at bottom */}
+        <div className="absolute inset-0 flex items-center justify-center pt-4">
+          <img 
+            src={contractIcon}
+            alt="Contract"
+            className="w-16 h-16 transition-transform duration-300 ease-out group-hover:rotate-12" 
           />
         </div>
         

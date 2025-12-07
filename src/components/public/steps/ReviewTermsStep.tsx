@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Check, X, Building2, FileText } from "lucide-react";
+import { ArrowRight, Check, X, FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -120,35 +120,17 @@ export default function ReviewTermsStep({
   return (
     <>
       <div className="space-y-6">
-        {/* Company Info Header */}
+        {/* Company Header - Name left, Address right */}
         {companyInfo && (
-          <div className="flex items-start gap-3 pb-4 border-b border-border/50">
-            {companyInfo.logo ? (
-              <img 
-                src={companyInfo.logo} 
-                alt={companyInfo.name} 
-                className="h-10 w-10 object-contain rounded-md"
-              />
-            ) : (
-              <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
-              </div>
+          <div className="flex items-start justify-between pb-4 border-b border-border/50">
+            <h2 className="font-sans text-xl text-foreground">
+              {companyInfo.name}{companyInfo.entityType ? `, ${companyInfo.entityType === 'c_corp' ? 'Inc.' : companyInfo.entityType === 'llc' ? 'LLC' : companyInfo.entityType}` : ''}
+            </h2>
+            {companyInfo.address && (
+              <p className="text-sm text-muted-foreground font-sans text-right max-w-xs">
+                {companyInfo.address}
+              </p>
             )}
-            <div className="flex-1 min-w-0">
-              <h2 className="font-heading font-semibold text-foreground text-lg">
-                {companyInfo.name}
-              </h2>
-              {companyInfo.entityType && (
-                <p className="text-sm text-muted-foreground">
-                  {companyInfo.entityType}
-                </p>
-              )}
-              {companyInfo.address && (
-                <p className="text-xs text-muted-foreground/70 mt-0.5">
-                  {companyInfo.address}
-                </p>
-              )}
-            </div>
           </div>
         )}
 

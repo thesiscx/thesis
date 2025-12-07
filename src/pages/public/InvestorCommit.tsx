@@ -307,11 +307,22 @@ export default function InvestorCommit() {
         </Button>
       </div>
 
-      {/* Centered Card Container - Intentionally extends past viewport bottom */}
+      {/* Company Logo - Top Right */}
+      {companyInfo.logo && (
+        <div className="absolute top-4 right-4 z-50">
+          <img 
+            src={companyInfo.logo} 
+            alt={companyInfo.name} 
+            className="h-8 w-auto object-contain"
+          />
+        </div>
+      )}
+
+      {/* Centered Card Container - Cut off at bottom */}
       <div className="flex-1 flex items-start justify-center pt-16 pb-0 px-8">
-        <div className="bg-background rounded-xl shadow-sm border w-full max-w-5xl flex min-h-[600px]">
-          {/* Sidebar - Now part of the card with PoweredByCircuit at bottom */}
-          <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0 border-r border-border/50">
+        <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex min-h-[600px] overflow-hidden">
+          {/* Sidebar - No border-r, PoweredByCircuit at absolute bottom */}
+          <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0">
             <div className="flex-1">
               <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
                 Investment Process
@@ -325,8 +336,8 @@ export default function InvestorCommit() {
             </div>
           </aside>
 
-          {/* Main Content - Always scrollable to ensure buttons are accessible */}
-          <main className="flex-1 min-w-0 py-8 px-6 lg:px-10 overflow-y-auto max-h-[calc(100vh-6rem)]">
+          {/* Main Content - bg-muted to connect with active step */}
+          <main className="flex-1 min-w-0 py-8 px-6 lg:px-10 overflow-y-auto max-h-[calc(100vh-6rem)] bg-muted">
             <div className="max-w-2xl pb-8">
               {currentStep === 'review-terms' && (
                 <ReviewTermsStep

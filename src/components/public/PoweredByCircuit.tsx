@@ -1,4 +1,5 @@
-import { Zap, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
+import circuitLogo from "@/assets/circuit-logo-new.png";
 
 interface PoweredByCircuitProps {
   variant?: 'footer' | 'badge' | 'inline';
@@ -19,17 +20,17 @@ export function PoweredByCircuit({ variant = 'footer' }: PoweredByCircuitProps) 
 
   if (variant === 'inline') {
     return (
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-1">
         <a 
           href="https://circuit.cx" 
           target="_blank" 
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
         >
-          <Zap className="w-3 h-3" />
-          <span className="text-[11px] font-medium">Powered by Circuit</span>
+          <span className="text-[11px] text-muted-foreground/50">Powered by</span>
+          <img src={circuitLogo} alt="Circuit" className="h-3.5" />
         </a>
-        <span className="text-[10px] text-muted-foreground/40 pl-4">Secure Investment Platform</span>
+        <span className="text-[10px] text-muted-foreground/40">Secure Investment Platform</span>
       </div>
     );
   }
@@ -42,8 +43,8 @@ export function PoweredByCircuit({ variant = 'footer' }: PoweredByCircuitProps) 
         rel="noopener noreferrer"
         className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
       >
-        <Zap className="w-3.5 h-3.5" />
-        <span className="text-xs font-medium">Powered by Circuit</span>
+        <span className="text-xs text-muted-foreground/60">Powered by</span>
+        <img src={circuitLogo} alt="Circuit" className="h-4" />
       </a>
       <span className="text-[10px] text-muted-foreground/70">Secure Investment Platform</span>
     </div>
