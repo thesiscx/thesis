@@ -250,9 +250,13 @@ export default function InvestorCommit() {
 
           // Restore flow state if exists
           const flowState = docket.commitment_flow_state as FlowStateJson;
+          let restoredStep: CommitmentStep = 'terms';
+          let restoredCompleted: CommitmentStep[] = [];
+          
           if (flowState && flowState.current_step) {
-            setCurrentStep(flowState.current_step as CommitmentStep);
-            setCompletedSteps((flowState.completed_steps || []) as CommitmentStep[]);
+            restoredStep = flowState.current_step as CommitmentStep;
+            restoredCompleted = (flowState.completed_steps || []) as CommitmentStep[];
+            
             if (flowState.investor_details) {
               setInvestorDetails(flowState.investor_details as InvestorDetails);
             }
@@ -262,16 +266,19 @@ export default function InvestorCommit() {
             if (flowState.document_html) {
               setDocumentHtml(flowState.document_html);
             }
+          }
 
-            // If wire received, go to finalize
-            const completedArr = (flowState.completed_steps || []) as CommitmentStep[];
-            if (docket.wire_received && completedArr.includes('wire')) {
-              setCurrentStep('finalize');
-              if (!completedArr.includes('finalize')) {
-                setCompletedSteps([...completedArr, 'finalize']);
-              }
+          // CRITICAL: If wire_received is true and wire step was completed, force finalize
+          // This overrides any stored current_step to ensure funded dockets go to finalize
+          if (docket.wire_received && restoredCompleted.includes('wire')) {
+            restoredStep = 'finalize';
+            if (!restoredCompleted.includes('finalize')) {
+              restoredCompleted = [...restoredCompleted, 'finalize'];
             }
           }
+          
+          setCurrentStep(restoredStep);
+          setCompletedSteps(restoredCompleted);
         }
 
         // Set company info from session

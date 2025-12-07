@@ -72,18 +72,22 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
     console.log(`[InvestorAccess] Checking session: isLoading=${isLoading}, hasSession=${!!investorSession}`);
     
     if (!isLoading && investorSession) {
-      // For global keys, investorSlug will be "global"
+      // CRITICAL: For investor-specific URLs, session MUST match exactly
+      // This prevents one investor's session from accessing another investor's docket
       const isGlobalKey = investorSession.investorSlug === 'global';
       
-      // If URL has investor slug, session MUST match that specific investor
-      // This prevents accessing wrong investor's docket with a different session
-      const sessionMatches = 
-        investorSession.companySlug === companySlug &&
-        investorSession.roundCode === roundCode &&
-        investorSession.tool === tool &&
-        (isGlobalKey || !investorSlug || investorSession.investorSlug === investorSlug);
+      // Strict matching: company, round, tool, AND investor slug must all match
+      const companyMatches = investorSession.companySlug === companySlug;
+      const roundMatches = investorSession.roundCode === roundCode;
+      const toolMatches = investorSession.tool === tool;
+      
+      // For investor-specific URLs, the session's investor MUST match the URL's investor
+      // For global keys OR URLs without investor slug, allow access
+      const investorMatches = !investorSlug || isGlobalKey || investorSession.investorSlug === investorSlug;
+      
+      const sessionMatches = companyMatches && roundMatches && toolMatches && investorMatches;
 
-      console.log(`[InvestorAccess] Session match check: matches=${sessionMatches}, sessionSlug=${investorSession.investorSlug}, urlSlug=${investorSlug}`);
+      console.log(`[InvestorAccess] Session match check: matches=${sessionMatches}, sessionSlug=${investorSession.investorSlug}, urlSlug=${investorSlug}, company=${companyMatches}, round=${roundMatches}, tool=${toolMatches}, investor=${investorMatches}`);
 
       if (sessionMatches) {
         // Session matches, navigate to viewer (with /share/ prefix)
