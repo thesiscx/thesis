@@ -33,7 +33,6 @@ export function PoweredByCircuit({ variant = 'footer' }: PoweredByCircuitProps) 
           <span className="text-[11px] text-muted-foreground/50">Powered by</span>
           <img src={circuitLogo} alt="Circuit" className="h-3.5" />
         </a>
-        <span className="text-[10px] text-muted-foreground/40">Secure Investment Platform</span>
       </div>
     );
   }
