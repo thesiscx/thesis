@@ -24,6 +24,8 @@ interface RoundTerms {
   company_name: string | null;
   entity_type: string | null;
   registered_address: string | null;
+  signatory_name: string | null;
+  signatory_title: string | null;
   wire_bank_name: string | null;
   wire_account_name: string | null;
   wire_account_number: string | null;
@@ -382,7 +384,7 @@ export default function InvestorCommit() {
                   companyName={investorSession.companyName || ''}
                   wireInstructions={terms}
                   documentHtml={documentHtml}
-                  onClose={handleClose}
+                  signatoryName={terms?.signatory_name || undefined}
                 />
               )}
             </div>

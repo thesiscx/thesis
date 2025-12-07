@@ -1,4 +1,4 @@
-import { CheckCircle2, Copy, Check, Download, ArrowRight } from "lucide-react";
+import { CheckCircle2, Copy, Check, Download, Clock, FileCheck, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -18,7 +18,7 @@ interface ConfirmationStepProps {
   companyName: string;
   wireInstructions: WireInstructions | null;
   documentHtml: string;
-  onClose: () => void;
+  signatoryName?: string;
 }
 
 export default function ConfirmationStep({ 
@@ -26,7 +26,7 @@ export default function ConfirmationStep({
   companyName, 
   wireInstructions,
   documentHtml,
-  onClose 
+  signatoryName
 }: ConfirmationStepProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -71,24 +71,60 @@ export default function ConfirmationStep({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Status Header */}
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-6">
-          <CheckCircle2 className="w-8 h-8 text-green-600" />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-100 mb-4">
+          <Clock className="w-7 h-7 text-amber-600 animate-pulse" />
         </div>
         <h1 className="text-2xl font-heading font-semibold text-foreground">
-          Investment Confirmed
+          Awaiting Funds
         </h1>
         <p className="text-muted-foreground mt-2">
-          Your commitment of {formattedAmount} to {companyName} has been recorded.
+          Your {formattedAmount} commitment to {companyName} is pending wire receipt.
+        </p>
+      </div>
+
+      {/* Execution Status */}
+      <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium text-foreground text-sm">Your signature recorded</p>
+            <p className="text-xs text-muted-foreground">Timestamp, IP address, and document hash captured</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium text-foreground text-sm">Counter-signed by {companyName}</p>
+            <p className="text-xs text-muted-foreground">
+              {signatoryName ? `Signed by ${signatoryName}` : 'Pre-authorized signature applied'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3">
+          <FileCheck className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium text-foreground text-sm">Agreement fully executed</p>
+            <p className="text-xs text-muted-foreground">Pending fund receipt to close</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Important Notice */}
+      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+        <p className="text-sm text-blue-900 leading-relaxed">
+          The agreement is fully executed but will only close upon confirmed receipt of funds. 
+          Once cleared, you will be automatically recorded in the shareholder register.
         </p>
       </div>
 
       {/* Download Agreement */}
       <div className="bg-muted/30 rounded-lg p-4 flex items-center justify-between">
         <div>
-          <p className="font-medium text-foreground">SAFE Agreement</p>
-          <p className="text-sm text-muted-foreground">Download your signed agreement</p>
+          <p className="font-medium text-foreground text-sm">Executed Agreement</p>
+          <p className="text-xs text-muted-foreground">Download your fully signed agreement</p>
         </div>
         <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
           <Download className="w-4 h-4" />
@@ -98,9 +134,9 @@ export default function ConfirmationStep({
 
       {/* Wire Instructions */}
       {wireInstructions && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div>
-            <h2 className="text-lg font-heading font-medium text-foreground">
+            <h2 className="text-base font-heading font-medium text-foreground">
               Wire Instructions
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -169,15 +205,21 @@ export default function ConfirmationStep({
         </div>
       )}
 
-      <div className="text-center pt-4">
-        <p className="text-sm text-muted-foreground mb-4">
-          Questions? Contact the {companyName} team directly.
+      {/* Account Setup CTA */}
+      <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 text-center">
+        <p className="text-sm text-foreground mb-3">
+          Set up your Circuit account to manage your shareholdings and receive updates.
         </p>
-        <Button onClick={onClose} className="gap-2">
-          Done
-          <ArrowRight className="w-4 h-4" />
+        <Button variant="outline" size="sm" className="gap-2">
+          <ExternalLink className="w-4 h-4" />
+          Create Investor Account
         </Button>
       </div>
+
+      {/* Contact Note */}
+      <p className="text-xs text-center text-muted-foreground">
+        Questions about your investment? Contact the {companyName} team directly.
+      </p>
     </div>
   );
 }
