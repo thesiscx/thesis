@@ -250,7 +250,7 @@ export function ActivityFeed() {
             <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
               {group}
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {groupedLogs[group].map((log) => {
                 const config = ACTION_CONFIG[log.action_type];
                 if (!config) return null;
@@ -259,17 +259,20 @@ export function ActivityFeed() {
                 const label = config.label(log.metadata);
 
                 return (
-                  <div key={log.id} className="flex gap-3 items-start">
-                    <div className="w-7 h-7 rounded-full bg-muted/70 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                  <div key={log.id} className="space-y-1.5">
+                    {/* Header with Circuit label and timestamp */}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">Circuit</span>
+                      <span>·</span>
+                      <span>{formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground leading-snug">
-                        {label}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                      </p>
+                    
+                    {/* Message bubble */}
+                    <div className="rounded-xl bg-secondary/70 px-4 py-3 text-sm leading-relaxed mr-4">
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        <p className="text-foreground">{label}</p>
+                      </div>
                     </div>
                   </div>
                 );
