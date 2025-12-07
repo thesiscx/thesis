@@ -50,7 +50,7 @@ type FlowStateJson = any;
 
 export default function InvestorCommit() {
   const navigate = useNavigate();
-  const { companySlug, roundCode } = useParams();
+  const { companySlug, roundCode, investorSlug } = useParams();
   const { investorSession, clearInvestorSession, isLoading: isAuthLoading } = useInvestorAuth();
 
   const [currentStep, setCurrentStep] = useState<CommitmentStep>('terms');
@@ -180,9 +180,13 @@ export default function InvestorCommit() {
   // Redirect if no session
   useEffect(() => {
     if (!isAuthLoading && !investorSession) {
-      navigate(`/share/${companySlug}/${roundCode}/memo`, { replace: true });
+      // Redirect to access page with investor slug if available
+      const accessPath = investorSlug 
+        ? `/share/${companySlug}/${roundCode}/docket/${investorSlug}`
+        : `/share/${companySlug}/${roundCode}/docket`;
+      navigate(accessPath, { replace: true });
     }
-  }, [isAuthLoading, investorSession, companySlug, roundCode, navigate]);
+  }, [isAuthLoading, investorSession, companySlug, roundCode, investorSlug, navigate]);
 
   // Fetch terms and restore flow state
   useEffect(() => {
