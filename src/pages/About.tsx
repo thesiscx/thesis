@@ -40,7 +40,7 @@ export default function About() {
             shareholder register.
           </p>
 
-          <p>Circuit is fundraising without friction. Automated pipeline. Automated memo. Automated execution.</p>
+          <p>Circuit is fundraising without friction. Automated pipeline, memo, and execution.</p>
 
           <p className="font-medium text-foreground">Raise Clarity.</p>
         </div>
