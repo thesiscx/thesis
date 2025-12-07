@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, LogOut } from "lucide-react";
+import { Building2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import CommitmentSteps, { CommitmentStep } from "@/components/public/CommitmentSteps";
@@ -14,6 +14,7 @@ import SignAgreementStep from "@/components/public/steps/SignAgreementStep";
 import ConfirmationStep from "@/components/public/steps/ConfirmationStep";
 import { PoweredByCircuit } from "@/components/public/PoweredByCircuit";
 import { CircuitSplash } from "@/components/public/CircuitSplash";
+
 interface RoundTerms {
   valuation_cap: number | null;
   discount_rate: number | null;
@@ -21,6 +22,8 @@ interface RoundTerms {
   pro_rata_enabled: boolean | null;
   mfn_enabled: boolean | null;
   company_name: string | null;
+  entity_type: string | null;
+  registered_address: string | null;
   wire_bank_name: string | null;
   wire_account_name: string | null;
   wire_account_number: string | null;
@@ -28,6 +31,13 @@ interface RoundTerms {
   wire_swift_code: string | null;
   wire_bank_address: string | null;
   wire_reference: string | null;
+}
+
+interface CompanyInfo {
+  name: string;
+  logo: string | null;
+  entityType: string | null;
+  address: string | null;
 }
 
 export default function InvestorCommit() {
@@ -43,6 +53,12 @@ export default function InvestorCommit() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
+    name: '',
+    logo: null,
+    entityType: null,
+    address: null,
+  });
 
   // Form data
   const [investorDetails, setInvestorDetails] = useState<InvestorDetails>({
@@ -79,6 +95,12 @@ export default function InvestorCommit() {
 
         if (roundTerms) {
           setTerms(roundTerms);
+          // Set company info from terms
+          setCompanyInfo(prev => ({
+            ...prev,
+            entityType: roundTerms.entity_type,
+            address: roundTerms.registered_address,
+          }));
         }
 
         // Fetch round for instrument type
@@ -105,6 +127,13 @@ export default function InvestorCommit() {
             setCustomTerms(docket.custom_terms);
           }
         }
+
+        // Set company info from session
+        setCompanyInfo(prev => ({
+          ...prev,
+          name: investorSession.companyName || '',
+          logo: investorSession.companyLogo || null,
+        }));
 
         // Pre-fill investor details if available
         if (investorSession.investorName) {
@@ -235,10 +264,6 @@ export default function InvestorCommit() {
     }
   };
 
-  const handleBackToMemo = () => {
-    navigate(`/share/${companySlug}/${roundCode}/memo/view`);
-  };
-
   const handleClose = () => {
     navigate(`/share/${companySlug}/${roundCode}/memo/view`);
   };
@@ -258,113 +283,102 @@ export default function InvestorCommit() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background">
-        <div className="flex h-14 items-center justify-between px-6">
-          <div className="flex items-center gap-2.5">
-            {investorSession.companyLogo ? (
-              <img src={investorSession.companyLogo} alt={investorSession.companyName} className="h-5 w-5 object-contain" />
-            ) : (
-              <Building2 className="h-5 w-5 text-muted-foreground" />
-            )}
-            <div className="flex items-center gap-2 font-heading text-base font-medium">
-              <span className="text-primary">{investorSession.companyName}</span>
-              <span className="text-muted-foreground">Investment Commitment</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleBackToMemo} className="gap-2 text-muted-foreground">
-              Close
-            </Button>
-            <span className="text-sm text-muted-foreground">{investorSession.investorName}</span>
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
-              <LogOut className="h-4 w-4" />
-              Exit
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="h-screen bg-muted/30 overflow-hidden flex flex-col">
+      {/* Close Terms Button - Top Left */}
+      <div className="absolute top-4 left-4 z-50">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleClose} 
+          className="gap-2 rounded-full px-4 bg-background hover:bg-muted"
+        >
+          <X className="h-4 w-4" />
+          Close Terms
+        </Button>
+      </div>
 
-      {/* Centered Card Container */}
-      <div className="flex justify-center py-8 px-4">
-        <div className="bg-background rounded-xl shadow-sm border w-full max-w-4xl">
-          <div className="flex">
-            {/* Sidebar - Now part of the card */}
-            <aside className="hidden lg:block w-56 flex-shrink-0 p-6 pr-0">
+      {/* Centered Card Container - Fills viewport without scroll */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="bg-background rounded-xl shadow-sm border w-full max-w-4xl h-full max-h-[680px] flex">
+          {/* Sidebar - Now part of the card with PoweredByCircuit at bottom */}
+          <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0 border-r border-border/50">
+            <div className="flex-1">
               <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
                 Investment Process
               </h2>
               <CommitmentSteps currentStep={currentStep} completedSteps={completedSteps} />
-            </aside>
+            </div>
+            
+            {/* PoweredByCircuit at bottom of sidebar */}
+            <div className="pt-4 pr-6">
+              <PoweredByCircuit variant="inline" />
+            </div>
+          </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 min-w-0 py-8 px-6 lg:px-8">
-              <div className="max-w-lg">
-                {currentStep === 'review-terms' && (
-                  <ReviewTermsStep
-                    terms={terms}
-                    customTerms={customTerms}
-                    instrumentType={instrumentType}
-                    onContinue={handleReviewTermsContinue}
-                  />
-                )}
+          {/* Main Content - Scrollable if needed */}
+          <main className="flex-1 min-w-0 py-8 px-6 lg:px-8 overflow-y-auto">
+            <div className="max-w-lg">
+              {currentStep === 'review-terms' && (
+                <ReviewTermsStep
+                  terms={terms}
+                  customTerms={customTerms}
+                  instrumentType={instrumentType}
+                  companyInfo={companyInfo}
+                  onContinue={handleReviewTermsContinue}
+                />
+              )}
 
-                {currentStep === 'your-details' && (
-                  <InvestorDetailsStep
-                    initialData={investorDetails}
-                    onContinue={handleDetailsContinue}
-                    onBack={() => goToStep('review-terms')}
-                  />
-                )}
+              {currentStep === 'your-details' && (
+                <InvestorDetailsStep
+                  initialData={investorDetails}
+                  onContinue={handleDetailsContinue}
+                  onBack={() => goToStep('review-terms')}
+                />
+              )}
 
-                {currentStep === 'investment-amount' && (
-                  <InvestmentAmountStep
-                    initialAmount={investmentAmount}
-                    minimumTicket={terms?.minimum_ticket || null}
-                    onContinue={handleAmountContinue}
-                    onBack={() => goToStep('your-details')}
-                  />
-                )}
+              {currentStep === 'investment-amount' && (
+                <InvestmentAmountStep
+                  initialAmount={investmentAmount}
+                  minimumTicket={terms?.minimum_ticket || null}
+                  onContinue={handleAmountContinue}
+                  onBack={() => goToStep('your-details')}
+                />
+              )}
 
-                {currentStep === 'generate-document' && (
-                  <GenerateDocumentStep
-                    onComplete={handleDocumentGenerated}
-                    investorDetails={investorDetails}
-                    amount={investmentAmount}
-                    companyName={investorSession.companyName || ''}
-                    roundId={investorSession.roundId}
-                    roundTerms={terms}
-                  />
-                )}
+              {currentStep === 'generate-document' && (
+                <GenerateDocumentStep
+                  onComplete={handleDocumentGenerated}
+                  investorDetails={investorDetails}
+                  amount={investmentAmount}
+                  companyName={investorSession.companyName || ''}
+                  roundId={investorSession.roundId}
+                  roundTerms={terms}
+                />
+              )}
 
-                {currentStep === 'sign-agreement' && (
-                  <SignAgreementStep
-                    documentHtml={documentHtml}
-                    investorName={investorDetails.name}
-                    companyName={investorSession.companyName || ''}
-                    onSign={handleSign}
-                    onBack={() => goToStep('investment-amount')}
-                    isSubmitting={isSubmitting}
-                  />
-                )}
+              {currentStep === 'sign-agreement' && (
+                <SignAgreementStep
+                  documentHtml={documentHtml}
+                  investorName={investorDetails.name}
+                  companyName={investorSession.companyName || ''}
+                  onSign={handleSign}
+                  onBack={() => goToStep('investment-amount')}
+                  isSubmitting={isSubmitting}
+                />
+              )}
 
-                {currentStep === 'confirmation' && (
-                  <ConfirmationStep
-                    amount={investmentAmount}
-                    companyName={investorSession.companyName || ''}
-                    wireInstructions={terms}
-                    documentHtml={documentHtml}
-                    onClose={handleClose}
-                  />
-                )}
-              </div>
-            </main>
-          </div>
+              {currentStep === 'confirmation' && (
+                <ConfirmationStep
+                  amount={investmentAmount}
+                  companyName={investorSession.companyName || ''}
+                  wireInstructions={terms}
+                  documentHtml={documentHtml}
+                  onClose={handleClose}
+                />
+              )}
+            </div>
+          </main>
         </div>
-
-        {/* Powered by Circuit Footer */}
-        <PoweredByCircuit variant="footer" />
       </div>
     </div>
   );

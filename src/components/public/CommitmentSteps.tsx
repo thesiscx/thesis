@@ -38,6 +38,7 @@ export default function CommitmentSteps({ currentStep, completedSteps }: Commitm
         const isCompleted = completedSteps.includes(step.id);
         const isCurrent = currentStep === step.id;
         const isPast = index < currentIndex;
+        const isFuture = index > currentIndex && !isCompleted;
         const Icon = step.icon;
 
         return (
@@ -46,16 +47,16 @@ export default function CommitmentSteps({ currentStep, completedSteps }: Commitm
             className={cn(
               "flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors",
               isCurrent && "bg-primary/10 text-primary",
-              !isCurrent && !isCompleted && "text-muted-foreground",
-              (isCompleted || isPast) && !isCurrent && "text-muted-foreground"
+              isCompleted && !isCurrent && "text-muted-foreground",
+              isFuture && "text-muted-foreground/40"
             )}
           >
             <div
               className={cn(
-                "flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium",
+                "flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium transition-colors",
                 isCurrent && "bg-primary text-primary-foreground",
                 isCompleted && !isCurrent && "bg-primary/20 text-primary",
-                !isCurrent && !isCompleted && "bg-muted text-muted-foreground"
+                isFuture && "bg-muted/50 text-muted-foreground/40"
               )}
             >
               {isCompleted && !isCurrent ? (
@@ -65,9 +66,10 @@ export default function CommitmentSteps({ currentStep, completedSteps }: Commitm
               )}
             </div>
             <span className={cn(
-              "text-sm",
+              "text-sm transition-colors",
               isCurrent && "text-primary font-medium",
-              !isCurrent && "text-muted-foreground"
+              isCompleted && !isCurrent && "text-muted-foreground",
+              isFuture && "text-muted-foreground/40"
             )}>
               {step.label}
             </span>
