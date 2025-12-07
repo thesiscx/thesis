@@ -47,10 +47,12 @@ interface CircuitHeaderProps {
   // Navigation context
   rounds?: Round[];
   activeRoundSlug?: string;
-  activeTool?: "pipeline" | "memo" | "docket" | "stage";
+  activeTool?: "pipeline" | "memo" | "docket" | "stage" | "home";
   customDomain?: string | null;
   // Breadcrumb for subpages
   breadcrumb?: BreadcrumbItem;
+  // UI options
+  hideRoundPicker?: boolean;
   // Callbacks
   onRoundChange?: (round: Round) => void;
   onToolChange?: (tool: "pipeline" | "memo" | "docket") => void;
@@ -67,6 +69,7 @@ export default function CircuitHeader({
   activeTool = "stage",
   customDomain,
   breadcrumb,
+  hideRoundPicker = false,
   onRoundChange,
   onToolChange,
   onCreateRound,
@@ -104,13 +107,7 @@ export default function CircuitHeader({
         <div className="flex items-center">
           {/* Logo + Name - clickable to go home */}
           <button 
-            onClick={() => {
-              if (activeRoundSlug) {
-                navigate(`/${activeRoundSlug}/pipeline`);
-              } else if (openRounds.length > 0) {
-                navigate(`/${openRounds[0].slug}/pipeline`);
-              }
-            }}
+            onClick={() => navigate("/home")}
             className="h-8 px-2 flex items-center gap-1.5 hover:opacity-70 transition-opacity"
           >
             {avatarUrl ? (
@@ -242,7 +239,7 @@ export default function CircuitHeader({
 
       {/* Right side: Round Context Selector + rightContent */}
       <div className="flex items-center gap-2">
-        {activeTool !== "stage" && (
+        {activeTool !== "stage" && activeTool !== "home" && !hideRoundPicker && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-8 px-3 gap-1.5 text-sm font-medium">

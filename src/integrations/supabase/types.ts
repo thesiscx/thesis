@@ -179,6 +179,71 @@ export type Database = {
           },
         ]
       }
+      activity_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          docket_id: string | null
+          id: string
+          investor_id: string | null
+          memo_id: string | null
+          metadata: Json | null
+          round_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          docket_id?: string | null
+          id?: string
+          investor_id?: string | null
+          memo_id?: string | null
+          metadata?: Json | null
+          round_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          docket_id?: string | null
+          id?: string
+          investor_id?: string | null
+          memo_id?: string | null
+          metadata?: Json | null
+          round_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_docket_id_fkey"
+            columns: ["docket_id"]
+            isOneToOne: false
+            referencedRelation: "dockets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_logs_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_logs_memo_id_fkey"
+            columns: ["memo_id"]
+            isOneToOne: false
+            referencedRelation: "memos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_logs_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circuit_chat_messages: {
         Row: {
           content: string
