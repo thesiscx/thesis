@@ -53,6 +53,10 @@ export default function InvestorCommit() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [roundInfo, setRoundInfo] = useState<{ name: string; targetRaise: number | null }>({
+    name: '',
+    targetRaise: null,
+  });
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
     name: '',
     logo: null,
@@ -103,15 +107,19 @@ export default function InvestorCommit() {
           }));
         }
 
-        // Fetch round for instrument type
+        // Fetch round for instrument type and details
         const { data: round } = await supabase
           .from('rounds')
-          .select('instrument_type')
+          .select('instrument_type, name, target_raise')
           .eq('id', investorSession.roundId)
           .maybeSingle();
 
         if (round) {
           setInstrumentType(round.instrument_type);
+          setRoundInfo({
+            name: round.name,
+            targetRaise: round.target_raise,
+          });
         }
 
         // Check for investor-specific docket with custom terms
@@ -324,6 +332,7 @@ export default function InvestorCommit() {
                   customTerms={customTerms}
                   instrumentType={instrumentType}
                   companyInfo={companyInfo}
+                  roundInfo={roundInfo}
                   onContinue={handleReviewTermsContinue}
                 />
               )}
