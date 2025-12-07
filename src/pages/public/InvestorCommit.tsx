@@ -11,7 +11,9 @@ import InvestorDetailsStep, { InvestorDetails } from "@/components/public/steps/
 import InvestmentAmountStep from "@/components/public/steps/InvestmentAmountStep";
 import GenerateDocumentStep from "@/components/public/steps/GenerateDocumentStep";
 import SignAgreementStep from "@/components/public/steps/SignAgreementStep";
-import ConfirmationStep from "@/components/public/steps/ConfirmationStep";
+import ExecuteStep from "@/components/public/steps/ExecuteStep";
+import WireStep from "@/components/public/steps/WireStep";
+import FinalizeStep from "@/components/public/steps/FinalizeStep";
 import { PoweredByCircuit } from "@/components/public/PoweredByCircuit";
 import { CircuitSplash } from "@/components/public/CircuitSplash";
 
@@ -47,7 +49,7 @@ export default function InvestorCommit() {
   const { companySlug, roundCode } = useParams();
   const { investorSession, clearInvestorSession, isLoading: isAuthLoading } = useInvestorAuth();
 
-  const [currentStep, setCurrentStep] = useState<CommitmentStep>('review-terms');
+  const [currentStep, setCurrentStep] = useState<CommitmentStep>('terms');
   const [completedSteps, setCompletedSteps] = useState<CommitmentStep[]>([]);
   const [terms, setTerms] = useState<RoundTerms | null>(null);
   const [customTerms, setCustomTerms] = useState<string | null>(null);
@@ -174,27 +176,27 @@ export default function InvestorCommit() {
   };
 
   // Step handlers
-  const handleReviewTermsContinue = () => {
-    markStepComplete('review-terms');
-    goToStep('your-details');
+  const handleTermsContinue = () => {
+    markStepComplete('terms');
+    goToStep('details');
   };
 
   const handleDetailsContinue = (details: InvestorDetails) => {
     setInvestorDetails(details);
-    markStepComplete('your-details');
-    goToStep('investment-amount');
+    markStepComplete('details');
+    goToStep('amount');
   };
 
   const handleAmountContinue = (amount: number) => {
     setInvestmentAmount(amount);
-    markStepComplete('investment-amount');
-    goToStep('generate-document');
+    markStepComplete('amount');
+    goToStep('generate');
   };
 
   const handleDocumentGenerated = useCallback((html: string) => {
     setDocumentHtml(html);
-    markStepComplete('generate-document');
-    goToStep('sign-agreement');
+    markStepComplete('generate');
+    goToStep('sign');
   }, []);
 
   const handleSign = async (signature: string) => {
@@ -263,8 +265,8 @@ export default function InvestorCommit() {
 
       if (sigError) throw sigError;
 
-      markStepComplete('sign-agreement');
-      goToStep('confirmation');
+      markStepComplete('sign');
+      goToStep('execute');
       toast.success('Agreement signed successfully');
     } catch (error) {
       console.error('Error signing agreement:', error);
@@ -272,6 +274,16 @@ export default function InvestorCommit() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleExecuteComplete = useCallback(() => {
+    markStepComplete('execute');
+    goToStep('wire');
+  }, []);
+
+  const handleWireContinue = () => {
+    markStepComplete('wire');
+    goToStep('finalize');
   };
 
   const handleClose = () => {
@@ -339,35 +351,35 @@ export default function InvestorCommit() {
           {/* Main Content - bg-muted to connect with active step */}
           <main className="flex-1 min-w-0 py-8 px-6 lg:px-10 overflow-y-auto max-h-[calc(100vh-6rem)] bg-muted">
             <div className="max-w-2xl pb-8">
-              {currentStep === 'review-terms' && (
+              {currentStep === 'terms' && (
                 <ReviewTermsStep
                   terms={terms}
                   customTerms={customTerms}
                   instrumentType={instrumentType}
                   companyInfo={companyInfo}
                   roundInfo={roundInfo}
-                  onContinue={handleReviewTermsContinue}
+                  onContinue={handleTermsContinue}
                 />
               )}
 
-              {currentStep === 'your-details' && (
+              {currentStep === 'details' && (
                 <InvestorDetailsStep
                   initialData={investorDetails}
                   onContinue={handleDetailsContinue}
-                  onBack={() => goToStep('review-terms')}
+                  onBack={() => goToStep('terms')}
                 />
               )}
 
-              {currentStep === 'investment-amount' && (
+              {currentStep === 'amount' && (
                 <InvestmentAmountStep
                   initialAmount={investmentAmount}
                   minimumTicket={terms?.minimum_ticket || null}
                   onContinue={handleAmountContinue}
-                  onBack={() => goToStep('your-details')}
+                  onBack={() => goToStep('details')}
                 />
               )}
 
-              {currentStep === 'generate-document' && (
+              {currentStep === 'generate' && (
                 <GenerateDocumentStep
                   onComplete={handleDocumentGenerated}
                   investorDetails={investorDetails}
@@ -378,22 +390,38 @@ export default function InvestorCommit() {
                 />
               )}
 
-              {currentStep === 'sign-agreement' && (
+              {currentStep === 'sign' && (
                 <SignAgreementStep
                   documentHtml={documentHtml}
                   investorName={investorDetails.name}
                   companyName={investorSession.companyName || ''}
                   onSign={handleSign}
-                  onBack={() => goToStep('investment-amount')}
+                  onBack={() => goToStep('amount')}
                   isSubmitting={isSubmitting}
                 />
               )}
 
-              {currentStep === 'confirmation' && (
-                <ConfirmationStep
+              {currentStep === 'execute' && (
+                <ExecuteStep
+                  onComplete={handleExecuteComplete}
+                  companyName={investorSession.companyName || ''}
+                  signatoryName={terms?.signatory_name || undefined}
+                />
+              )}
+
+              {currentStep === 'wire' && (
+                <WireStep
                   amount={investmentAmount}
                   companyName={investorSession.companyName || ''}
                   wireInstructions={terms}
+                  onContinue={handleWireContinue}
+                />
+              )}
+
+              {currentStep === 'finalize' && (
+                <FinalizeStep
+                  amount={investmentAmount}
+                  companyName={investorSession.companyName || ''}
                   documentHtml={documentHtml}
                   signatoryName={terms?.signatory_name || undefined}
                 />
