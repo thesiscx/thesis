@@ -668,7 +668,7 @@ export default function InvestorCommit() {
       </header>
 
       {/* Centered Card Container - extends to bottom */}
-      <div className="flex-1 flex items-stretch justify-center px-8 pb-0 overflow-hidden pt-6">
+      <div className="flex-1 flex items-stretch justify-center px-8 pb-0 overflow-hidden pt-8">
         <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex overflow-hidden mt-4">
           {/* Sidebar - No border-r, PoweredByCircuit at absolute bottom */}
           <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0">
@@ -680,7 +680,7 @@ export default function InvestorCommit() {
             </div>
             
             {/* PoweredByCircuit at bottom of sidebar */}
-            <div className="pr-6 mt-6">
+            <div className="pr-6 mt-8">
               <PoweredByCircuit variant="inline" />
             </div>
           </aside>
