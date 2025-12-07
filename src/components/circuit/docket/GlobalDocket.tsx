@@ -242,7 +242,9 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
 
   const getShareUrl = (docket: any) => {
     if (!profile?.company_slug || !roundData?.slug) return null;
-    return `${window.location.origin}/share/${profile.company_slug}/${roundData.slug}/docket`;
+    const investorSlug = getInvestorSlug(docket);
+    if (!investorSlug) return null;
+    return `${window.location.origin}/share/${profile.company_slug}/${roundData.slug}/docket/${investorSlug}`;
   };
 
   const handleRowClick = (docket: any) => {

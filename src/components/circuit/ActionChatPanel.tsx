@@ -1729,9 +1729,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
         console.error("Failed to generate access key:", keyError);
       }
 
-      // Generate the share URL
+      // Generate the share URL with investor slug for uniqueness
       const shareUrl = profile?.company_slug && roundSlug
-        ? `${window.location.origin}/share/${profile.company_slug}/${roundSlug}/docket`
+        ? `${window.location.origin}/share/${profile.company_slug}/${roundSlug}/docket/${slug}`
         : undefined;
 
       setGeneratedDocketUrl(shareUrl);
