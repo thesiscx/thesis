@@ -630,13 +630,13 @@ export default function InvestorCommit() {
     navigate(`/share/${companySlug}/${roundCode}/memo`, { replace: true });
   };
 
-  if (isAuthLoading || !investorSession || isLoading) {
-    return null;
-  }
-
-  // Show splash screen first
+  // Show splash screen immediately - covers loading time
   if (showSplash) {
     return <CircuitSplash onComplete={() => setShowSplash(false)} />;
+  }
+
+  if (isAuthLoading || !investorSession || isLoading) {
+    return null;
   }
 
   return (

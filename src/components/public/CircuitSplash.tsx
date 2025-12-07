@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import circuitSplashGif from "@/assets/circuit-splash-new.gif";
 
 interface CircuitSplashProps {
@@ -7,13 +7,24 @@ interface CircuitSplashProps {
 
 export function CircuitSplash({ onComplete }: CircuitSplashProps) {
   const [isExiting, setIsExiting] = useState(false);
-  const [gifKey] = useState(() => Date.now());
+  const [isLoaded, setIsLoaded] = useState(false);
+  const gifKey = useRef(Date.now());
   
-  // GIF duration ~2.2s + 300ms buffer before fade
+  // GIF duration ~2.2s + buffer before fade
   const GIF_DURATION = 2200;
   const FADE_DURATION = 400;
 
+  // Preload the GIF
   useEffect(() => {
+    const img = new Image();
+    img.src = `${circuitSplashGif}?t=${gifKey.current}`;
+    img.onload = () => setIsLoaded(true);
+  }, []);
+
+  // Only start timers after GIF is loaded
+  useEffect(() => {
+    if (!isLoaded) return;
+    
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
     }, GIF_DURATION);
@@ -26,19 +37,18 @@ export function CircuitSplash({ onComplete }: CircuitSplashProps) {
       clearTimeout(exitTimer);
       clearTimeout(completeTimer);
     };
-  }, [onComplete]);
+  }, [isLoaded, onComplete]);
 
   return (
     <div 
-      className={`fixed inset-0 z-[100] bg-background flex items-center justify-center transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[100] bg-background flex items-center justify-center transition-opacity duration-400 ${
         isExiting ? 'opacity-0' : 'opacity-100'
       }`}
     >
       <img 
-        key={gifKey}
-        src={`${circuitSplashGif}?t=${gifKey}`}
+        src={`${circuitSplashGif}?t=${gifKey.current}`}
         alt=""
-        className="h-32 w-auto"
+        className={`h-32 w-auto transition-opacity duration-150 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
       />
     </div>
   );
