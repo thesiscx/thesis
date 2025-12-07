@@ -120,13 +120,13 @@ export default function CircuitHeader({
                 {companyName?.charAt(0)?.toUpperCase() || "C"}
               </div>
             )}
-            <span className="truncate font-medium max-w-[140px]">{companyName || "My Company"}</span>
+            <span className="truncate text-sm font-medium max-w-[140px]">{companyName || "My Company"}</span>
           </button>
           {/* Chevron - opens settings dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-7 w-7 flex items-center justify-center rounded-md bg-secondary/50 hover:bg-secondary transition-colors">
-                <ChevronsUpDown className="w-3.5 h-3.5 opacity-60" />
+              <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-background hover:shadow-sm hover:border hover:border-border/50 transition-all">
+                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64">
@@ -200,8 +200,8 @@ export default function CircuitHeader({
             {/* Chevron - opens tool switcher dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="h-7 w-7 flex items-center justify-center rounded-md bg-secondary/50 hover:bg-secondary transition-colors">
-                  <ChevronsUpDown className="w-3.5 h-3.5 opacity-60" />
+                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-background hover:shadow-sm hover:border hover:border-border/50 transition-all">
+                  <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
