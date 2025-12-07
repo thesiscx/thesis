@@ -36,7 +36,6 @@ interface GlobalDocketProps {
 // Status definitions
 const STATUSES = [
   { value: "drafted", label: "Drafted" },
-  { value: "shared", label: "Shared" },
   { value: "viewed", label: "Viewed" },
   { value: "signed", label: "Signed" },
   { value: "executed", label: "Executed" },
@@ -49,7 +48,7 @@ type StatusValue = typeof STATUSES[number]["value"];
 // Map old statuses to new
 const STATUS_MAP: Record<string, StatusValue> = {
   draft: "drafted",
-  sent: "shared",
+  sent: "drafted",
   investor_signed: "signed",
   executed: "executed",
   expired: "voided",
@@ -63,7 +62,7 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeFilters, setActiveFilters] = useState<StatusValue[]>([
-    "drafted", "shared", "viewed", "signed", "executed", "funded"
+    "drafted", "viewed", "signed", "executed", "funded"
   ]);
   const [sortField, setSortField] = useState<SortField>("updated");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -151,7 +150,6 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
   const getStatusBadge = (status: StatusValue) => {
     const config: Record<StatusValue, { variant: "default" | "secondary" | "destructive" | "outline"; className?: string }> = {
       drafted: { variant: "outline" },
-      shared: { variant: "secondary" },
       viewed: { variant: "secondary", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
       signed: { variant: "default", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
       executed: { variant: "default", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
@@ -244,8 +242,6 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
   const getAvailableActions = (status: StatusValue) => {
     switch (status) {
       case "drafted":
-        return ["view", "void"];
-      case "shared":
       case "viewed":
         return ["view", "void"];
       case "signed":
