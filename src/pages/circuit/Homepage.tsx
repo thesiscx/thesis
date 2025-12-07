@@ -1,9 +1,11 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useRounds } from "@/hooks/useRounds";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import CircuitHeader from "@/components/circuit/CircuitHeader";
 import { ActivityFeed } from "@/components/circuit/ActivityFeed";
-import { Users, FileText, FolderOpen, ArrowRight } from "lucide-react";
+import { Users, FileText, FolderOpen, ArrowRight, Settings } from "lucide-react";
 import circuitLogo from "@/assets/circuit-logo.png";
 
 const tools = [
@@ -38,6 +40,29 @@ export default function Homepage() {
   // Determine which round to navigate to
   const activeRound = openRound || rounds?.[0];
 
+  // Fetch round stats for the open round
+  const { data: roundStats } = useQuery({
+    queryKey: ["homepage-round-stats", openRound?.id],
+    queryFn: async () => {
+      if (!openRound?.id) return null;
+      const { data: dockets } = await supabase
+        .from("dockets")
+        .select("id, amount, wire_received, status")
+        .eq("round_id", openRound.id)
+        .eq("is_global", false);
+
+      const fundedAmount = dockets?.filter(d => d.wire_received)
+        .reduce((sum, d) => sum + (Number(d.amount) || 0), 0) || 0;
+      const totalDockets = dockets?.length || 0;
+      const signedDockets = dockets?.filter(d => 
+        d.status === 'investor_signed' || d.wire_received
+      ).length || 0;
+
+      return { fundedAmount, totalDockets, signedDockets };
+    },
+    enabled: !!openRound?.id,
+  });
+
   const handleToolClick = (toolId: string) => {
     if (activeRound) {
       navigate(`/${activeRound.slug}/${toolId}`);
@@ -65,6 +90,30 @@ export default function Homepage() {
               <p className="text-muted-foreground text-sm mt-1">
                 Your fundraising workspace is ready.
               </p>
+
+              {/* Round Stats - understated text */}
+              {openRound && (
+                <div className="mt-4 space-y-1.5">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Active:</span>
+                    <span className="font-medium">{openRound.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <span>{roundStats?.totalDockets || 0} dockets</span>
+                    <span>·</span>
+                    <span>{roundStats?.signedDockets || 0} signed</span>
+                    <span>·</span>
+                    <span>${((roundStats?.fundedAmount || 0) / 1000).toFixed(0)}k raised</span>
+                  </div>
+                  <Link 
+                    to="/settings/rounds" 
+                    className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mt-1"
+                  >
+                    <Settings className="w-3 h-3" />
+                    Manage Rounds
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Navigation Cards */}
