@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { X } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import CommitmentSteps, { CommitmentStep } from "@/components/public/CommitmentSteps";
@@ -621,7 +621,7 @@ export default function InvestorCommit() {
   }, [completedSteps, investorDetails, investmentAmount, documentHtml, saveFlowState, docketId, investorSession]);
 
   const handleClose = () => {
-    navigate(`/share/${companySlug}/${roundCode}/memo/view`);
+    navigate(`/share/${companySlug}/${roundCode}/docket/${investorSession?.investorSlug}`);
   };
 
   const handleLogout = () => {
@@ -641,16 +641,16 @@ export default function InvestorCommit() {
   return (
     <div className="h-screen bg-muted/30 overflow-hidden flex flex-col">
       {/* Header */}
-      <header className="h-14 bg-background border-b flex items-center justify-between px-4 shrink-0">
+      <header className="h-14 bg-muted/30 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-2">
           {companyInfo.logo && (
             <img 
               src={companyInfo.logo} 
               alt={companyInfo.name} 
-              className="h-6 w-auto object-contain"
+              className="h-5 w-auto object-contain"
             />
           )}
-          <span className="font-medium">{companyInfo.name} Investment Docket</span>
+          <span className="text-sm font-medium">{companyInfo.name} Investment Docket</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{investorDetails.name || investorSession?.investorName || 'Investor'}</span>
@@ -660,15 +660,15 @@ export default function InvestorCommit() {
             onClick={handleClose} 
             className="gap-2"
           >
-            <X className="h-4 w-4" />
             Exit
+            <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       </header>
 
       {/* Centered Card Container - extends to bottom */}
-      <div className="flex-1 flex items-stretch justify-center px-8 pb-0 overflow-hidden">
-        <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex overflow-hidden mt-4">
+      <div className="flex-1 flex items-stretch justify-center px-8 pb-0 overflow-hidden pt-2">
+        <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex overflow-hidden mt-6">
           {/* Sidebar - No border-r, PoweredByCircuit at absolute bottom */}
           <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0">
             <div className="flex-1">
