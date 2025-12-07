@@ -116,6 +116,43 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
 
   // Track which memo ID we've initialized to detect memo changes
   const initializedMemoId = useRef<string | null>(null);
+
+  // Extract TOC from content
+  const extractTocFromContent = useCallback((content: Json) => {
+    if (!content || typeof content !== 'object') return [];
+    
+    const jsonContent = content as { content?: any[] };
+    if (!jsonContent.content) return [];
+    
+    const items: TocItem[] = [];
+    let h1Index = 0;
+    
+    const traverse = (nodes: any[]) => {
+      for (const node of nodes) {
+        if (node.type === 'heading' && node.attrs?.level === 1) {
+          const text = node.content
+            ?.filter((n: any) => n.type === 'text')
+            .map((n: any) => n.text)
+            .join('') || '';
+          
+          if (text.trim()) {
+            items.push({
+              id: `h1-${h1Index}`,
+              label: text.trim(),
+              level: 1,
+            });
+            h1Index++;
+          }
+        }
+        if (node.content) {
+          traverse(node.content);
+        }
+      }
+    };
+    
+    traverse(jsonContent.content);
+    return items;
+  }, []);
   
   // Sync local content with memo from DB - force update when updated_at changes (AI edits)
   useEffect(() => {
@@ -129,10 +166,17 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
         lastUpdatedAt.current = memo.updated_at;
         hasInitializedContent.current = true;
         setLocalContent(memo.content);
-        console.log('[Memo] Set content from DB', { isNewMemo, isExternalUpdate, memoId: memo.id });
+        
+        // Extract TOC on initial load
+        const extractedToc = extractTocFromContent(memo.content);
+        if (extractedToc.length > 0) {
+          setTocItems(extractedToc);
+        }
+        
+        console.log('[Memo] Set content from DB', { isNewMemo, isExternalUpdate, memoId: memo.id, tocCount: extractedToc.length });
       }
     }
-  }, [memo?.content, memo?.id, memo?.updated_at]);
+  }, [memo?.content, memo?.id, memo?.updated_at, extractTocFromContent]);
 
   // Save mutation with error handling
   const saveMutation = useMutation({
