@@ -680,7 +680,7 @@ export default function InvestorCommit() {
             </div>
             
             {/* PoweredByCircuit at bottom of sidebar */}
-            <div className="pr-6 mt-8">
+            <div className="pr-6 mt-12">
               <PoweredByCircuit variant="inline" />
             </div>
           </aside>
