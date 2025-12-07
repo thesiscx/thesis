@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import robomartIcon from "@/assets/robomart-icon.png";
 
 interface TocItem {
   id: string;
@@ -130,11 +131,18 @@ export default function PublicMemoViewer() {
     }
   };
 
-  // Scroll to heading
+  // Scroll to heading with offset for sticky header
   const scrollToHeading = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const headerOffset = 56 + 40; // header height (14 * 4 = 56px) + padding
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
       setActiveHeading(id);
     }
   };
@@ -180,6 +188,7 @@ export default function PublicMemoViewer() {
       <header className="sticky top-0 z-50 border-b bg-background">
         <div className="flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-3">
+            <img src={robomartIcon} alt="Robomart" className="h-7 w-7" />
             <div className="flex items-center gap-2 font-heading text-sm font-medium">
               <span className="text-primary">{investorSession.companyName}</span>
               <span className="text-muted-foreground">Investment Memo</span>
@@ -198,15 +207,15 @@ export default function PublicMemoViewer() {
       <div className="flex">
         {/* TOC Sidebar */}
         <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
-          <nav className="py-10 pl-8 pr-6">
+          <nav className="py-10 pl-10 pr-6">
             {tocItems.length > 0 && (
-              <ul className="space-y-2">
+              <ul className="space-y-1">
                 {tocItems.map((item) => (
                   <li key={item.id}>
                     <button
                       onClick={() => scrollToHeading(item.id)}
                       className={`
-                        block w-full text-left text-sm transition-colors py-1
+                        block w-full text-left text-sm transition-colors py-0.5
                         ${item.level === 2 ? 'pl-4' : ''}
                         ${activeHeading === item.id 
                           ? 'text-foreground font-medium' 
@@ -224,7 +233,7 @@ export default function PublicMemoViewer() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 min-w-0 border-l">
+        <main className="flex-1 min-w-0">
           <div className="max-w-3xl py-10 px-12 lg:px-16">
             {isLoading ? (
               <div className="space-y-6">
