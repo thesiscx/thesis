@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Check, History, Pencil, Eye } from "lucide-react";
+import { Check, History, Pencil, Eye, ExternalLink, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface TocItem {
   id: string;
@@ -32,6 +39,7 @@ interface MemoSidebarProps {
   isRestoringVersion?: boolean;
   isEditing?: boolean;
   onToggleEdit?: () => void;
+  memoId?: string | null;
 }
 
 export default function MemoSidebar({
@@ -43,9 +51,61 @@ export default function MemoSidebar({
   isRestoringVersion,
   isEditing = false,
   onToggleEdit,
+  memoId,
 }: MemoSidebarProps) {
   const [activeSection, setActiveSection] = useState<string>("");
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const isScrollingRef = useRef(false);
+
+  // Generate or get existing preview link
+  const handlePreview = async () => {
+    if (!memoId) {
+      toast.error("Save the memo first to preview it");
+      return;
+    }
+
+    setIsGeneratingPreview(true);
+    
+    try {
+      // Check if preview link already exists
+      const { data: existingLink, error: fetchError } = await supabase
+        .from('share_links')
+        .select('token')
+        .eq('memo_id', memoId)
+        .eq('permissions', 'preview')
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      let token: string;
+
+      if (existingLink) {
+        token = existingLink.token;
+      } else {
+        // Generate new preview token (long random string)
+        token = crypto.randomUUID() + '-' + crypto.randomUUID();
+        
+        const { error: insertError } = await supabase
+          .from('share_links')
+          .insert({
+            memo_id: memoId,
+            token,
+            permissions: 'preview',
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      // Open preview in new tab
+      const previewUrl = `${window.location.origin}/preview/memo/${token}`;
+      window.open(previewUrl, '_blank');
+    } catch (error) {
+      console.error('Error generating preview link:', error);
+      toast.error("Failed to generate preview link");
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  };
 
   const scrollToSection = (id: string) => {
     isScrollingRef.current = true;
@@ -97,18 +157,47 @@ export default function MemoSidebar({
           </h1>
           <div className="flex items-center gap-1">
             {onToggleEdit && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-6 w-6 p-0"
-                onClick={onToggleEdit}
-              >
-                {isEditing ? (
-                  <Eye className="h-3.5 w-3.5" />
-                ) : (
-                  <Pencil className="h-3.5 w-3.5" />
-                )}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0"
+                    onClick={onToggleEdit}
+                  >
+                    {isEditing ? (
+                      <Eye className="h-3.5 w-3.5" />
+                    ) : (
+                      <Pencil className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {isEditing ? 'View' : 'Edit'}
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {memoId && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0"
+                    onClick={handlePreview}
+                    disabled={isGeneratingPreview}
+                  >
+                    {isGeneratingPreview ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  Preview
+                </TooltipContent>
+              </Tooltip>
             )}
             {versions.length > 0 && onRestoreVersion && (
               <DropdownMenu>
