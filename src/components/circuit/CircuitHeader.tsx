@@ -169,38 +169,52 @@ export default function CircuitHeader({
         {activeTool === "stage" ? (
           <span className="text-sm text-muted-foreground pl-1">Stage</span>
         ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 px-2 gap-1.5 capitalize">
-                {getToolIcon(activeTool)}
-                {activeTool}
-                <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem
-                onClick={() => onToolChange?.("pipeline")}
-                className={cn(activeTool === "pipeline" && "bg-accent")}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Pipeline
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onToolChange?.("memo")}
-                className={cn(activeTool === "memo" && "bg-accent")}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Memo
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onToolChange?.("docket")}
-                className={cn(activeTool === "docket" && "bg-accent")}
-              >
-                <FolderOpen className="w-4 h-4 mr-2" />
-                Docket
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center">
+            {/* Tool name - clickable to navigate back */}
+            <Button 
+              variant="ghost" 
+              className="h-8 px-2 gap-1.5 capitalize pr-0.5"
+              onClick={() => {
+                if (activeRoundSlug) {
+                  navigate(`/${activeRoundSlug}/${activeTool}`);
+                }
+              }}
+            >
+              {getToolIcon(activeTool)}
+              {activeTool}
+            </Button>
+            {/* Chevron - opens tool switcher dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-6 p-0">
+                  <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem
+                  onClick={() => onToolChange?.("pipeline")}
+                  className={cn(activeTool === "pipeline" && "bg-accent")}
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Pipeline
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onToolChange?.("memo")}
+                  className={cn(activeTool === "memo" && "bg-accent")}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Memo
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onToolChange?.("docket")}
+                  className={cn(activeTool === "docket" && "bg-accent")}
+                >
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  Docket
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
 
         {/* Breadcrumb for subpages */}
