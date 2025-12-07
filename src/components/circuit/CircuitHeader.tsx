@@ -122,7 +122,7 @@ export default function CircuitHeader({
           {/* Chevron - opens settings dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-7 w-7 flex items-center justify-center rounded-md bg-muted/30 hover:bg-background hover:shadow-sm hover:border hover:border-border/50 data-[state=open]:bg-background data-[state=open]:shadow-sm data-[state=open]:border data-[state=open]:border-border/50 transition-all">
+              <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted/30 hover:shadow-sm hover:border hover:border-border/50 data-[state=open]:bg-muted/30 data-[state=open]:shadow-sm data-[state=open]:border data-[state=open]:border-border/50 transition-all">
                 <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
               </button>
             </DropdownMenuTrigger>
@@ -197,7 +197,7 @@ export default function CircuitHeader({
               {/* Chevron - opens tool switcher dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="h-7 w-7 flex items-center justify-center rounded-md bg-muted/30 hover:bg-background hover:shadow-sm hover:border hover:border-border/50 data-[state=open]:bg-background data-[state=open]:shadow-sm data-[state=open]:border data-[state=open]:border-border/50 transition-all">
+                  <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted/30 hover:shadow-sm hover:border hover:border-border/50 data-[state=open]:bg-muted/30 data-[state=open]:shadow-sm data-[state=open]:border data-[state=open]:border-border/50 transition-all">
                     <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
                   </button>
                 </DropdownMenuTrigger>
