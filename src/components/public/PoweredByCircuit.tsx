@@ -30,8 +30,8 @@ export function PoweredByCircuit({ variant = 'footer' }: PoweredByCircuitProps) 
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
         >
-          <span className="text-[11px] text-muted-foreground/50">Powered by</span>
-          <img src={circuitLogo} alt="Circuit" className="h-3.5" />
+          <span className="text-xs text-muted-foreground/50">Powered by</span>
+          <img src={circuitLogo} alt="Circuit" className="h-4" />
         </a>
       </div>
     );
