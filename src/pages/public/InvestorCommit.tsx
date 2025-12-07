@@ -621,7 +621,8 @@ export default function InvestorCommit() {
   }, [completedSteps, investorDetails, investmentAmount, documentHtml, saveFlowState, docketId, investorSession]);
 
   const handleClose = () => {
-    navigate(`/share/${companySlug}/${roundCode}/docket/${investorSession?.investorSlug}`);
+    clearInvestorSession();
+    navigate(`/share/${companySlug}/${roundCode}/docket/${investorSlug}`, { replace: true });
   };
 
   const handleLogout = () => {
@@ -667,11 +668,11 @@ export default function InvestorCommit() {
       </header>
 
       {/* Centered Card Container - extends to bottom */}
-      <div className="flex-1 flex items-stretch justify-center px-8 pb-0 overflow-hidden pt-2">
-        <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex overflow-hidden mt-6">
+      <div className="flex-1 flex items-stretch justify-center px-8 pb-0 overflow-hidden pt-6">
+        <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex overflow-hidden mt-4">
           {/* Sidebar - No border-r, PoweredByCircuit at absolute bottom */}
           <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0">
-            <div className="flex-1 pt-8">
+            <div className="flex-1">
               <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
                 Investment Process
               </h2>
@@ -679,7 +680,7 @@ export default function InvestorCommit() {
             </div>
             
             {/* PoweredByCircuit at bottom of sidebar */}
-            <div className="pr-6 pb-4">
+            <div className="pr-6 mt-6">
               <PoweredByCircuit variant="inline" />
             </div>
           </aside>
