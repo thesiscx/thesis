@@ -186,10 +186,10 @@ export default function PublicMemoViewer() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background">
-        <div className="flex h-14 items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <img src={robomartIcon} alt="Robomart" className="h-7 w-7" />
-            <div className="flex items-center gap-2 font-heading text-sm font-medium">
+        <div className="flex h-14 items-center justify-between pl-12 pr-6">
+          <div className="flex items-center gap-2.5">
+            <img src={robomartIcon} alt="Robomart" className="h-5 w-5" />
+            <div className="flex items-center gap-2 font-heading text-base font-medium">
               <span className="text-primary">{investorSession.companyName}</span>
               <span className="text-muted-foreground">Investment Memo</span>
             </div>
@@ -207,7 +207,7 @@ export default function PublicMemoViewer() {
       <div className="flex">
         {/* TOC Sidebar */}
         <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
-          <nav className="py-10 pl-10 pr-6">
+          <nav className="py-10 pl-12 pr-6">
             {tocItems.length > 0 && (
               <ul className="space-y-1">
                 {tocItems.map((item) => (
