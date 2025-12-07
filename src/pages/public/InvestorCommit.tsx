@@ -169,12 +169,20 @@ export default function InvestorCommit() {
         }
       }
 
-      // Update the docket with flow state
-      if (targetDocketId) {
-        await supabase
-          .from('dockets')
-          .update({ commitment_flow_state: flowState })
-          .eq('id', targetDocketId);
+      // Update the docket with flow state via edge function (bypasses RLS)
+      if (targetDocketId && investorSession?.roundId) {
+        try {
+          await supabase.functions.invoke('update-investor-docket', {
+            body: {
+              docketId: targetDocketId,
+              roundId: investorSession.roundId,
+              updateType: 'flow_state',
+              data: { flowState },
+            },
+          });
+        } catch (err) {
+          console.error('Failed to update flow state:', err);
+        }
       }
     } catch (error) {
       console.error('Error saving flow state:', error);
@@ -385,13 +393,21 @@ export default function InvestorCommit() {
     setCurrentStep('details');
     saveFlowState('details', newCompleted, investorDetails, investmentAmount, documentHtml);
     
-    // Update docket status to 'viewed' when investor reviews terms
-    if (docketId) {
-      await supabase
-        .from('dockets')
-        .update({ status: 'viewed' })
-        .eq('id', docketId)
-        .eq('status', 'draft'); // Only update if still in draft
+    // Update docket status to 'viewed' via edge function (bypasses RLS)
+    if (investorSession?.roundId) {
+      try {
+        await supabase.functions.invoke('update-investor-docket', {
+          body: {
+            docketId,
+            investorId: investorSession.investorId,
+            accessKeyId: investorSession.accessKeyId,
+            roundId: investorSession.roundId,
+            updateType: 'viewed',
+          },
+        });
+      } catch (err) {
+        console.error('Failed to update docket status:', err);
+      }
     }
   };
 
@@ -453,13 +469,25 @@ export default function InvestorCommit() {
       let targetDocketId = docketId;
 
       if (targetDocketId) {
-        // Update existing docket
-        const { error } = await supabase
-          .from('dockets')
-          .update(docketData)
-          .eq('id', targetDocketId);
+        // Update existing docket via edge function (bypasses RLS)
+        const { error } = await supabase.functions.invoke('update-investor-docket', {
+          body: {
+            docketId: targetDocketId,
+            roundId: investorSession.roundId,
+            updateType: 'signed',
+            data: {
+              amount: investmentAmount,
+              investorName: investorDetails.entityType === 'entity' ? investorDetails.entityName : investorDetails.name,
+              investorEmail: investorDetails.email,
+              investorPhone: investorDetails.phone,
+              investorAddress: investorDetails.address,
+              entityName: investorDetails.entityType === 'entity' ? investorDetails.entityName : null,
+              entityType: investorDetails.entityType,
+            },
+          },
+        });
 
-        if (error) throw error;
+        if (error) throw new Error(error.message || 'Failed to update docket');
       } else {
         // Check if docket exists
         const query = supabase
@@ -476,17 +504,30 @@ export default function InvestorCommit() {
         const { data: existingDocket } = await query.maybeSingle();
 
         if (existingDocket) {
-          // Update existing docket
-          const { error } = await supabase
-            .from('dockets')
-            .update(docketData)
-            .eq('id', existingDocket.id);
+          // Update existing docket via edge function
+          const { error } = await supabase.functions.invoke('update-investor-docket', {
+            body: {
+              docketId: existingDocket.id,
+              roundId: investorSession.roundId,
+              updateType: 'signed',
+              data: {
+                amount: investmentAmount,
+                investorName: investorDetails.entityType === 'entity' ? investorDetails.entityName : investorDetails.name,
+                investorEmail: investorDetails.email,
+                investorPhone: investorDetails.phone,
+                investorAddress: investorDetails.address,
+                entityName: investorDetails.entityType === 'entity' ? investorDetails.entityName : null,
+                entityType: investorDetails.entityType,
+              },
+            },
+          });
 
-          if (error) throw error;
+          if (error) throw new Error(error.message || 'Failed to update docket');
           targetDocketId = existingDocket.id;
           setDocketId(existingDocket.id);
         } else {
-          // Create new docket
+          // Create new docket - this still needs direct insert for creation
+          // but the edge function should handle updates after
           const { data: newDocket, error } = await supabase
             .from('dockets')
             .insert(docketData)

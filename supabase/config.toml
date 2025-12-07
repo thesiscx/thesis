@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.log-investor-activity]
 verify_jwt = false
+
+[functions.update-investor-docket]
+verify_jwt = false
