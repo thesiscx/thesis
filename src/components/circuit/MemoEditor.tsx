@@ -38,18 +38,18 @@ export default function MemoEditor({
   const extractHeadings = useCallback((editor: any) => {
     const headings: TocItem[] = [];
     const doc = editor.state.doc;
-    let h1Index = 0;
+    let headingIndex = 0;
     
     doc.descendants((node: any) => {
       if (node.type.name === 'heading' && node.attrs.level === 1) {
         const text = node.textContent;
         if (text.trim()) {
           headings.push({
-            id: `h1-${h1Index}`,
+            id: `heading-${headingIndex}`,
             label: text,
             level: 1,
           });
-          h1Index++;
+          headingIndex++;
         }
       }
     });

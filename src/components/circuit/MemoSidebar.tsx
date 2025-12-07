@@ -107,7 +107,6 @@ export default function MemoSidebar({
       // Open preview in new tab
       const previewUrl = `${window.location.origin}/preview/memo/${token}`;
       window.open(previewUrl, '_blank');
-      window.open(previewUrl, '_blank');
     } catch (error) {
       console.error('Error generating preview link:', error);
       toast.error("Failed to generate preview link");
@@ -120,13 +119,34 @@ export default function MemoSidebar({
     isScrollingRef.current = true;
     setActiveSection(id);
     
-    const match = id.match(/h1-(\d+)/);
+    // Try to find element by ID first (view mode - TipTapRenderer adds IDs to headings)
+    const elementById = document.getElementById(id);
+    if (elementById) {
+      const toolbarHeight = 70;
+      const scrollContainer = elementById.closest('.overflow-y-auto');
+      
+      if (scrollContainer) {
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const elementRect = elementById.getBoundingClientRect();
+        const currentScroll = scrollContainer.scrollTop;
+        const targetScroll = currentScroll + (elementRect.top - containerRect.top) - toolbarHeight;
+        scrollContainer.scrollTo({ top: targetScroll, behavior: 'smooth' });
+      }
+      
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 500);
+      return;
+    }
+    
+    // Fallback: edit mode - look for headings in ProseMirror by index
+    const match = id.match(/heading-(\d+)/);
     if (!match) {
       isScrollingRef.current = false;
       return;
     }
     
-    const h1Index = parseInt(match[1], 10);
+    const headingIndex = parseInt(match[1], 10);
     const proseMirror = document.querySelector('.ProseMirror');
     if (!proseMirror) {
       isScrollingRef.current = false;
@@ -134,7 +154,7 @@ export default function MemoSidebar({
     }
     
     const h1Headings = proseMirror.querySelectorAll('h1');
-    const targetHeading = h1Headings[h1Index] as HTMLElement;
+    const targetHeading = h1Headings[headingIndex] as HTMLElement;
     
     if (!targetHeading) {
       isScrollingRef.current = false;
