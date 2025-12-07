@@ -45,8 +45,9 @@ export default function CommitmentSteps({ currentStep, completedSteps }: Commitm
           <div
             key={step.id}
             className={cn(
-              "flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors",
-              isCurrent && "bg-primary/10 text-primary",
+              "flex items-center gap-2.5 px-2.5 py-2 -mr-6 transition-colors",
+              // Rounded on left only when current to connect to content box
+              isCurrent && "bg-muted rounded-l-md text-foreground",
               isCompleted && !isCurrent && "text-muted-foreground",
               isFuture && "text-muted-foreground/40"
             )}
@@ -54,8 +55,8 @@ export default function CommitmentSteps({ currentStep, completedSteps }: Commitm
             <div
               className={cn(
                 "flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium transition-colors",
-                isCurrent && "bg-primary text-primary-foreground",
-                isCompleted && !isCurrent && "bg-primary/20 text-primary",
+                isCurrent && "bg-foreground text-background",
+                isCompleted && !isCurrent && "bg-muted-foreground/20 text-muted-foreground",
                 isFuture && "bg-muted/50 text-muted-foreground/40"
               )}
             >
@@ -67,7 +68,7 @@ export default function CommitmentSteps({ currentStep, completedSteps }: Commitm
             </div>
             <span className={cn(
               "text-sm transition-colors",
-              isCurrent && "text-primary font-medium",
+              isCurrent && "text-foreground font-medium",
               isCompleted && !isCurrent && "text-muted-foreground",
               isFuture && "text-muted-foreground/40"
             )}>
