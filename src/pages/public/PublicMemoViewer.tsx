@@ -4,9 +4,8 @@ import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
 import TipTapRenderer from "@/components/circuit/TipTapRenderer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut } from "lucide-react";
+import { LogOut, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import robomartIcon from "@/assets/robomart-icon.png";
 
 interface TocItem {
   id: string;
@@ -188,7 +187,11 @@ export default function PublicMemoViewer() {
       <header className="sticky top-0 z-50 border-b bg-background">
         <div className="flex h-14 items-center justify-between pl-12 pr-6">
           <div className="flex items-center gap-2.5">
-            <img src={robomartIcon} alt="Robomart" className="h-5 w-5" />
+            {investorSession.companyLogo ? (
+              <img src={investorSession.companyLogo} alt={investorSession.companyName} className="h-5 w-5 object-contain" />
+            ) : (
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+            )}
             <div className="flex items-center gap-2 font-heading text-base font-medium">
               <span className="text-primary">{investorSession.companyName}</span>
               <span className="text-muted-foreground">Investment Memo</span>

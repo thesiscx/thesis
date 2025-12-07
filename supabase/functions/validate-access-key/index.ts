@@ -86,17 +86,19 @@ Deno.serve(async (req) => {
     // Fetch the profile for company info
     let companySlug = null;
     let companyName = null;
+    let companyLogo = null;
     
     if (accessKey.round?.created_by) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('company_slug, company_name')
+        .select('company_slug, company_name, avatar_url')
         .eq('id', accessKey.round.created_by)
         .maybeSingle();
       
       if (profile) {
         companySlug = profile.company_slug;
         companyName = profile.company_name;
+        companyLogo = profile.avatar_url;
       }
     }
 
@@ -139,7 +141,8 @@ Deno.serve(async (req) => {
         },
         workspace: {
           companySlug,
-          companyName
+          companyName,
+          companyLogo
         },
         tool: accessKey.tool,
         accessKeyId: accessKey.id

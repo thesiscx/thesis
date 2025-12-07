@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogOut, FileCheck, ChevronRight, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { LogOut, FileCheck, ChevronRight, CheckCircle2, Clock, AlertCircle, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DocketData {
@@ -161,6 +161,11 @@ export default function PublicDocketViewer() {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-3">
+            {investorSession.companyLogo ? (
+              <img src={investorSession.companyLogo} alt={investorSession.companyName} className="h-5 w-5 object-contain" />
+            ) : (
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+            )}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{investorSession.companyName}</span>
               <ChevronRight className="h-4 w-4" />

@@ -11,6 +11,7 @@ interface InvestorSession {
   roundNumber: number;
   companySlug: string;
   companyName: string;
+  companyLogo: string | null;
   tool: 'memo' | 'docket';
   accessKeyId: string;
   accessKey: string;
@@ -142,6 +143,7 @@ export const InvestorAuthProvider = ({ children }: { children: ReactNode }) => {
           roundNumber: data.round.roundNumber,
           companySlug: data.workspace.companySlug,
           companyName: data.workspace.companyName,
+          companyLogo: data.workspace.companyLogo || null,
           tool: data.tool,
           accessKeyId: data.accessKeyId,
           accessKey: key,
