@@ -486,6 +486,26 @@ export default function InvestorCommit() {
 
       if (sigError) throw sigError;
 
+      // Log investor_signed activity
+      if (targetDocketId) {
+        try {
+          await supabase.functions.invoke('log-investor-activity', {
+            body: {
+              actionType: 'investor_signed',
+              docketId: targetDocketId,
+              roundId: investorSession.roundId,
+              investorId: investorSession.investorId,
+              metadata: {
+                investor_name: investorDetails.name,
+                amount: investmentAmount,
+              },
+            },
+          });
+        } catch (logError) {
+          console.error('Failed to log activity:', logError);
+        }
+      }
+
       const newCompleted = [...completedSteps];
       if (!newCompleted.includes('sign')) {
         newCompleted.push('sign');
@@ -502,7 +522,7 @@ export default function InvestorCommit() {
     }
   };
 
-  const handleExecuteComplete = useCallback(() => {
+  const handleExecuteComplete = useCallback(async () => {
     const newCompleted = [...completedSteps];
     if (!newCompleted.includes('execute')) {
       newCompleted.push('execute');
@@ -510,7 +530,27 @@ export default function InvestorCommit() {
     setCompletedSteps(newCompleted);
     setCurrentStep('wire');
     saveFlowState('wire', newCompleted, investorDetails, investmentAmount, documentHtml);
-  }, [completedSteps, investorDetails, investmentAmount, documentHtml, saveFlowState]);
+
+    // Log deal_executed activity
+    if (docketId && investorSession?.roundId) {
+      try {
+        await supabase.functions.invoke('log-investor-activity', {
+          body: {
+            actionType: 'deal_executed',
+            docketId: docketId,
+            roundId: investorSession.roundId,
+            investorId: investorSession.investorId,
+            metadata: {
+              investor_name: investorDetails.name,
+              amount: investmentAmount,
+            },
+          },
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
+  }, [completedSteps, investorDetails, investmentAmount, documentHtml, saveFlowState, docketId, investorSession]);
 
   const handleClose = () => {
     navigate(`/share/${companySlug}/${roundCode}/memo/view`);
