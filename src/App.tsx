@@ -27,6 +27,7 @@ import InvestorAccess from "./pages/public/InvestorAccess";
 import PublicMemoViewer from "./pages/public/PublicMemoViewer";
 import PublicDocketViewer from "./pages/public/PublicDocketViewer";
 import MemoPreview from "./pages/public/MemoPreview";
+import InvestorCommit from "./pages/public/InvestorCommit";
 import SmartRedirect from "./components/circuit/SmartRedirect";
 import { FounderAuthProvider, useFounderAuth } from "./contexts/FounderAuthContext";
 import { InvestorAuthProvider } from "./contexts/InvestorAuthContext";
@@ -182,6 +183,7 @@ const App = () => {
               <Route path="/share/:companySlug/:roundCode/memo" element={<><RouteLogger name="share:memo:access" /><InvestorAccess tool="memo" /></>} />
               <Route path="/share/:companySlug/:roundCode/memo/:investorSlug" element={<><RouteLogger name="share:memo:investor" /><InvestorAccess tool="memo" /></>} />
               <Route path="/share/:companySlug/:roundCode/memo/:investorSlug/view" element={<><RouteLogger name="share:memo:view" /><PublicMemoViewer /></>} />
+              <Route path="/share/:companySlug/:roundCode/invest" element={<><RouteLogger name="share:invest" /><InvestorCommit /></>} />
               <Route path="/share/:companySlug/:roundCode/docket" element={<><RouteLogger name="share:docket:access" /><InvestorAccess tool="docket" /></>} />
               <Route path="/share/:companySlug/:roundCode/docket/:investorSlug" element={<><RouteLogger name="share:docket:investor" /><InvestorAccess tool="docket" /></>} />
               <Route path="/share/:companySlug/:roundCode/docket/:investorSlug/view" element={<><RouteLogger name="share:docket:view" /><PublicDocketViewer /></>} />

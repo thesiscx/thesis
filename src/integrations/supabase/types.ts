@@ -220,39 +220,66 @@ export type Database = {
       dockets: {
         Row: {
           amount: number | null
+          commitment_status: string | null
           content: Json
           created_at: string
           created_by: string | null
+          custom_terms: string | null
           id: string
+          investor_address: string | null
+          investor_email: string | null
+          investor_entity_name: string | null
+          investor_entity_type: string | null
           investor_id: string | null
+          investor_name: string | null
+          investor_phone: string | null
           is_global: boolean
           round_id: string
+          show_deal_terms: boolean | null
           status: string
           updated_at: string
           wire_received: boolean | null
         }
         Insert: {
           amount?: number | null
+          commitment_status?: string | null
           content?: Json
           created_at?: string
           created_by?: string | null
+          custom_terms?: string | null
           id?: string
+          investor_address?: string | null
+          investor_email?: string | null
+          investor_entity_name?: string | null
+          investor_entity_type?: string | null
           investor_id?: string | null
+          investor_name?: string | null
+          investor_phone?: string | null
           is_global?: boolean
           round_id: string
+          show_deal_terms?: boolean | null
           status?: string
           updated_at?: string
           wire_received?: boolean | null
         }
         Update: {
           amount?: number | null
+          commitment_status?: string | null
           content?: Json
           created_at?: string
           created_by?: string | null
+          custom_terms?: string | null
           id?: string
+          investor_address?: string | null
+          investor_email?: string | null
+          investor_entity_name?: string | null
+          investor_entity_type?: string | null
           investor_id?: string | null
+          investor_name?: string | null
+          investor_phone?: string | null
           is_global?: boolean
           round_id?: string
+          show_deal_terms?: boolean | null
           status?: string
           updated_at?: string
           wire_received?: boolean | null
