@@ -21,11 +21,15 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
   const [isValidating, setIsValidating] = useState(false);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
+  const [logoLoading, setLogoLoading] = useState(true);
 
   // Fetch company logo from profiles table
   useEffect(() => {
     const fetchCompanyLogo = async () => {
-      if (!companySlug) return;
+      if (!companySlug) {
+        setLogoLoading(false);
+        return;
+      }
       
       const { data } = await supabase
         .from('profiles')
@@ -36,9 +40,13 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
       if (data?.avatar_url) {
         setCompanyLogo(data.avatar_url);
         setCompanyName(data.company_name);
-        // Preload the logo
+        // Preload the logo before showing
         const img = new Image();
+        img.onload = () => setLogoLoading(false);
+        img.onerror = () => setLogoLoading(false);
         img.src = data.avatar_url;
+      } else {
+        setLogoLoading(false);
       }
     };
     
@@ -157,7 +165,9 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
       <div className="w-full max-w-md space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
-          {companyLogo ? (
+          {logoLoading ? (
+            <div className="w-16 h-16 rounded-full bg-secondary animate-pulse mx-auto mb-4" />
+          ) : companyLogo ? (
             <img 
               src={companyLogo} 
               alt={companyName || 'Company logo'} 
