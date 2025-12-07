@@ -492,10 +492,18 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                       <TableCell>
                         {docket.shareUrl && docket.accessKey ? (
                           <div className="flex items-center gap-1">
-                            <Link className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground truncate max-w-[120px]">
-                              Share link
-                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(docket.shareUrl, "_blank");
+                              }}
+                              title="Open share link"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -504,6 +512,7 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                                 e.stopPropagation();
                                 copyToClipboard(docket.shareUrl, "Share link");
                               }}
+                              title="Copy share link"
                             >
                               <Copy className="w-3 h-3" />
                             </Button>

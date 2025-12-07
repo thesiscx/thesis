@@ -15,7 +15,7 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
   const { companySlug, roundCode, investorSlug } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { investorSession, isLoading, validateAndSetSession } = useInvestorAuth();
+  const { investorSession, isLoading, validateAndSetSession, clearInvestorSession } = useInvestorAuth();
   
   const [accessKey, setAccessKey] = useState("");
   const [isValidating, setIsValidating] = useState(false);
@@ -75,21 +75,27 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
       // For global keys, investorSlug will be "global"
       const isGlobalKey = investorSession.investorSlug === 'global';
       
+      // If URL has investor slug, session MUST match that specific investor
+      // This prevents accessing wrong investor's docket with a different session
       const sessionMatches = 
         investorSession.companySlug === companySlug &&
         investorSession.roundCode === roundCode &&
         investorSession.tool === tool &&
         (isGlobalKey || !investorSlug || investorSession.investorSlug === investorSlug);
 
-      console.log(`[InvestorAccess] Session match check: matches=${sessionMatches}, companySlug=${companySlug}, roundCode=${roundCode}`);
+      console.log(`[InvestorAccess] Session match check: matches=${sessionMatches}, sessionSlug=${investorSession.investorSlug}, urlSlug=${investorSlug}`);
 
       if (sessionMatches) {
         // Session matches, navigate to viewer (with /share/ prefix)
         const viewerSlug = isGlobalKey ? 'global' : investorSession.investorSlug;
         navigate(`/share/${companySlug}/${roundCode}/${tool}/${viewerSlug}/view`, { replace: true });
+      } else {
+        // Session does NOT match - clear it and require re-authentication
+        console.log(`[InvestorAccess] Session mismatch, clearing session. Required: ${investorSlug}, Got: ${investorSession.investorSlug}`);
+        clearInvestorSession();
       }
     }
-  }, [isLoading, investorSession, companySlug, roundCode, investorSlug, tool, navigate]);
+  }, [isLoading, investorSession, companySlug, roundCode, investorSlug, tool, navigate, clearInvestorSession]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

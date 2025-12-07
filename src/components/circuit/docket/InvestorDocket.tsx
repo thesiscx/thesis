@@ -171,25 +171,38 @@ export default function InvestorDocket({ roundSlug, investorSlug }: InvestorDock
   const investorSignature = signatures.find(s => s.signer_type === 'investor');
   const companySignature = signatures.find(s => s.signer_type === 'company');
 
-  const getStatusBadge = (status: string | undefined) => {
-    if (!status) return <Badge variant="outline">Draft</Badge>;
+  const getStatusBadge = (status: string | undefined, wireReceived?: boolean) => {
+    // If wire received, show Funded status
+    if (wireReceived) {
+      return <Badge className="bg-green-600/10 text-green-700 border-green-600/20">Funded</Badge>;
+    }
+    
+    if (!status) return <Badge variant="outline">Drafted</Badge>;
     
     switch (status) {
       case 'draft':
-        return <Badge variant="outline">Draft</Badge>;
+      case 'drafted':
+        return <Badge variant="outline">Drafted</Badge>;
       case 'sent':
-        return <Badge variant="secondary">Sent</Badge>;
+      case 'viewed':
+        return <Badge variant="secondary">Viewed</Badge>;
       case 'investor_signed':
-        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Awaiting Countersignature</Badge>;
+      case 'signed':
+        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Signed</Badge>;
       case 'executed':
-        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Executed</Badge>;
+        return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Executed</Badge>;
+      case 'funded':
+        return <Badge className="bg-green-600/10 text-green-700 border-green-600/20">Funded</Badge>;
+      case 'voided':
+        return <Badge className="bg-muted text-muted-foreground">Voided</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  const shareUrl = profile?.company_slug && roundData?.slug
-    ? `${window.location.origin}/share/${profile.company_slug}/${roundData.slug}/docket`
+  // Include investor slug in URL for investor-specific dockets
+  const shareUrl = profile?.company_slug && roundData?.slug && investorSlug
+    ? `${window.location.origin}/share/${profile.company_slug}/${roundData.slug}/docket/${investorSlug}`
     : null;
 
   const copyToClipboard = async (text: string, label: string) => {
@@ -300,15 +313,9 @@ export default function InvestorDocket({ roundSlug, investorSlug }: InvestorDock
             <h1 className="font-heading text-2xl font-semibold mb-1">
               {investorName}
             </h1>
-            {getStatusBadge(docket?.status)}
+            {getStatusBadge(docket?.status, docket?.wire_received)}
           </div>
           
-          {docket?.status === "investor_signed" && (
-            <Button className="gap-2">
-              <FileSignature className="w-4 h-4" />
-              Countersign
-            </Button>
-          )}
         </div>
 
         <Separator />
