@@ -3,40 +3,41 @@ import circuitSplashGif from "@/assets/circuit-splash-new.gif";
 
 interface CircuitSplashProps {
   onComplete: () => void;
-  duration?: number;
 }
 
-export function CircuitSplash({ onComplete, duration = 3000 }: CircuitSplashProps) {
+export function CircuitSplash({ onComplete }: CircuitSplashProps) {
   const [isExiting, setIsExiting] = useState(false);
-  const [gifKey] = useState(() => Date.now()); // Ensures GIF plays fresh
+  const [gifKey] = useState(() => Date.now());
+  
+  // GIF duration ~2.2s + 300ms buffer before fade
+  const GIF_DURATION = 2200;
+  const FADE_DURATION = 400;
 
   useEffect(() => {
-    // Start exit animation slightly before duration ends
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
-    }, duration - 500);
+    }, GIF_DURATION);
 
-    // Complete after full duration
     const completeTimer = setTimeout(() => {
       onComplete();
-    }, duration);
+    }, GIF_DURATION + FADE_DURATION);
 
     return () => {
       clearTimeout(exitTimer);
       clearTimeout(completeTimer);
     };
-  }, [duration, onComplete]);
+  }, [onComplete]);
 
   return (
     <div 
-      className={`fixed inset-0 z-[100] bg-background flex items-center justify-center transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[100] bg-background flex items-center justify-center transition-opacity duration-300 ${
         isExiting ? 'opacity-0' : 'opacity-100'
       }`}
     >
       <img 
         key={gifKey}
         src={`${circuitSplashGif}?t=${gifKey}`}
-        alt="Circuit"
+        alt=""
         className="h-32 w-auto"
       />
     </div>

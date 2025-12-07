@@ -289,7 +289,7 @@ export default function InvestorCommit() {
 
   // Show splash screen first
   if (showSplash) {
-    return <CircuitSplash onComplete={() => setShowSplash(false)} duration={2500} />;
+    return <CircuitSplash onComplete={() => setShowSplash(false)} />;
   }
 
   return (
