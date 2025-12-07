@@ -207,7 +207,7 @@ export default function PublicMemoViewer() {
         </div>
       </header>
 
-      <div className="flex max-w-7xl mx-auto">
+      <div className="flex pl-12 pr-6">
         {/* TOC Sidebar */}
         <aside className="hidden lg:block w-56 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto pt-10">
           <nav className="pr-6">
