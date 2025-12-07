@@ -18,10 +18,10 @@ interface Step {
 const steps: Step[] = [
   { id: 'review-terms', label: 'Review Terms', icon: FileText },
   { id: 'your-details', label: 'Your Details', icon: User },
-  { id: 'investment-amount', label: 'Investment Amount', icon: DollarSign },
-  { id: 'generate-document', label: 'Generate Agreement', icon: Sparkles },
-  { id: 'sign-agreement', label: 'Review & Sign', icon: FileSignature },
-  { id: 'confirmation', label: 'Confirmation', icon: CheckCircle2 },
+  { id: 'investment-amount', label: 'Amount', icon: DollarSign },
+  { id: 'generate-document', label: 'Generate', icon: Sparkles },
+  { id: 'sign-agreement', label: 'Sign', icon: FileSignature },
+  { id: 'confirmation', label: 'Done', icon: CheckCircle2 },
 ];
 
 interface CommitmentStepsProps {
@@ -33,7 +33,7 @@ export default function CommitmentSteps({ currentStep, completedSteps }: Commitm
   const currentIndex = steps.findIndex(s => s.id === currentStep);
 
   return (
-    <nav className="space-y-1">
+    <nav className="space-y-0.5">
       {steps.map((step, index) => {
         const isCompleted = completedSteps.includes(step.id);
         const isCurrent = currentStep === step.id;
@@ -44,7 +44,7 @@ export default function CommitmentSteps({ currentStep, completedSteps }: Commitm
           <div
             key={step.id}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors",
+              "flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors",
               isCurrent && "bg-primary/10 text-primary",
               !isCurrent && !isCompleted && "text-muted-foreground",
               (isCompleted || isPast) && !isCurrent && "text-muted-foreground"
@@ -52,21 +52,21 @@ export default function CommitmentSteps({ currentStep, completedSteps }: Commitm
           >
             <div
               className={cn(
-                "flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium",
+                "flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium",
                 isCurrent && "bg-primary text-primary-foreground",
                 isCompleted && !isCurrent && "bg-primary/20 text-primary",
                 !isCurrent && !isCompleted && "bg-muted text-muted-foreground"
               )}
             >
               {isCompleted && !isCurrent ? (
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-3 h-3" />
               ) : (
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-3 h-3" />
               )}
             </div>
             <span className={cn(
-              "text-sm font-medium",
-              isCurrent && "text-primary",
+              "text-sm",
+              isCurrent && "text-primary font-medium",
               !isCurrent && "text-muted-foreground"
             )}>
               {step.label}

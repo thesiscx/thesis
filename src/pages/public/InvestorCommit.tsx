@@ -247,7 +247,7 @@ export default function InvestorCommit() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background">
         <div className="flex h-14 items-center justify-between px-6">
@@ -272,77 +272,82 @@ export default function InvestorCommit() {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="hidden lg:block w-64 flex-shrink-0 border-r bg-muted/20 sticky top-14 h-[calc(100vh-3.5rem)]">
-          <div className="p-6">
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
-              Investment Process
-            </h2>
-            <CommitmentSteps currentStep={currentStep} completedSteps={completedSteps} />
+      {/* Centered Card Container */}
+      <div className="flex justify-center py-8 px-4">
+        <div className="bg-background rounded-xl shadow-sm border w-full max-w-4xl">
+          <div className="flex">
+            {/* Sidebar - Now part of the card */}
+            <aside className="hidden lg:block w-56 flex-shrink-0 p-6 pr-0">
+              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
+                Investment Process
+              </h2>
+              <CommitmentSteps currentStep={currentStep} completedSteps={completedSteps} />
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 min-w-0 py-8 px-6 lg:px-8">
+              <div className="max-w-lg">
+                {currentStep === 'review-terms' && (
+                  <ReviewTermsStep
+                    terms={terms}
+                    customTerms={customTerms}
+                    instrumentType={instrumentType}
+                    onContinue={handleReviewTermsContinue}
+                  />
+                )}
+
+                {currentStep === 'your-details' && (
+                  <InvestorDetailsStep
+                    initialData={investorDetails}
+                    onContinue={handleDetailsContinue}
+                    onBack={() => goToStep('review-terms')}
+                  />
+                )}
+
+                {currentStep === 'investment-amount' && (
+                  <InvestmentAmountStep
+                    initialAmount={investmentAmount}
+                    minimumTicket={terms?.minimum_ticket || null}
+                    onContinue={handleAmountContinue}
+                    onBack={() => goToStep('your-details')}
+                  />
+                )}
+
+                {currentStep === 'generate-document' && (
+                  <GenerateDocumentStep
+                    onComplete={handleDocumentGenerated}
+                    investorDetails={investorDetails}
+                    amount={investmentAmount}
+                    companyName={investorSession.companyName || ''}
+                    roundId={investorSession.roundId}
+                    roundTerms={terms}
+                  />
+                )}
+
+                {currentStep === 'sign-agreement' && (
+                  <SignAgreementStep
+                    documentHtml={documentHtml}
+                    investorName={investorDetails.name}
+                    companyName={investorSession.companyName || ''}
+                    onSign={handleSign}
+                    onBack={() => goToStep('investment-amount')}
+                    isSubmitting={isSubmitting}
+                  />
+                )}
+
+                {currentStep === 'confirmation' && (
+                  <ConfirmationStep
+                    amount={investmentAmount}
+                    companyName={investorSession.companyName || ''}
+                    wireInstructions={terms}
+                    documentHtml={documentHtml}
+                    onClose={handleClose}
+                  />
+                )}
+              </div>
+            </main>
           </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 min-w-0 py-8 px-6 lg:px-12">
-          <div className="max-w-xl mx-auto">
-            {currentStep === 'review-terms' && (
-              <ReviewTermsStep
-                terms={terms}
-                customTerms={customTerms}
-                instrumentType={instrumentType}
-                onContinue={handleReviewTermsContinue}
-              />
-            )}
-
-            {currentStep === 'your-details' && (
-              <InvestorDetailsStep
-                initialData={investorDetails}
-                onContinue={handleDetailsContinue}
-                onBack={() => goToStep('review-terms')}
-              />
-            )}
-
-            {currentStep === 'investment-amount' && (
-              <InvestmentAmountStep
-                initialAmount={investmentAmount}
-                minimumTicket={terms?.minimum_ticket || null}
-                onContinue={handleAmountContinue}
-                onBack={() => goToStep('your-details')}
-              />
-            )}
-
-            {currentStep === 'generate-document' && (
-              <GenerateDocumentStep
-                onComplete={handleDocumentGenerated}
-                investorDetails={investorDetails}
-                amount={investmentAmount}
-                companyName={investorSession.companyName || ''}
-                roundId={investorSession.roundId}
-              />
-            )}
-
-            {currentStep === 'sign-agreement' && (
-              <SignAgreementStep
-                documentHtml={documentHtml}
-                investorName={investorDetails.name}
-                onSign={handleSign}
-                onBack={() => goToStep('investment-amount')}
-                isSubmitting={isSubmitting}
-              />
-            )}
-
-            {currentStep === 'confirmation' && (
-              <ConfirmationStep
-                amount={investmentAmount}
-                companyName={investorSession.companyName || ''}
-                wireInstructions={terms}
-                documentHtml={documentHtml}
-                onClose={handleClose}
-              />
-            )}
-          </div>
-        </main>
+        </div>
       </div>
     </div>
   );
