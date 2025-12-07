@@ -63,6 +63,7 @@ export default function InvestorCommit() {
   const [showSplash, setShowSplash] = useState(true);
   const [docketId, setDocketId] = useState<string | null>(null);
   const [wireReceivedAt, setWireReceivedAt] = useState<string | null>(null);
+  const [logoLoaded, setLogoLoaded] = useState(false);
   const [roundInfo, setRoundInfo] = useState<{ name: string; targetRaise: number | null }>({
     name: '',
     targetRaise: null,
@@ -73,6 +74,18 @@ export default function InvestorCommit() {
     entityType: null,
     address: null,
   });
+
+  // Preload company logo when available
+  useEffect(() => {
+    if (investorSession?.companyLogo) {
+      const img = new Image();
+      img.onload = () => setLogoLoaded(true);
+      img.onerror = () => setLogoLoaded(true);
+      img.src = investorSession.companyLogo;
+    } else {
+      setLogoLoaded(true);
+    }
+  }, [investorSession?.companyLogo]);
 
   // Form data
   const [investorDetails, setInvestorDetails] = useState<InvestorDetails>({
@@ -644,13 +657,15 @@ export default function InvestorCommit() {
       {/* Header */}
       <header className="h-14 bg-muted/30 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-2">
-          {companyInfo.logo && (
+          {companyInfo.logo && logoLoaded ? (
             <img 
               src={companyInfo.logo} 
               alt={companyInfo.name} 
               className="h-5 w-auto object-contain"
             />
-          )}
+          ) : companyInfo.logo ? (
+            <div className="h-5 w-5 bg-muted/50 rounded animate-pulse" />
+          ) : null}
           <span className="text-sm font-medium">{companyInfo.name} Investment Docket</span>
         </div>
         <div className="flex items-center gap-3">
