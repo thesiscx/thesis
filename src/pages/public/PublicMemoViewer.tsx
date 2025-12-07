@@ -209,7 +209,7 @@ export default function PublicMemoViewer() {
 
       <div className="flex pl-12 pr-6">
         {/* TOC Sidebar */}
-        <aside className="hidden lg:block w-56 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto pt-16">
+        <aside className="hidden lg:block w-56 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto pt-14">
           <nav className="pr-6">
             {tocItems.length > 0 && (
               <ul className="space-y-1">
@@ -236,7 +236,7 @@ export default function PublicMemoViewer() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 min-w-0 pt-10">
+        <main className="flex-1 min-w-0 pt-8">
           <div className="max-w-3xl pb-10">
             {isLoading ? (
               <div className="space-y-6">
