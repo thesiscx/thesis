@@ -206,8 +206,8 @@ export default function PublicMemoViewer() {
 
       <div className="flex">
         {/* TOC Sidebar */}
-        <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
-          <nav className="py-10 pl-12 pr-6">
+        <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto pt-10">
+          <nav className="pl-12 pr-6">
             {tocItems.length > 0 && (
               <ul className="space-y-1">
                 {tocItems.map((item) => (
