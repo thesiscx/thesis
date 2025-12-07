@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Lock, FileText, FileCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface InvestorAccessProps {
   tool: 'memo' | 'docket';
@@ -18,6 +19,31 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
   
   const [accessKey, setAccessKey] = useState("");
   const [isValidating, setIsValidating] = useState(false);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState<string | null>(null);
+
+  // Fetch company logo from profiles table
+  useEffect(() => {
+    const fetchCompanyLogo = async () => {
+      if (!companySlug) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url, company_name')
+        .eq('company_slug', companySlug)
+        .single();
+      
+      if (data?.avatar_url) {
+        setCompanyLogo(data.avatar_url);
+        setCompanyName(data.company_name);
+        // Preload the logo
+        const img = new Image();
+        img.src = data.avatar_url;
+      }
+    };
+    
+    fetchCompanyLogo();
+  }, [companySlug]);
 
   // Format access key as user types (xxxx-xxxx-xxxx-xxxx)
   const formatAccessKey = (value: string) => {
@@ -131,9 +157,17 @@ export default function InvestorAccess({ tool }: InvestorAccessProps) {
       <div className="w-full max-w-md space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary mb-4">
-            <ToolIcon className="h-8 w-8 text-foreground" />
-          </div>
+          {companyLogo ? (
+            <img 
+              src={companyLogo} 
+              alt={companyName || 'Company logo'} 
+              className="w-16 h-16 rounded-full object-cover mx-auto mb-4"
+            />
+          ) : (
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary mb-4">
+              <ToolIcon className="h-8 w-8 text-foreground" />
+            </div>
+          )}
           <h1 className="text-2xl font-heading font-semibold text-foreground">
             {tool === 'memo' ? 'Investment Memo' : 'Investment Agreement'}
           </h1>
