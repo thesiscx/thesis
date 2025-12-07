@@ -1323,6 +1323,15 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       // Don't set activeFlowId - each publish creates its own card that persists
       await addMessage("result", "Your memo has been published to your share subdomain.");
       toast({ title: "Published successfully" });
+      
+      // Log publish activity
+      if (user?.id) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "memo_published",
+          roundId,
+        });
+      }
     } catch (error) {
       toast({ 
         title: "Failed to publish", 
