@@ -275,7 +275,7 @@ export default function InvestorCommit() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={handleBackToMemo} className="gap-2 text-muted-foreground">
-              Back to Memo
+              Close
             </Button>
             <span className="text-sm text-muted-foreground">{investorSession.investorName}</span>
             <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
