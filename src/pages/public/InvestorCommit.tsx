@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import CommitmentSteps, { CommitmentStep } from "@/components/public/CommitmentSteps";
@@ -661,7 +661,7 @@ export default function InvestorCommit() {
             className="gap-2"
           >
             Exit
-            <ArrowRight className="h-4 w-4" />
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </header>
