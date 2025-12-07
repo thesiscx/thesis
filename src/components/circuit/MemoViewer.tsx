@@ -15,8 +15,8 @@ export default function MemoViewer({ content }: MemoViewerProps) {
   }
 
   return (
-    <div className="h-full overflow-y-auto px-16 py-6 bg-background">
-      <div className="max-w-4xl mx-auto">
+    <div className="h-full overflow-y-auto px-8 py-6 bg-background">
+      <div className="max-w-4xl">
         <TipTapRenderer content={content as any} />
       </div>
     </div>

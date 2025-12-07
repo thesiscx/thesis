@@ -210,8 +210,8 @@ export default function MemoEditor({
           <EditorToolbar editor={editor} />
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-16 py-6 bg-background">
-        <div className="max-w-4xl mx-auto">
+      <div className="flex-1 overflow-y-auto px-8 py-6 bg-background">
+        <div className="max-w-4xl">
           <EditorContent editor={editor} />
         </div>
       </div>
