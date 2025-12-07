@@ -125,7 +125,10 @@ export const InvestorAuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (!data || data.error) {
-        return { success: false, error: data?.error || 'Invalid access key' };
+        // Provide more specific error messages
+        const errorMessage = data?.error || 'Invalid access key';
+        console.log('[Investor Auth] Validation failed:', errorMessage);
+        return { success: false, error: errorMessage };
       }
 
       // Handle both investor-specific and global keys

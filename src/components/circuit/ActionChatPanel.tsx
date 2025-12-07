@@ -1730,8 +1730,10 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       }
 
       // Generate the share URL with investor slug for uniqueness
-      const shareUrl = profile?.company_slug && roundSlug
-        ? `${window.location.origin}/share/${profile.company_slug}/${roundSlug}/docket/${slug}`
+      // Use roundSlug prop or fallback to openRound.slug (for cases like Homepage where roundSlug isn't passed)
+      const roundSlugToUse = roundSlug || openRound?.slug;
+      const shareUrl = profile?.company_slug && roundSlugToUse
+        ? `${window.location.origin}/share/${profile.company_slug}/${roundSlugToUse}/docket/${slug}`
         : undefined;
 
       setGeneratedDocketUrl(shareUrl);

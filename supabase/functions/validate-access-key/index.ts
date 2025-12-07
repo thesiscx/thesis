@@ -49,7 +49,13 @@ Deno.serve(async (req) => {
       .eq('key', key.toLowerCase())
       .maybeSingle();
 
-    console.log('Key lookup result:', { accessKey, keyError, searchKey: key.toLowerCase() });
+    console.log('Key lookup result:', { 
+      found: !!accessKey, 
+      keyError: keyError?.message, 
+      searchKey: key.toLowerCase(),
+      status: accessKey?.status,
+      expiresAt: accessKey?.expires_at
+    });
 
     if (keyError) {
       console.error('Key lookup error:', keyError);
@@ -62,23 +68,25 @@ Deno.serve(async (req) => {
     if (!accessKey) {
       console.log('No access key found for:', key.toLowerCase());
       return new Response(
-        JSON.stringify({ error: 'Invalid access key' }),
+        JSON.stringify({ error: 'Invalid access key. Please check and try again.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Check if key is active
     if (accessKey.status !== 'active') {
+      console.log('Access key is not active:', accessKey.status);
       return new Response(
-        JSON.stringify({ error: 'Access key is inactive' }),
+        JSON.stringify({ error: `Access key is ${accessKey.status}. Please contact the company for a new key.` }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Check if key is expired
     if (accessKey.expires_at && new Date(accessKey.expires_at) < new Date()) {
+      console.log('Access key has expired:', accessKey.expires_at);
       return new Response(
-        JSON.stringify({ error: 'Access key has expired' }),
+        JSON.stringify({ error: 'Access key has expired. Please request a new key.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
