@@ -80,6 +80,10 @@ export default function InvestorCommit() {
     email: '',
     phone: '',
     address: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'United States',
     entityType: 'individual',
     entityName: '',
     entityJurisdiction: '',
@@ -228,7 +232,7 @@ export default function InvestorCommit() {
         // Find existing docket and restore state
         const query = supabase
           .from('dockets')
-          .select('id, custom_terms, commitment_flow_state, wire_received, wire_received_at')
+          .select('id, custom_terms, commitment_flow_state, wire_received, wire_received_at, investor_email')
           .eq('round_id', investorSession.roundId);
 
         if (investorSession.investorId) {
@@ -301,10 +305,12 @@ export default function InvestorCommit() {
         }));
 
         // Pre-fill investor details if available and not restored
-        if (investorSession.investorName && !stateRestored.current) {
+        if (!stateRestored.current) {
           setInvestorDetails(prev => ({
             ...prev,
             name: prev.name || investorSession.investorName || '',
+            // Email will be pre-filled from docket.investor_email if available
+            email: prev.email || docket?.investor_email || '',
           }));
         }
 
@@ -584,33 +590,35 @@ export default function InvestorCommit() {
 
   return (
     <div className="h-screen bg-muted/30 overflow-hidden flex flex-col">
-      {/* Close Terms Button - Top Left */}
-      <div className="absolute top-4 left-4 z-50">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleClose} 
-          className="gap-2 rounded-full px-4 bg-background hover:bg-muted"
-        >
-          <X className="h-4 w-4" />
-          Close Terms
-        </Button>
-      </div>
-
-      {/* Company Logo - Top Right */}
-      {companyInfo.logo && (
-        <div className="absolute top-4 right-4 z-50">
-          <img 
-            src={companyInfo.logo} 
-            alt={companyInfo.name} 
-            className="h-8 w-auto object-contain"
-          />
+      {/* Header */}
+      <header className="h-14 bg-background border-b flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center gap-2">
+          {companyInfo.logo && (
+            <img 
+              src={companyInfo.logo} 
+              alt={companyInfo.name} 
+              className="h-6 w-auto object-contain"
+            />
+          )}
+          <span className="font-medium">{companyInfo.name} Investment Docket</span>
         </div>
-      )}
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">{investorDetails.name || investorSession?.investorName || 'Investor'}</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleClose} 
+            className="gap-2"
+          >
+            <X className="h-4 w-4" />
+            Exit
+          </Button>
+        </div>
+      </header>
 
-      {/* Centered Card Container - Cut off at bottom */}
-      <div className="flex-1 flex items-start justify-center pt-16 pb-0 px-8">
-        <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex min-h-[600px] overflow-hidden">
+      {/* Centered Card Container - extends to bottom */}
+      <div className="flex-1 flex items-stretch justify-center px-8 pb-0">
+        <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex overflow-hidden mt-4">
           {/* Sidebar - No border-r, PoweredByCircuit at absolute bottom */}
           <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0">
             <div className="flex-1">
@@ -627,7 +635,7 @@ export default function InvestorCommit() {
           </aside>
 
           {/* Main Content - bg-muted to connect with active step */}
-          <main className="flex-1 min-w-0 py-8 px-6 lg:px-10 overflow-y-auto max-h-[calc(100vh-6rem)] bg-muted">
+          <main className="flex-1 min-w-0 py-8 px-6 lg:px-10 overflow-y-auto bg-muted">
             <div className="max-w-2xl pb-8">
               {currentStep === 'terms' && (
                 <ReviewTermsStep
