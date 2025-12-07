@@ -13,7 +13,7 @@ import GenerateDocumentStep from "@/components/public/steps/GenerateDocumentStep
 import SignAgreementStep from "@/components/public/steps/SignAgreementStep";
 import ConfirmationStep from "@/components/public/steps/ConfirmationStep";
 import { PoweredByCircuit } from "@/components/public/PoweredByCircuit";
-
+import { CircuitSplash } from "@/components/public/CircuitSplash";
 interface RoundTerms {
   valuation_cap: number | null;
   discount_rate: number | null;
@@ -42,6 +42,7 @@ export default function InvestorCommit() {
   const [instrumentType, setInstrumentType] = useState<string>('safe');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Form data
   const [investorDetails, setInvestorDetails] = useState<InvestorDetails>({
@@ -245,6 +246,11 @@ export default function InvestorCommit() {
 
   if (isAuthLoading || !investorSession || isLoading) {
     return null;
+  }
+
+  // Show splash screen first
+  if (showSplash) {
+    return <CircuitSplash onComplete={() => setShowSplash(false)} duration={2500} />;
   }
 
   return (
