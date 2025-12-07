@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import InvestorAccess from "./pages/public/InvestorAccess";
 import PublicMemoViewer from "./pages/public/PublicMemoViewer";
 import PublicDocketViewer from "./pages/public/PublicDocketViewer";
+import MemoPreview from "./pages/public/MemoPreview";
 import SmartRedirect from "./components/circuit/SmartRedirect";
 import { FounderAuthProvider, useFounderAuth } from "./contexts/FounderAuthContext";
 import { InvestorAuthProvider } from "./contexts/InvestorAuthContext";
@@ -185,6 +186,9 @@ const App = () => {
               <Route path="/share/:companySlug/:roundCode/docket/:investorSlug" element={<><RouteLogger name="share:docket:investor" /><InvestorAccess tool="docket" /></>} />
               <Route path="/share/:companySlug/:roundCode/docket/:investorSlug/view" element={<><RouteLogger name="share:docket:view" /><PublicDocketViewer /></>} />
             </Route>
+            
+            {/* Public Preview Routes - No auth needed, token-based */}
+            <Route path="/preview/memo/:token" element={<><RouteLogger name="preview:memo" /><MemoPreview /></>} />
             
             {/* 404 */}
             <Route path="*" element={<><RouteLogger name="404" /><NotFound /></>} />

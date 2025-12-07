@@ -149,6 +149,7 @@ export default function ThesisMemo() {
             isRestoringVersion={isRestoringVersion}
             isEditing={isEditing}
             onToggleEdit={() => setIsEditing(!isEditing)}
+            memoId={memo?.id}
           />
 
           {/* Main Content Area */}
