@@ -948,6 +948,148 @@ function AddInvestorFlow({
   );
 }
 
+// Add Docket flow - simpler version for creating dockets
+interface DocketFormData {
+  investor_name?: string;
+  investor_email?: string;
+}
+
+function AddDocketFlow({
+  onSubmit,
+  isLoading,
+  isComplete,
+  isHistorical,
+  savedData,
+  generatedUrl,
+  generatedKey,
+}: {
+  onSubmit: (data: DocketFormData) => void;
+  isLoading: boolean;
+  isComplete: boolean;
+  isHistorical?: boolean;
+  savedData?: DocketFormData & { url?: string; key?: string };
+  generatedUrl?: string;
+  generatedKey?: string;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<DocketFormData>({
+    ...savedData,
+  });
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: `${label} copied` });
+    } catch {
+      toast({ title: "Copy failed", variant: "destructive" });
+    }
+  };
+
+  // Completed state - show generated link and key
+  if (isComplete || isHistorical) {
+    const url = savedData?.url || generatedUrl;
+    const key = savedData?.key || generatedKey;
+    
+    return (
+      <div className={cn("rounded-xl border border-border p-4 space-y-3", isHistorical && "bg-secondary/30 opacity-60")}>
+        <div className="flex items-center gap-2 text-sm">
+          <Check className="w-4 h-4 text-green-600" />
+          <span className="font-medium">Docket created</span>
+          {(savedData?.investor_name || formData.investor_name) && (
+            <span className="text-muted-foreground">- {savedData?.investor_name || formData.investor_name}</span>
+          )}
+        </div>
+        {url && !isHistorical && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs bg-background px-2 py-1.5 rounded border border-border break-all">
+                {url}
+              </code>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => copyToClipboard(url, "URL")}
+                className="shrink-0 h-7 w-7 p-0"
+              >
+                <Copy className="w-3 h-3" />
+              </Button>
+            </div>
+            {key && (
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-secondary/50 px-2 py-1.5 rounded border border-border font-mono">
+                  {key}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => copyToClipboard(key, "Access key")}
+                  className="shrink-0 h-7 w-7 p-0"
+                >
+                  <Copy className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <FlowCard title="Add Docket">
+        <div className="flex flex-col items-center gap-3 py-4">
+          <Loader2 className="w-6 h-6 animate-spin text-foreground" />
+          <span className="text-sm text-muted-foreground animate-pulse">
+            Creating docket...
+          </span>
+        </div>
+      </FlowCard>
+    );
+  }
+
+  return (
+    <FlowCard title="Add Docket">
+      <p className="text-xs text-muted-foreground mb-3">
+        Create a docket for an investor to review and sign the SAFE agreement.
+      </p>
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Investor Name *</Label>
+          <Input
+            value={formData.investor_name || ""}
+            onChange={(e) => setFormData(prev => ({ ...prev, investor_name: e.target.value }))}
+            placeholder="John Smith"
+            className="bg-background"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Investor Email</Label>
+          <Input
+            value={formData.investor_email || ""}
+            onChange={(e) => setFormData(prev => ({ ...prev, investor_email: e.target.value }))}
+            placeholder="john@example.com"
+            type="email"
+            className="bg-background"
+          />
+        </div>
+      </div>
+
+      <Button 
+        size="sm" 
+        onClick={() => onSubmit(formData)} 
+        disabled={!formData.investor_name?.trim() || isLoading}
+        className="w-full"
+      >
+        {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FolderOpen className="w-4 h-4 mr-2" />}
+        Create Docket
+      </Button>
+    </FlowCard>
+  );
+}
+
 // Welcome messages for each page
 const WELCOME_MESSAGES: Record<PageKey, string> = {
   stage: "Welcome to Circuit. I'll help you manage your fundraising rounds. Use the actions below to open a new round or close your current one.",
@@ -1489,6 +1631,125 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
+  // State for docket creation
+  const [generatedDocketUrl, setGeneratedDocketUrl] = useState<string | undefined>();
+  const [generatedDocketKey, setGeneratedDocketKey] = useState<string | undefined>();
+
+  const handleAddDocket = async () => {
+    setGeneratedDocketUrl(undefined);
+    setGeneratedDocketKey(undefined);
+    const cardId = await createFlowCard("add-docket");
+    if (cardId) {
+      setActiveFlowId(cardId);
+    }
+  };
+
+  const confirmAddDocket = async (data: { investor_name?: string; investor_email?: string }) => {
+    if (!openRound || !data.investor_name?.trim() || !activeFlowId) return;
+    
+    setIsProcessing(true);
+    setProcessingAction("add-docket");
+    
+    try {
+      // Create slug from investor name
+      const slug = data.investor_name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+        .slice(0, 30);
+
+      // First create or find investor
+      let investorId: string;
+      
+      // Check if investor exists
+      const { data: existingInvestor } = await supabase
+        .from("investors")
+        .select("id")
+        .eq("slug", slug)
+        .eq("workspace_id", openRound.workspace_id)
+        .maybeSingle();
+      
+      if (existingInvestor) {
+        investorId = existingInvestor.id;
+      } else {
+        // Create new investor
+        const { data: newInvestor, error: investorError } = await supabase
+          .from("investors")
+          .insert({
+            name: data.investor_name.trim(),
+            slug,
+            email: data.investor_email?.trim() || null,
+            workspace_id: openRound.workspace_id,
+          })
+          .select("id")
+          .single();
+        
+        if (investorError) throw investorError;
+        investorId = newInvestor.id;
+      }
+
+      // Create docket for this investor
+      const { data: newDocket, error: docketError } = await supabase
+        .from("dockets")
+        .insert({
+          round_id: roundId,
+          investor_id: investorId,
+          investor_name: data.investor_name.trim(),
+          investor_email: data.investor_email?.trim() || null,
+          is_global: false,
+          status: "draft",
+          show_deal_terms: true,
+          created_by: user?.id,
+        })
+        .select("id")
+        .single();
+      
+      if (docketError) throw docketError;
+
+      // Generate access key
+      const { data: accessKeyData, error: keyError } = await supabase.functions.invoke("generate-access-key", {
+        body: { 
+          roundId: roundId, 
+          investorId: investorId,
+          tool: "docket" 
+        }
+      });
+
+      if (keyError) {
+        console.error("Failed to generate access key:", keyError);
+      }
+
+      // Generate the share URL
+      const shareUrl = profile?.company_slug && roundSlug
+        ? `${window.location.origin}/share/${profile.company_slug}/${roundSlug}/docket`
+        : undefined;
+
+      setGeneratedDocketUrl(shareUrl);
+      setGeneratedDocketKey(accessKeyData?.key);
+
+      await updateFlowCard(activeFlowId, 1, { 
+        ...data, 
+        url: shareUrl, 
+        key: accessKeyData?.key 
+      }, true);
+      
+      setActiveFlowId(null);
+      queryClient.invalidateQueries({ queryKey: ["dockets"] });
+      queryClient.invalidateQueries({ queryKey: ["investors"] });
+      toast({ title: "Docket created" });
+    } catch (error) {
+      console.error("Failed to create docket:", error);
+      toast({ 
+        title: "Failed to create docket", 
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsProcessing(false);
+      setProcessingAction(null);
+    }
+  };
+
   // Render a flow card from a database message
   const renderFlowCard = (msg: ActionMessage) => {
     const isActive = msg.id === activeFlowId && !msg.flow_complete;
@@ -1552,6 +1813,18 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             isComplete={isComplete}
             isHistorical={isHistorical}
             savedData={flowData as InvestorFormData}
+          />
+        );
+      case "add-docket":
+        return (
+          <AddDocketFlow
+            onSubmit={confirmAddDocket}
+            isLoading={isProcessing && isActive}
+            isComplete={isComplete}
+            isHistorical={isHistorical}
+            savedData={flowData as { investor_name?: string; investor_email?: string; url?: string; key?: string }}
+            generatedUrl={generatedDocketUrl}
+            generatedKey={generatedDocketKey}
           />
         );
       case "edit-memo":
@@ -1620,18 +1893,18 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
       case "docket":
         return [
           { 
+            key: "add-docket",
+            label: "Add Docket", 
+            icon: FolderOpen, 
+            onClick: handleAddDocket,
+            disabled: !hasOpenRound || isButtonDisabled("add-docket") || hasActiveFlow("add-docket")
+          },
+          { 
             key: "setup-terms",
             label: "Setup Terms", 
             icon: Settings, 
             onClick: handleSetupTerms,
             disabled: isButtonDisabled("setup-terms") || hasActiveFlow("setup-terms")
-          },
-          { 
-            key: "publish",
-            label: "Publish", 
-            icon: Globe, 
-            onClick: handlePublish,
-            disabled: isButtonDisabled("publish") // Publish always creates new card, no hasActiveFlow check
           },
         ];
       case "pipeline":
