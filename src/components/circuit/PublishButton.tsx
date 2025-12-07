@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { getRoundCode } from "@/hooks/useRounds";
+import { logActivity } from "@/lib/activityLogger";
 
 interface PublishButtonProps {
   roundId?: string;
@@ -45,7 +46,7 @@ export default function PublishButton({
   isPublished = false 
 }: PublishButtonProps) {
   const { toast } = useToast();
-  const { companySlug, profileLoaded } = useFounderAuth();
+  const { user, companySlug, profileLoaded } = useFounderAuth();
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -109,6 +110,15 @@ export default function PublishButton({
       setPublishSuccess(true);
       toast({ title: isPublished ? "Updated" : "Published" });
       
+      // Log publish activity
+      if (user?.id && roundId) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "memo_published",
+          roundId,
+        });
+      }
+      
       setTimeout(() => {
         setPublishSuccess(false);
       }, 3000);
@@ -144,6 +154,17 @@ export default function PublishButton({
       if (error) throw error;
       setAccessKey(data.key);
       setAccessKeyId(data.id);
+      
+      // Log access key generation
+      if (user?.id) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "access_key_generated",
+          roundId,
+          investorId: isGlobal ? undefined : investorId,
+          metadata: { tool },
+        });
+      }
     } catch (error: any) {
       console.error("Error generating access key:", error);
       if (error.message === 'Request timed out') {

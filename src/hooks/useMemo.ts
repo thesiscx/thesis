@@ -238,6 +238,16 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
       lastVersionTime.current = new Date();
       queryClient.invalidateQueries({ queryKey: ["memo", roundSlug, variantSlug] });
       queryClient.invalidateQueries({ queryKey: ["memo-versions", memo?.id] });
+      
+      // Log activity
+      if (user?.id && memo?.id) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "memo_version_created",
+          memoId: memo.id,
+          metadata: { version: memo.version || 1 },
+        });
+      }
     },
   });
 

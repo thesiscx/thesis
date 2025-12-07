@@ -24,6 +24,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { format } from "date-fns";
+import { logActivity } from "@/lib/activityLogger";
 
 interface InvestorDocketProps {
   roundSlug?: string;
@@ -238,6 +239,18 @@ export default function InvestorDocket({ roundSlug, investorSlug }: InvestorDock
       
       queryClient.invalidateQueries({ queryKey: ["docket", roundData?.id, investor?.id] });
       toast({ title: checked ? "Wire marked as received" : "Wire receipt cleared" });
+      
+      // Log wire received activity
+      if (checked && user?.id && roundData?.id) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "investor_funded",
+          roundId: roundData.id,
+          investorId: investor?.id,
+          docketId: docket.id,
+          metadata: { investor_name: investor?.name || "Unknown" },
+        });
+      }
     } catch (error) {
       toast({ title: "Failed to update", variant: "destructive" });
     } finally {
