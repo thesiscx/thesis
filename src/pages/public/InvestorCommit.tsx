@@ -376,7 +376,7 @@ export default function InvestorCommit() {
   }, []);
 
   // Step handlers with state persistence
-  const handleTermsContinue = () => {
+  const handleTermsContinue = async () => {
     const newCompleted = [...completedSteps];
     if (!newCompleted.includes('terms')) {
       newCompleted.push('terms');
@@ -384,6 +384,15 @@ export default function InvestorCommit() {
     setCompletedSteps(newCompleted);
     setCurrentStep('details');
     saveFlowState('details', newCompleted, investorDetails, investmentAmount, documentHtml);
+    
+    // Update docket status to 'viewed' when investor reviews terms
+    if (docketId) {
+      await supabase
+        .from('dockets')
+        .update({ status: 'viewed' })
+        .eq('id', docketId)
+        .eq('status', 'draft'); // Only update if still in draft
+    }
   };
 
   const handleDetailsContinue = (details: InvestorDetails) => {
@@ -617,7 +626,7 @@ export default function InvestorCommit() {
       </header>
 
       {/* Centered Card Container - extends to bottom */}
-      <div className="flex-1 flex items-stretch justify-center px-8 pb-0">
+      <div className="flex-1 flex items-stretch justify-center px-8 pb-0 overflow-hidden">
         <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex overflow-hidden mt-4">
           {/* Sidebar - No border-r, PoweredByCircuit at absolute bottom */}
           <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0">
@@ -635,8 +644,9 @@ export default function InvestorCommit() {
           </aside>
 
           {/* Main Content - bg-muted to connect with active step */}
-          <main className="flex-1 min-w-0 py-8 px-6 lg:px-10 overflow-y-auto bg-muted">
-            <div className="max-w-2xl pb-8">
+          <main className="flex-1 min-w-0 flex flex-col overflow-hidden bg-muted">
+            <div className="flex-1 overflow-y-auto py-8 px-6 lg:px-10">
+              <div className="max-w-2xl pb-8">
               {currentStep === 'terms' && (
                 <ReviewTermsStep
                   terms={terms}
@@ -713,6 +723,7 @@ export default function InvestorCommit() {
                   wireReceivedAt={wireReceivedAt}
                 />
               )}
+              </div>
             </div>
           </main>
         </div>
