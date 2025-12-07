@@ -54,7 +54,7 @@ export default function Index() {
           
           <div className="text-center space-y-2">
             <img src={circuitLogo} alt="Circuit" className="h-8 mx-auto" />
-            <p className="text-muted-foreground font-medium text-sm tracking-[0.3em]">
+            <p className="text-muted-foreground font-medium text-lg">
               Built to Raise
             </p>
           </div>
