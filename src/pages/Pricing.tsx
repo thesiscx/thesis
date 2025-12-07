@@ -18,95 +18,37 @@ export default function Pricing() {
           Simple, transparent pricing for founders.
         </p>
         
-        <div className="space-y-8">
-          {/* Free Tier */}
-          <div className="border border-border rounded-lg p-6">
-            <div className="flex items-baseline justify-between mb-4">
-              <h2 className="text-xl font-semibold">Starter</h2>
-              <div className="text-right">
-                <span className="text-2xl font-bold">$0</span>
+        <div className="border border-border rounded-lg p-6">
+          <div className="flex items-baseline justify-between mb-6">
+            <h2 className="text-xl font-semibold">Full Access</h2>
+            <div className="text-right">
+              <div>
+                <span className="text-2xl font-bold">$50</span>
                 <span className="text-muted-foreground text-sm">/month</span>
               </div>
+              <p className="text-xs text-muted-foreground">or $500/year</p>
             </div>
-            <p className="text-sm text-muted-foreground mb-6">
-              Everything you need to get started with your raise.
-            </p>
-            <ul className="space-y-3">
-              {[
-                "1 active fundraising round",
-                "Investment memo editor",
-                "Unlimited investor variants",
-                "Share links with access keys",
-                "Basic analytics"
-              ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm">
-                  <Check className="w-4 h-4 text-primary" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
           </div>
-
-          {/* Pro Tier */}
-          <div className="border border-primary/50 rounded-lg p-6 relative">
-            <div className="absolute -top-3 left-4 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded">
-              Coming Soon
-            </div>
-            <div className="flex items-baseline justify-between mb-4">
-              <h2 className="text-xl font-semibold">Pro</h2>
-              <div className="text-right">
-                <span className="text-2xl font-bold">$49</span>
-                <span className="text-muted-foreground text-sm">/month</span>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-6">
-              For founders running serious fundraising campaigns.
-            </p>
-            <ul className="space-y-3">
-              {[
-                "Unlimited fundraising rounds",
-                "AI-powered memo drafting",
-                "SAFE agreement generation",
-                "E-signature collection",
-                "Wire tracking & cap table sync",
-                "Advanced investor analytics",
-                "Custom subdomain publishing",
-                "Priority support"
-              ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm">
-                  <Check className="w-4 h-4 text-primary" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Enterprise */}
-          <div className="border border-border rounded-lg p-6">
-            <div className="flex items-baseline justify-between mb-4">
-              <h2 className="text-xl font-semibold">Enterprise</h2>
-              <div className="text-right">
-                <span className="text-lg font-medium text-muted-foreground">Custom</span>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-6">
-              For funds and accelerators managing multiple portfolio companies.
-            </p>
-            <ul className="space-y-3">
-              {[
-                "Multi-company workspace",
-                "Dedicated account manager",
-                "Custom integrations",
-                "SSO & advanced security",
-                "SLA & premium support"
-              ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm">
-                  <Check className="w-4 h-4 text-primary" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <p className="text-sm text-muted-foreground mb-6">
+            Everything you need to run your raise, end to end.
+          </p>
+          <ul className="space-y-3">
+            {[
+              "AI-automated investor pipeline",
+              "AI-generated investment memo",
+              "Custom subdomain publishing",
+              "Branded investor links",
+              "Unlimited investor dockets",
+              "End-to-end contract execution",
+              "E-signature collection",
+              "Official shareholder register"
+            ].map((feature) => (
+              <li key={feature} className="flex items-center gap-2 text-sm">
+                <Check className="w-4 h-4 text-primary" />
+                {feature}
+              </li>
+            ))}
+          </ul>
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-12">
