@@ -55,7 +55,7 @@ export default function Index() {
           <div className="text-center space-y-2">
             <img src={circuitLogo} alt="Circuit" className="h-8 mx-auto" />
             <p className="text-muted-foreground font-medium text-sm">
-              Automate Your Raise
+              Built to Raise
             </p>
           </div>
 
