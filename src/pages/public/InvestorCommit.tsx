@@ -12,6 +12,7 @@ import InvestmentAmountStep from "@/components/public/steps/InvestmentAmountStep
 import GenerateDocumentStep from "@/components/public/steps/GenerateDocumentStep";
 import SignAgreementStep from "@/components/public/steps/SignAgreementStep";
 import ConfirmationStep from "@/components/public/steps/ConfirmationStep";
+import { PoweredByCircuit } from "@/components/public/PoweredByCircuit";
 
 interface RoundTerms {
   valuation_cap: number | null;
@@ -348,6 +349,9 @@ export default function InvestorCommit() {
             </main>
           </div>
         </div>
+
+        {/* Powered by Circuit Footer */}
+        <PoweredByCircuit variant="footer" />
       </div>
     </div>
   );
