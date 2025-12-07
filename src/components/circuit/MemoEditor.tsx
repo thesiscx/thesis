@@ -87,7 +87,7 @@ export default function MemoEditor({
     extensions: [
       StarterKit.configure({
         heading: {
-          levels: [1], // Only H1 allowed for clean memo structure
+          levels: [1, 2], // Support H1 and H2 to properly load existing content
         },
       }),
       TextStyle,
