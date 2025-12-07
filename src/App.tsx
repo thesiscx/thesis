@@ -30,6 +30,7 @@ import PublicDocketViewer from "./pages/public/PublicDocketViewer";
 import MemoPreview from "./pages/public/MemoPreview";
 import InvestorCommit from "./pages/public/InvestorCommit";
 import SmartRedirect from "./components/circuit/SmartRedirect";
+import Homepage from "./pages/circuit/Homepage";
 import { FounderAuthProvider, useFounderAuth } from "./contexts/FounderAuthContext";
 import { InvestorAuthProvider } from "./contexts/InvestorAuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -159,7 +160,9 @@ const App = () => {
             
             {/* Protected founder routes - WITH AUTH CONTEXT */}
             <Route element={<FounderAuthLayout />}>
-              {/* Smart redirect for authenticated users - must be inside auth context */}
+              {/* Homepage for authenticated users */}
+              <Route path="/home" element={<><RouteLogger name="home" /><ProtectedRoute routeName="home"><Homepage /></ProtectedRoute></>} />
+              {/* Smart redirect for /app */}
               <Route path="/app" element={<><RouteLogger name="app" /><ProtectedRoute routeName="app"><SmartRedirect /></ProtectedRoute></>} />
               
               {/* Admin Routes */}
