@@ -29,7 +29,7 @@ export default function AssistantSidebar({
         <img src={circuitLogo} alt="Circuit" className="h-5" />
       </div>
 
-      {/* Content */}
+      {/* Content - ActionChatPanel already receives roundId */}
       <div className="flex-1 overflow-hidden">
         <ActionChatPanel 
           pageKey={pageKey} 

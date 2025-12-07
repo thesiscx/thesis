@@ -43,7 +43,11 @@ function parseToolCalls(content: string): { toolCalls: ToolCall[]; cleanContent:
   return { toolCalls: [], cleanContent: content };
 }
 
-export default function AIChatPanel() {
+interface AIChatPanelProps {
+  roundId?: string;
+}
+
+export default function AIChatPanel({ roundId }: AIChatPanelProps) {
   const { toast } = useToast();
   const { user, session } = useFounderAuth();
   const queryClient = useQueryClient();
@@ -52,17 +56,26 @@ export default function AIChatPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Use React Query for message caching - persists across navigations
+  // Use React Query for message caching - persists across navigations, filtered by round
   const { data: dbMessages = [], isLoading: isLoadingMessages, isFetched } = useQuery({
-    queryKey: ["circuit-chat-messages", user?.id],
+    queryKey: ["circuit-chat-messages", user?.id, roundId],
     queryFn: async () => {
-      console.log("[AIChatPanel] Fetching messages from DB for user:", user?.id);
+      console.log("[AIChatPanel] Fetching messages from DB for user:", user?.id, "round:", roundId);
       const start = performance.now();
       
-      const { data, error } = await supabase
+      let query = supabase
         .from("circuit_chat_messages")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", user!.id);
+      
+      // Filter by round if available
+      if (roundId) {
+        query = query.eq("round_id", roundId);
+      } else {
+        query = query.is("round_id", null);
+      }
+      
+      const { data, error } = await query
         .order("created_at", { ascending: true })
         .limit(100); // Get last 100 messages
 
@@ -106,6 +119,7 @@ export default function AIChatPanel() {
           user_id: user.id,
           role: "user",
           content,
+          round_id: roundId || null,
         })
         .select()
         .single();
@@ -127,6 +141,7 @@ export default function AIChatPanel() {
       },
       body: JSON.stringify({
         messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
+        roundId: roundId || null,
       }),
     });
 
@@ -286,7 +301,7 @@ export default function AIChatPanel() {
     }
 
     // Invalidate query to include new message
-    await queryClient.invalidateQueries({ queryKey: ["circuit-chat-messages", user.id] });
+    await queryClient.invalidateQueries({ queryKey: ["circuit-chat-messages", user.id, roundId] });
 
     try {
       const allMessages = [...messages, savedUserMessage];
@@ -305,7 +320,7 @@ export default function AIChatPanel() {
 
       // Invalidate to get the saved assistant message from DB
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["circuit-chat-messages", user.id] });
+        queryClient.invalidateQueries({ queryKey: ["circuit-chat-messages", user.id, roundId] });
         setLocalMessages([]); // Clear local messages once DB is updated
       }, 500);
     } catch (error) {

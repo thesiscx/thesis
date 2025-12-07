@@ -138,6 +138,7 @@ export type Database = {
           message_type: string
           metadata: Json | null
           page_key: string
+          round_id: string | null
           user_id: string
         }
         Insert: {
@@ -151,6 +152,7 @@ export type Database = {
           message_type: string
           metadata?: Json | null
           page_key: string
+          round_id?: string | null
           user_id: string
         }
         Update: {
@@ -164,9 +166,18 @@ export type Database = {
           message_type?: string
           metadata?: Json | null
           page_key?: string
+          round_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "action_messages_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       circuit_chat_messages: {
         Row: {
@@ -175,6 +186,7 @@ export type Database = {
           id: string
           is_archived: boolean
           role: string
+          round_id: string | null
           user_id: string
         }
         Insert: {
@@ -183,6 +195,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           role: string
+          round_id?: string | null
           user_id: string
         }
         Update: {
@@ -191,9 +204,18 @@ export type Database = {
           id?: string
           is_archived?: boolean
           role?: string
+          round_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "circuit_chat_messages_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dockets: {
         Row: {
