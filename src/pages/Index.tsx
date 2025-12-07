@@ -9,6 +9,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function Index() {
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [logoLoaded, setLogoLoaded] = useState(false);
+
+  // Preload the Circuit logo
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setLogoLoaded(true);
+    img.src = circuitLogo;
+  }, []);
 
   useEffect(() => {
     // Check for existing session
@@ -53,7 +61,11 @@ export default function Index() {
           <FeatureStream />
           
           <div className="text-center space-y-2">
-            <img src={circuitLogo} alt="Circuit" className="h-8 mx-auto" />
+            {logoLoaded ? (
+              <img src={circuitLogo} alt="Circuit" className="h-8 mx-auto" />
+            ) : (
+              <div className="h-8 w-24 bg-muted/50 rounded mx-auto animate-pulse" />
+            )}
             <p className="text-muted-foreground font-medium text-lg">
               Raise Clarity
             </p>
