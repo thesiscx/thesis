@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Download, FileSignature, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { PoweredByCircuit } from "@/components/public/PoweredByCircuit";
 
 interface SignAgreementStepProps {
   documentHtml: string;
@@ -177,6 +178,11 @@ export default function SignAgreementStep({
         {error && (
           <p className="text-sm text-destructive">{error}</p>
         )}
+
+        {/* Trust Badge */}
+        <div className="flex justify-end">
+          <PoweredByCircuit variant="badge" />
+        </div>
       </div>
 
       <div className="flex gap-3">
