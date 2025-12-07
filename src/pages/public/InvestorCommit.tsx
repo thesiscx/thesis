@@ -235,6 +235,10 @@ export default function InvestorCommit() {
     }
   };
 
+  const handleBackToMemo = () => {
+    navigate(`/share/${companySlug}/${roundCode}/memo/view`);
+  };
+
   const handleClose = () => {
     navigate(`/share/${companySlug}/${roundCode}/memo/view`);
   };
@@ -269,7 +273,10 @@ export default function InvestorCommit() {
               <span className="text-muted-foreground">Investment Commitment</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleBackToMemo} className="gap-2 text-muted-foreground">
+              Back to Memo
+            </Button>
             <span className="text-sm text-muted-foreground">{investorSession.investorName}</span>
             <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
               <LogOut className="h-4 w-4" />
