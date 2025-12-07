@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
 import contractIcon from "@/assets/contract-icon.svg";
+
 interface RoundTerms {
   valuation_cap: number | null;
   discount_rate: number | null;
@@ -72,10 +73,10 @@ export default function DealTermsCard() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40">
+    <div className="fixed bottom-0 right-6 z-40">
       <button
         onClick={handleReviewClick}
-        className="group relative w-28 h-28 bg-background border border-border rounded-2xl shadow-lg hover:shadow-xl transition-all hover:border-primary/50 overflow-hidden"
+        className="group relative w-28 h-32 bg-background border border-border border-b-0 rounded-t-2xl shadow-lg hover:shadow-xl transition-all hover:border-primary/50 overflow-hidden"
       >
         {/* Label at top with subtext */}
         <div className="absolute inset-x-0 top-0 p-3 z-10 bg-gradient-to-b from-background via-background/80 to-transparent">
@@ -87,12 +88,12 @@ export default function DealTermsCard() {
           </span>
         </div>
         
-        {/* Large contract icon - positioned at bottom, cut off, extra large for tilt */}
-        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 transition-transform duration-300 ease-out group-hover:rotate-12 origin-center">
+        {/* Large contract icon - positioned to bleed off bottom edge */}
+        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 transition-transform duration-300 ease-out group-hover:rotate-12 origin-center">
           <img 
             src={contractIcon}
             alt="Contract"
-            className="w-24 h-24" 
+            className="w-28 h-28" 
           />
         </div>
       </button>

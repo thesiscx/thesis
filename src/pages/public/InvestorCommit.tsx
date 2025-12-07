@@ -281,10 +281,8 @@ export default function InvestorCommit() {
     goToStep('wire');
   }, []);
 
-  const handleWireContinue = () => {
-    markStepComplete('wire');
-    goToStep('finalize');
-  };
+  // Wire step no longer has continue - finalize only accessible when wire_received is true
+  // For now, mark wire complete when execute completes since we show awaiting status
 
   const handleClose = () => {
     navigate(`/share/${companySlug}/${roundCode}/memo/view`);
@@ -414,7 +412,6 @@ export default function InvestorCommit() {
                   amount={investmentAmount}
                   companyName={investorSession.companyName || ''}
                   wireInstructions={terms}
-                  onContinue={handleWireContinue}
                 />
               )}
 

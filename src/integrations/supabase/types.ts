@@ -220,6 +220,7 @@ export type Database = {
       dockets: {
         Row: {
           amount: number | null
+          commitment_flow_state: Json | null
           commitment_status: string | null
           content: Json
           created_at: string
@@ -242,6 +243,7 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
+          commitment_flow_state?: Json | null
           commitment_status?: string | null
           content?: Json
           created_at?: string
@@ -264,6 +266,7 @@ export type Database = {
         }
         Update: {
           amount?: number | null
+          commitment_flow_state?: Json | null
           commitment_status?: string | null
           content?: Json
           created_at?: string
