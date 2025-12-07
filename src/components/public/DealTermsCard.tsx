@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowRight, FileText } from "lucide-react";
+import { FileSignature } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
 
@@ -30,7 +30,6 @@ export default function DealTermsCard() {
       if (!investorSession?.roundId) return;
 
       try {
-        // Fetch round terms
         const { data: roundTerms } = await supabase
           .from('round_terms')
           .select('valuation_cap, discount_rate, minimum_ticket, pro_rata_enabled, mfn_enabled')
@@ -39,7 +38,6 @@ export default function DealTermsCard() {
 
         setTerms(roundTerms);
 
-        // Check docket settings if investor-specific
         if (investorSession.investorId) {
           const { data: docket } = await supabase
             .from('dockets')
@@ -62,25 +60,13 @@ export default function DealTermsCard() {
     fetchTerms();
   }, [investorSession]);
 
-  // Don't show if docket explicitly hides deal terms
   if (docketSettings && !docketSettings.show_deal_terms) {
     return null;
   }
 
-  // Don't show if loading or no terms
   if (isLoading || !terms) {
     return null;
   }
-
-  const formatCurrency = (amount: number) => {
-    if (amount >= 1000000) {
-      return `$${(amount / 1000000).toFixed(1)}M`;
-    }
-    if (amount >= 1000) {
-      return `$${(amount / 1000).toFixed(0)}K`;
-    }
-    return `$${amount}`;
-  };
 
   const handleReviewClick = () => {
     navigate(`/share/${companySlug}/${roundCode}/invest`);
@@ -90,31 +76,28 @@ export default function DealTermsCard() {
     <div className="fixed bottom-6 right-6 z-40">
       <button
         onClick={handleReviewClick}
-        className="group flex items-center gap-4 bg-background border border-border rounded-lg px-5 py-4 shadow-lg hover:shadow-xl transition-all hover:border-primary/50"
+        className="group relative w-28 h-28 bg-background border border-border rounded-2xl shadow-lg hover:shadow-xl transition-all hover:border-primary/50 overflow-hidden"
       >
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary">
-          <FileText className="w-5 h-5" />
+        {/* Large icon - centered and cut off at bottom */}
+        <div className="absolute inset-0 flex items-center justify-center pt-2">
+          <FileSignature 
+            className="w-20 h-20 text-muted-foreground/20 transition-transform duration-300 ease-out group-hover:rotate-12 group-hover:text-primary/30" 
+            strokeWidth={1.5}
+          />
         </div>
         
-        <div className="text-left">
-          <div className="font-heading font-medium text-foreground text-sm">
+        {/* Label overlay at top */}
+        <div className="absolute inset-x-0 top-0 p-3 bg-gradient-to-b from-background via-background/90 to-transparent">
+          <span className="font-heading font-medium text-foreground text-sm">
             Deal Terms
-          </div>
-          <div className="text-xs text-muted-foreground mt-0.5">
-            {terms.valuation_cap && (
-              <span>{formatCurrency(terms.valuation_cap)} cap</span>
-            )}
-            {terms.valuation_cap && terms.discount_rate && (
-              <span className="mx-1">·</span>
-            )}
-            {terms.discount_rate && (
-              <span>{terms.discount_rate}% discount</span>
-            )}
-          </div>
+          </span>
         </div>
-
-        <div className="ml-2 text-muted-foreground group-hover:text-primary transition-colors">
-          <ArrowRight className="w-4 h-4" />
+        
+        {/* Bottom hint */}
+        <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-background via-background/90 to-transparent">
+          <span className="text-[10px] text-muted-foreground">
+            View & Invest →
+          </span>
         </div>
       </button>
     </div>
