@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Download, FileSignature, Loader2 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArrowLeft, Download, FileSignature, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { PoweredByCircuit } from "@/components/public/PoweredByCircuit";
 
@@ -29,6 +28,7 @@ export default function SignAgreementStep({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const documentRef = useRef<HTMLDivElement>(null);
 
   const handleSign = async () => {
@@ -94,17 +94,17 @@ export default function SignAgreementStep({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-heading font-semibold text-foreground">
           Review & Sign
         </h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-muted-foreground mt-1.5 text-sm">
           Review the agreement below and sign to confirm your investment.
         </p>
       </div>
 
-      {/* Document Preview */}
+      {/* Document Preview - Collapsible */}
       <div className="border border-border rounded-lg overflow-hidden bg-white">
         <div className="bg-muted/30 px-4 py-2 border-b border-border flex items-center justify-between">
           <span className="text-sm font-medium text-muted-foreground">SAFE Agreement</span>
@@ -123,31 +123,60 @@ export default function SignAgreementStep({
             Download PDF
           </Button>
         </div>
-        <ScrollArea className="h-[350px]">
+        
+        {/* Collapsible document content */}
+        <div className="relative">
           <div 
             ref={documentRef}
-            className="p-6 prose prose-sm max-w-none"
+            className={`p-6 prose prose-sm max-w-none overflow-hidden transition-all duration-300 ${
+              isExpanded ? 'max-h-[500px] overflow-y-auto' : 'max-h-[180px]'
+            }`}
             dangerouslySetInnerHTML={{ __html: documentHtml }}
           />
-        </ScrollArea>
+          
+          {/* Fade overlay when collapsed */}
+          {!isExpanded && (
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+          )}
+        </div>
+
+        {/* View More / View Less button */}
+        <div className="border-t border-border/50 bg-muted/20">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="w-full h-9 rounded-none text-muted-foreground hover:text-foreground gap-1.5"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="w-4 h-4" />
+                View Less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                View Full Agreement
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Signature Section */}
-      <div className="bg-muted/30 rounded-lg p-6 space-y-4">
+      <div className="bg-muted/30 rounded-lg p-5 space-y-4">
         <div className="flex items-center gap-2 text-foreground">
           <FileSignature className="w-5 h-5" />
           <h2 className="font-medium">Electronic Signature</h2>
         </div>
 
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           By typing your name below, you acknowledge that this constitutes your legal signature 
-          and that you agree to the terms of this SAFE agreement pursuant to the Electronic 
-          Signatures in Global and National Commerce Act (E-Sign Act) and the Uniform Electronic 
-          Transactions Act (UETA).
+          and that you agree to the terms of this SAFE agreement pursuant to the E-Sign Act and UETA.
         </p>
 
         <div className="space-y-2">
-          <Label htmlFor="signature">Type your full legal name to sign</Label>
+          <Label htmlFor="signature" className="text-sm">Type your full legal name to sign</Label>
           <Input
             id="signature"
             value={signature}
@@ -156,7 +185,7 @@ export default function SignAgreementStep({
             className="font-serif text-lg italic bg-background"
           />
           {signature && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Signed as: <span className="font-serif italic">{signature}</span>
             </p>
           )}
@@ -168,7 +197,7 @@ export default function SignAgreementStep({
             checked={agreedToTerms}
             onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
           />
-          <Label htmlFor="agree" className="text-sm text-muted-foreground font-normal leading-relaxed cursor-pointer">
+          <Label htmlFor="agree" className="text-xs text-muted-foreground font-normal leading-relaxed cursor-pointer">
             I have read and agree to the terms of this SAFE agreement. I understand that this 
             constitutes a legally binding agreement and that my electronic signature has the 
             same legal effect as a handwritten signature.
