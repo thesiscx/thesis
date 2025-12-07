@@ -125,7 +125,7 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
     if (!jsonContent.content) return [];
     
     const items: TocItem[] = [];
-    let h1Index = 0;
+    let headingIndex = 0;
     
     const traverse = (nodes: any[]) => {
       for (const node of nodes) {
@@ -137,11 +137,11 @@ export function useMemo(roundSlug?: string, variantSlug?: string) {
           
           if (text.trim()) {
             items.push({
-              id: `h1-${h1Index}`,
+              id: `heading-${headingIndex}`,
               label: text.trim(),
               level: 1,
             });
-            h1Index++;
+            headingIndex++;
           }
         }
         if (node.content) {
