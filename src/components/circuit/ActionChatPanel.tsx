@@ -148,24 +148,24 @@ function CloseRoundFlow({
   );
 }
 
-// Published memo flow - shows generated link and docket generation options
+// Published memo flow - shows generated link and investor memo links
 function PublishFlow({
   roundId,
   roundSlug,
   companySlug,
   investors,
-  onGenerateDocket,
+  onGenerateMemoLink,
   isLoading,
-  generatedDockets,
+  generatedMemoLinks,
   isHistorical,
 }: {
   roundId: string;
   roundSlug?: string;
   companySlug?: string;
   investors: { id: string; name: string; slug: string }[];
-  onGenerateDocket: (investorId: string, investorName: string) => void;
+  onGenerateMemoLink: (investorId: string, investorSlug: string, investorName: string) => void;
   isLoading: boolean;
-  generatedDockets: Record<string, boolean>;
+  generatedMemoLinks: Record<string, { url: string; key: string }>;
   isHistorical?: boolean;
 }) {
   const { toast } = useToast();
@@ -206,9 +206,9 @@ function PublishFlow({
     }
   }, [roundId, roundSlug, isHistorical]);
 
-  const goToDocket = () => {
+  const goToInvestorMemo = (investorSlug: string) => {
     if (roundSlug) {
-      navigate(`/${roundSlug}/docket`);
+      navigate(`/${roundSlug}/memo/${investorSlug}`);
     }
   };
 
@@ -267,42 +267,42 @@ function PublishFlow({
         {!isHistorical && (
           <div className="border-t border-border pt-3 space-y-2">
             <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <FolderOpen className="w-3.5 h-3.5" />
-              Generate Investor Dockets
+              <Users className="w-3.5 h-3.5" />
+              Investor Memos
             </Label>
             {investors.length === 0 ? (
               <p className="text-xs text-muted-foreground">No investors in your pipeline yet.</p>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {investors.map((inv) => {
-                  const isGenerated = generatedDockets[inv.id];
+                  const memoLink = generatedMemoLinks[inv.id];
                   return (
                     <div key={inv.id} className="p-3 rounded-lg bg-background border border-border space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">{inv.name}</span>
-                        {!isGenerated ? (
+                        {!memoLink ? (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => onGenerateDocket(inv.id, inv.name)}
+                            onClick={() => onGenerateMemoLink(inv.id, inv.slug, inv.name)}
                             disabled={isLoading}
                             className="h-7 text-xs"
                           >
-                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate Docket"}
+                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate Link"}
                           </Button>
                         ) : (
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Check className="w-3 h-3 text-green-600" />
-                              Generated
+                              Link Ready
                             </span>
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={goToDocket}
+                              onClick={() => goToInvestorMemo(inv.slug)}
                               className="h-7 text-xs gap-1"
                             >
-                              Go to Docket
+                              View
                               <ArrowRight className="w-3 h-3" />
                             </Button>
                           </div>
@@ -1117,8 +1117,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   const [draftData, setDraftData] = useState<DraftData>({});
   const [termsStep, setTermsStep] = useState(0);
   const [termsData, setTermsData] = useState<TermsData>({});
-  const [generatedDockets, setGeneratedDockets] = useState<Record<string, boolean>>({});
-  
+  const [generatedMemoLinks, setGeneratedMemoLinks] = useState<Record<string, { url: string; key: string }>>({});
   // Edit memo state
   const [editMemoPrompt, setEditMemoPrompt] = useState("");
 
@@ -1615,24 +1614,45 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
-  const generateDocket = async (investorId: string, investorName: string) => {
-    if (!roundId) return;
+  const generateMemoLink = async (investorId: string, investorSlug: string, investorName: string) => {
+    if (!roundId || !roundSlug) return;
     
     setIsProcessing(true);
     
     try {
-      // Mark the docket as generated
-      setGeneratedDockets(prev => ({
+      // Generate access key for this investor's memo
+      const { data } = await supabase.functions.invoke("generate-access-key", {
+        body: { roundId, investorId, tool: "memo" }
+      });
+
+      // Build the share URL
+      const shareUrl = profile?.company_slug 
+        ? `${window.location.origin}/share/${profile.company_slug}/${roundSlug}/memo/${investorSlug}`
+        : "";
+
+      // Store the generated link info
+      setGeneratedMemoLinks(prev => ({
         ...prev,
-        [investorId]: true
+        [investorId]: { url: shareUrl, key: data?.key || "" }
       }));
       
-      await addMessage("result", `Docket generated for ${investorName}`);
+      await addMessage("result", `Memo link generated for ${investorName}`);
       
-      toast({ title: `Docket created for ${investorName}` });
+      toast({ title: `Memo link created for ${investorName}` });
+
+      // Log activity
+      if (user?.id) {
+        logActivity({
+          workspaceId: user.id,
+          actionType: "memo_link_generated",
+          roundId: roundId,
+          investorId: investorId,
+          metadata: { investor_name: investorName },
+        });
+      }
     } catch (error) {
       toast({ 
-        title: "Failed to generate docket", 
+        title: "Failed to generate memo link", 
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive" 
       });
@@ -1801,9 +1821,9 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             roundSlug={roundSlug}
             companySlug={profile?.company_slug || undefined}
             investors={investors}
-            onGenerateDocket={generateDocket}
+            onGenerateMemoLink={generateMemoLink}
             isLoading={isProcessing && isActive}
-            generatedDockets={generatedDockets}
+            generatedMemoLinks={generatedMemoLinks}
             isHistorical={isHistorical}
           />
         ) : null;

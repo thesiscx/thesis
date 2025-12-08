@@ -4,6 +4,7 @@ import CircuitLayout from "@/components/circuit/CircuitLayout";
 import MemoEditor from "@/components/circuit/MemoEditor";
 import MemoViewer from "@/components/circuit/MemoViewer";
 import MemoSidebar from "@/components/circuit/MemoSidebar";
+import { InvestorMemoSidebar } from "@/components/circuit/InvestorMemoSidebar";
 import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
 import { useRounds } from "@/hooks/useRounds";
 import { useInvestors } from "@/hooks/useInvestors";
@@ -12,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 
 export default function ThesisMemo() {
@@ -38,8 +39,25 @@ export default function ThesisMemo() {
   } = useMemo(roundSlug, variantSlug);
 
   const isLoading = memoLoading;
+  
+  // Determine if we're on an investor-specific memo page
+  const isInvestorView = Boolean(variantSlug && variantSlug !== "global");
 
-  // Callback to handle memo content update from Draft Memo wizard
+  // Fetch round ID for investor sidebar
+  const { data: roundData } = useQuery({
+    queryKey: ["round-by-slug", roundSlug, user?.id],
+    queryFn: async () => {
+      if (!user?.id || !roundSlug) return null;
+      const { data } = await supabase
+        .from("rounds")
+        .select("id")
+        .eq("slug", roundSlug)
+        .eq("created_by", user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id && !!roundSlug && isInvestorView,
+  });
   const handleUpdateMemoContent = useCallback(async (content: any) => {
     if (!user?.id || !roundSlug) {
       console.error("Missing user or roundSlug");
@@ -139,18 +157,26 @@ export default function ThesisMemo() {
         currentMemoContent={currentMemoContent}
       >
         <div className="flex h-[calc(100vh-3.5rem)]">
-          {/* Left Sidebar - TOC */}
-          <MemoSidebar 
-            tocItems={tocItems}
-            lastSaved={lastSaved}
-            isSaving={isSaving}
-            versions={versions}
-            onRestoreVersion={restoreVersion}
-            isRestoringVersion={isRestoringVersion}
-            isEditing={isEditing}
-            onToggleEdit={() => setIsEditing(!isEditing)}
-            memoId={memo?.id}
-          />
+          {/* Left Sidebar - Investor sidebar or TOC */}
+          {isInvestorView ? (
+            <InvestorMemoSidebar 
+              roundSlug={roundSlug!}
+              investorSlug={variantSlug!}
+              roundId={roundData?.id}
+            />
+          ) : (
+            <MemoSidebar 
+              tocItems={tocItems}
+              lastSaved={lastSaved}
+              isSaving={isSaving}
+              versions={versions}
+              onRestoreVersion={restoreVersion}
+              isRestoringVersion={isRestoringVersion}
+              isEditing={isEditing}
+              onToggleEdit={() => setIsEditing(!isEditing)}
+              memoId={memo?.id}
+            />
+          )}
 
           {/* Main Content Area */}
           <div className="flex-1 overflow-hidden flex flex-col">
