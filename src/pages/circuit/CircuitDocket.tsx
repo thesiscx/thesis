@@ -23,16 +23,16 @@ export default function ThesisDocket() {
   const isGlobal = !variantSlug || variantSlug === "global";
   const isInvestorSubpage = !isGlobal;
 
-  // Fetch investor name for breadcrumb when on investor docket page
-  const { data: investorData } = useQuery({
-    queryKey: ["investor-for-breadcrumb", variantSlug, roundSlug, user?.id],
+  // Fetch investor and docket data for breadcrumb when on investor docket page
+  const { data: docketData } = useQuery({
+    queryKey: ["docket-for-breadcrumb", variantSlug, roundSlug, user?.id],
     queryFn: async () => {
       if (!variantSlug || variantSlug === "global" || !roundSlug || !user?.id) return null;
       
       // Get round to find workspace_id
       const { data: round } = await supabase
         .from("rounds")
-        .select("workspace_id")
+        .select("id, workspace_id")
         .eq("slug", roundSlug)
         .eq("created_by", user.id)
         .single();
@@ -41,24 +41,37 @@ export default function ThesisDocket() {
       
       const { data: investor } = await supabase
         .from("investors")
-        .select("id, name")
+        .select("id, name, slug")
         .eq("slug", variantSlug)
         .eq("workspace_id", round.workspace_id)
         .single();
       
-      return investor;
+      if (!investor) return null;
+
+      // Get docket for this investor to retrieve docket_id
+      const { data: docket } = await supabase
+        .from("dockets")
+        .select("id, docket_id, docket_number")
+        .eq("round_id", round.id)
+        .eq("investor_id", investor.id)
+        .maybeSingle();
+      
+      return { investor, docket };
     },
     enabled: !!variantSlug && variantSlug !== "global" && !!roundSlug && !!user?.id,
   });
 
-  // Build breadcrumb for investor docket pages
-  const breadcrumb = !isGlobal && investorData?.name 
-    ? { label: investorData.name }
+  // Build breadcrumb for investor docket pages - use docket_id instead of name
+  const breadcrumb = !isGlobal && docketData?.docket?.docket_id 
+    ? { label: docketData.docket.docket_id }
+    : !isGlobal && docketData?.investor?.name
+    ? { label: docketData.investor.name }
     : !isGlobal && variantSlug
     ? { label: variantSlug.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) }
     : undefined;
 
-  const investorName = investorData?.name || variantSlug?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "Investor";
+  const investorName = docketData?.investor?.name || variantSlug?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "Investor";
+  const investorData = docketData?.investor;
 
   if (roundsLoading) {
     return (
