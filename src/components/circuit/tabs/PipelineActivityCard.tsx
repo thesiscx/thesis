@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clock, Activity, Mail } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
@@ -36,18 +35,18 @@ export function PipelineActivityCard({ investorId, investorName }: PipelineActiv
 
   if (isLoading) {
     return (
-      <Card className="border-border bg-transparent">
-        <CardHeader className="py-3 border-b border-border">
+      <div className="rounded-xl border border-border bg-transparent overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
           <Skeleton className="h-5 w-40" />
-        </CardHeader>
-        <CardContent className="pt-4">
+        </div>
+        <div className="p-4">
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
@@ -58,14 +57,12 @@ export function PipelineActivityCard({ investorId, investorName }: PipelineActiv
 
   return (
     <>
-      <Card className="border-border bg-transparent">
-        <CardHeader className="py-3 border-b border-border">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Activity className="w-4 h-4" />
-            Activity & Communication
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 space-y-4">
+      <div className="rounded-xl border border-border bg-transparent overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <Activity className="w-4 h-4 text-foreground" />
+          <span className="text-sm font-medium">Activity & Communication</span>
+        </div>
+        <div className="p-4 space-y-4">
           {investorName && (
             <p className="text-xs text-muted-foreground">{investorName}</p>
           )}
@@ -114,8 +111,8 @@ export function PipelineActivityCard({ investorId, investorName }: PipelineActiv
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       <StatusLine status="idle" idleText={statusText} />
     </>
   );
