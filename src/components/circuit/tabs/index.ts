@@ -16,3 +16,4 @@ export { ManageInvestorCard } from "./ManageInvestorCard";
 export { AccessLogsCard } from "./AccessLogsCard";
 export { DocketStatusCard } from "./DocketStatusCard";
 export { PipelineActivityCard } from "./PipelineActivityCard";
+export { ExportDocketCard } from "./ExportDocketCard";
