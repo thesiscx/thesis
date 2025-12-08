@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserPlus, Loader2 } from "lucide-react";
+import { UserPlus, Loader2, Mail, RefreshCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,6 +109,32 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
 
   return (
     <>
+      {/* Gmail Sync Bar */}
+      <div className="rounded-xl border border-border bg-transparent overflow-hidden mb-4">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Mail className="w-4 h-4 text-foreground" />
+            <span className="text-sm font-medium">Synced with Gmail</span>
+            <Check className="w-3.5 h-3.5 text-muted-foreground" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Last sync: 2m ago</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 w-7 p-0"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Manual Update Section */}
+      <div className="mb-3">
+        <span className="text-xs text-muted-foreground uppercase tracking-wide">Manual Update</span>
+      </div>
+
       <div className="rounded-xl border border-border bg-transparent overflow-hidden">
         <div className="px-4 py-3 border-b border-border flex items-center gap-2">
           <UserPlus className="w-4 h-4 text-foreground" />
