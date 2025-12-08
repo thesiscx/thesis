@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,9 +25,19 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import CircuitLayout from "@/components/circuit/CircuitLayout";
 import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
 import InvestorPipeline from "@/components/circuit/pipeline/InvestorPipeline";
@@ -35,36 +45,32 @@ import { useRounds } from "@/hooks/useRounds";
 import { useInvestors } from "@/hooks/useInvestors";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
 import { logActivity } from "@/lib/activityLogger";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
+import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 import {
   Search,
-  MoreHorizontal,
-  FileText,
-  FolderOpen,
-  Trash2,
-  Pencil,
   Users,
+  Filter,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
+// Pipeline status flow: prospect -> pitch -> contract -> won/lost
 const STATUS_OPTIONS = [
   { value: "prospect", label: "Prospect", color: "bg-muted text-muted-foreground" },
-  { value: "contacted", label: "Contacted", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
-  { value: "interested", label: "Interested", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" },
-  { value: "committed", label: "Committed", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
-  { value: "signed", label: "Signed", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" },
-  { value: "declined", label: "Declined", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+  { value: "pitch", label: "Pitch", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  { value: "contract", label: "Contract", color: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
+  { value: "won", label: "Won", color: "bg-green-600/10 text-green-700 border-green-600/20" },
+  { value: "lost", label: "Lost", color: "bg-muted text-muted-foreground opacity-60" },
 ] as const;
 
 type InvestorStatus = typeof STATUS_OPTIONS[number]["value"];
+
+type SortField = "name" | "entity" | "email" | "lastContact" | "status";
+type SortDirection = "asc" | "desc";
 
 interface InvestorFormData {
   name: string;
@@ -90,6 +96,13 @@ export default function ThesisCircuit() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [investorData, setInvestorData] = useState<{ id: string; name: string } | null>(null);
+  
+  // Filter & sort state
+  const [activeFilters, setActiveFilters] = useState<InvestorStatus[]>([
+    "prospect", "pitch", "contract", "won"
+  ]);
+  const [sortField, setSortField] = useState<SortField>("lastContact");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const [formData, setFormData] = useState<InvestorFormData>({
     name: "",
@@ -104,10 +117,127 @@ export default function ThesisCircuit() {
 
   const activeRound = rounds?.find((r) => r.slug === roundSlug);
 
-  const filteredInvestors = investors?.filter((inv) =>
-    inv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    inv.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  // Fetch last contact times from activity_logs
+  const { data: lastContactMap = {} } = useQuery({
+    queryKey: ["investor-last-contact", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return {};
+      
+      // Get most recent activity per investor
+      const { data, error } = await supabase
+        .from("activity_logs")
+        .select("investor_id, created_at")
+        .eq("workspace_id", user.id)
+        .not("investor_id", "is", null)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      
+      // Build map of investor_id -> most recent created_at
+      const map: Record<string, string> = {};
+      data?.forEach((log) => {
+        if (log.investor_id && !map[log.investor_id]) {
+          map[log.investor_id] = log.created_at;
+        }
+      });
+      return map;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Filter, sort, and transform investors
+  const filteredInvestors = useMemo(() => {
+    if (!investors) return [];
+    
+    let processed = investors
+      .filter((inv) =>
+        inv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        inv.email?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .map((inv) => ({
+        ...inv,
+        status: (inv.status as InvestorStatus) || "prospect",
+        lastContact: lastContactMap[inv.id] || null,
+      }))
+      .filter((inv) => activeFilters.includes(inv.status));
+
+    // Sort
+    processed.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortField) {
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "entity":
+          comparison = (a.entity_name || "").localeCompare(b.entity_name || "");
+          break;
+        case "email":
+          comparison = (a.email || "").localeCompare(b.email || "");
+          break;
+        case "lastContact":
+          const aTime = a.lastContact ? new Date(a.lastContact).getTime() : 0;
+          const bTime = b.lastContact ? new Date(b.lastContact).getTime() : 0;
+          comparison = aTime - bTime;
+          break;
+        case "status":
+          const statusOrder = STATUS_OPTIONS.map(s => s.value);
+          comparison = statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status);
+          break;
+      }
+      
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+
+    return processed;
+  }, [investors, searchQuery, activeFilters, sortField, sortDirection, lastContactMap]);
+
+  const toggleFilter = (status: InvestorStatus) => {
+    setActiveFilters(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+    <TableHead 
+      className="font-medium cursor-pointer select-none hover:bg-muted/50 transition-colors"
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {children}
+        {sortField === field ? (
+          sortDirection === "asc" ? (
+            <ArrowUp className="w-3 h-3" />
+          ) : (
+            <ArrowDown className="w-3 h-3" />
+          )
+        ) : (
+          <ArrowUpDown className="w-3 h-3 opacity-30" />
+        )}
+      </div>
+    </TableHead>
+  );
+
+  const getStatusBadge = (status: InvestorStatus) => {
+    const option = STATUS_OPTIONS.find(s => s.value === status);
+    if (!option) return null;
+    return (
+      <Badge variant="outline" className={cn("font-normal", option.color)}>
+        {option.label}
+      </Badge>
+    );
+  };
 
   const handleAddInvestor = async () => {
     if (!formData.name.trim() || !activeRound) return;
@@ -129,6 +259,7 @@ export default function ThesisCircuit() {
         entity_type: formData.entity_type || "individual",
         address: formData.address.trim() || null,
         workspace_id: activeRound.workspace_id,
+        status: "prospect",
       }).select().single();
 
       if (error) throw error;
@@ -206,24 +337,6 @@ export default function ThesisCircuit() {
     }
   };
 
-  const handleDeleteInvestor = async (investorId: string) => {
-    try {
-      const { error } = await supabase.from("investors").delete().eq("id", investorId);
-
-      if (error) throw error;
-
-      toast({ title: "Investor deleted" });
-      queryClient.invalidateQueries({ queryKey: ["investors"] });
-    } catch (error) {
-      console.error("Error deleting investor:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete investor.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const openEditModal = (investor: typeof investors[number]) => {
     setFormData({
       name: investor.name,
@@ -266,6 +379,9 @@ export default function ThesisCircuit() {
 
   const investorName = investorData?.name || variantSlug?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "Investor";
 
+  const activeFilterCount = activeFilters.length;
+  const allFiltersActive = activeFilterCount === STATUS_OPTIONS.length;
+
   return (
     <CircuitLayout
       rounds={rounds || []}
@@ -281,11 +397,54 @@ export default function ThesisCircuit() {
       <div className="flex-1 overflow-auto">
         <div className="max-w-6xl mx-auto p-8">
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="font-heading text-2xl font-bold">Pipeline</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Manage your investor pipeline for {activeRound?.name || "this round"}
-            </p>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="font-heading text-2xl font-bold">Pipeline</h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                Manage your investor pipeline for {activeRound?.name || "this round"}
+              </p>
+            </div>
+            
+            {/* Filter Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Filter className="w-4 h-4" />
+                  Filter
+                  {!allFiltersActive && (
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {STATUS_OPTIONS.map(status => (
+                  <DropdownMenuCheckboxItem
+                    key={status.value}
+                    checked={activeFilters.includes(status.value)}
+                    onCheckedChange={() => toggleFilter(status.value)}
+                  >
+                    {status.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setActiveFilters(STATUS_OPTIONS.map(s => s.value))}
+                  className="text-xs text-muted-foreground"
+                >
+                  Show all
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setActiveFilters([])}
+                  className="text-xs text-muted-foreground"
+                >
+                  Clear all
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Search */}
@@ -302,7 +461,7 @@ export default function ThesisCircuit() {
           {/* Table */}
           {investorsLoading ? (
             <Skeleton className="h-64 w-full" />
-          ) : filteredInvestors.length === 0 ? (
+          ) : investors?.length === 0 ? (
             <div className="border border-dashed border-border rounded-lg p-12 text-center">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                 <Users className="w-6 h-6 text-muted-foreground" />
@@ -312,69 +471,57 @@ export default function ThesisCircuit() {
                 Add investors using the sidebar.
               </p>
             </div>
+          ) : filteredInvestors.length === 0 ? (
+            <div className="border border-dashed border-border rounded-lg p-12 text-center">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                <Users className="w-6 h-6 text-muted-foreground" />
+              </div>
+              <h3 className="font-heading text-lg font-semibold mb-2">No matching investors</h3>
+              <p className="text-muted-foreground text-sm">
+                Try adjusting your search or filters.
+              </p>
+            </div>
           ) : (
             <div className="border border-border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Entity</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <SortableHeader field="name">Name</SortableHeader>
+                    <SortableHeader field="entity">Entity</SortableHeader>
+                    <SortableHeader field="email">Email</SortableHeader>
+                    <SortableHeader field="lastContact">Last Contact</SortableHeader>
+                    <SortableHeader field="status">Status</SortableHeader>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredInvestors.map((investor) => (
                     <TableRow 
                       key={investor.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className={cn(
+                        "cursor-pointer transition-colors",
+                        investor.status === "won" && "bg-green-50/50 hover:bg-green-50",
+                        investor.status === "lost" && "opacity-50 bg-muted/30 hover:bg-muted/40",
+                        investor.status !== "won" && investor.status !== "lost" && "hover:bg-muted/50"
+                      )}
                       onClick={() => navigate(`/${roundSlug}/pipeline/${investor.slug}`)}
                     >
-                      <TableCell className="font-medium">{investor.name}</TableCell>
+                      <TableCell className={cn("font-medium", investor.status === "lost" && "line-through")}>
+                        {investor.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {investor.entity_name || "—"}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {investor.email || "—"}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {investor.entity_name || investor.entity_type || "—"}
+                        {investor.lastContact 
+                          ? formatDistanceToNow(new Date(investor.lastContact), { addSuffix: true })
+                          : "—"
+                        }
                       </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() =>
-                                navigate(`/${roundSlug}/memo/${investor.slug}`)
-                              }
-                            >
-                              <FileText className="w-4 h-4 mr-2" />
-                              View Memo
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                navigate(`/${roundSlug}/docket/${investor.slug}`)
-                              }
-                            >
-                              <FolderOpen className="w-4 h-4 mr-2" />
-                              View Docket
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openEditModal(investor)}>
-                              <Pencil className="w-4 h-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDeleteInvestor(investor.id)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      <TableCell>
+                        {getStatusBadge(investor.status)}
                       </TableCell>
                     </TableRow>
                   ))}
