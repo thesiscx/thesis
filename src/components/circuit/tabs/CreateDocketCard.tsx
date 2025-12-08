@@ -80,8 +80,19 @@ export function CreateDocketCard({ roundId, roundSlug, onSuccess }: CreateDocket
     setStatus("loading");
     
     try {
-      // Generate access key
-      const accessKey = crypto.randomUUID().split("-").slice(0, 2).join("-");
+      // Generate access key in format: llzk-rxqh-ryya-epep
+      const generateAccessKey = () => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz';
+        const generateSegment = () => {
+          let segment = '';
+          for (let i = 0; i < 4; i++) {
+            segment += chars[Math.floor(Math.random() * chars.length)];
+          }
+          return segment;
+        };
+        return `${generateSegment()}-${generateSegment()}-${generateSegment()}-${generateSegment()}`;
+      };
+      const accessKey = generateAccessKey();
       
       const { data: accessKeyData, error: accessKeyError } = await supabase
         .from("access_keys")
