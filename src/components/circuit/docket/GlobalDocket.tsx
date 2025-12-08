@@ -55,7 +55,7 @@ const STATUS_MAP: Record<string, StatusValue> = {
   expired: "voided",
 };
 
-type SortField = "investor" | "amount" | "status" | "url" | "key" | "updated";
+type SortField = "id" | "investor" | "amount" | "status" | "url" | "key" | "updated";
 type SortDirection = "asc" | "desc";
 
 export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
@@ -155,6 +155,8 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
         .from("dockets")
         .select(`
           id,
+          docket_id,
+          docket_number,
           amount,
           status,
           wire_received,
@@ -333,6 +335,9 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
       let comparison = 0;
       
       switch (sortField) {
+        case "id":
+          comparison = (a.docket_number || 0) - (b.docket_number || 0);
+          break;
         case "investor":
           comparison = getInvestorName(a).localeCompare(getInvestorName(b));
           break;
@@ -450,6 +455,7 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <SortableHeader field="id">ID</SortableHeader>
                   <SortableHeader field="investor">Investor</SortableHeader>
                   <SortableHeader field="amount">Amount</SortableHeader>
                   <SortableHeader field="status">Status</SortableHeader>
@@ -475,6 +481,9 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                       )}
                       onClick={() => handleRowClick(docket)}
                     >
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {docket.docket_id || "—"}
+                      </TableCell>
                       <TableCell className="font-medium">
                         <div className={cn("flex flex-col", status === "voided" && "line-through")}>
                           <span>{getInvestorName(docket)}</span>

@@ -96,6 +96,25 @@ export default function InvestorMemo({ roundSlug, investorSlug, onAccessKeyLoade
     enabled: !!roundData?.id && !!investor?.id,
   });
 
+  // Fetch memo to get memo_code
+  const { data: memoData } = useQuery({
+    queryKey: ["memo-code", roundData?.id],
+    queryFn: async () => {
+      if (!roundData?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("memos")
+        .select("id, memo_code")
+        .eq("round_id", roundData.id)
+        .eq("is_global", true)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!roundData?.id,
+  });
+
   // Notify parent when access key is loaded
   useEffect(() => {
     if (accessKey?.id && onAccessKeyLoaded) {
@@ -263,7 +282,10 @@ export default function InvestorMemo({ roundSlug, investorSlug, onAccessKeyLoade
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-heading text-2xl font-semibold mb-1">
+            <h1 className="font-heading text-2xl font-semibold mb-1 flex items-center gap-2">
+              {memoData?.memo_code && (
+                <Badge variant="outline" className="font-mono text-xs">{memoData.memo_code}</Badge>
+              )}
               {investorName}
             </h1>
             {getStatusBadge()}
