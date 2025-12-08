@@ -11,6 +11,12 @@ interface AssistantSidebarProps {
   onUpdateMemoContent?: (content: any) => void;
   hasMemoContent?: boolean;
   currentMemoContent?: any;
+  // Subpage props
+  isSubpage?: boolean;
+  investorSlug?: string;
+  investorId?: string;
+  investorName?: string;
+  accessKeyId?: string;
 }
 
 export default function AssistantSidebar({ 
@@ -21,6 +27,11 @@ export default function AssistantSidebar({
   onUpdateMemoContent,
   hasMemoContent,
   currentMemoContent,
+  isSubpage = false,
+  investorSlug,
+  investorId,
+  investorName,
+  accessKeyId,
 }: AssistantSidebarProps) {
   return (
     <aside className="w-96 h-screen bg-[hsl(var(--canvas))] flex flex-col shrink-0">
@@ -39,6 +50,11 @@ export default function AssistantSidebar({
           onUpdateMemoContent={onUpdateMemoContent}
           hasMemoContent={hasMemoContent}
           currentMemoContent={currentMemoContent}
+          isSubpage={isSubpage}
+          investorSlug={investorSlug}
+          investorId={investorId}
+          investorName={investorName}
+          accessKeyId={accessKeyId}
         />
       </div>
     </aside>

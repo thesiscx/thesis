@@ -33,6 +33,12 @@ interface CircuitLayoutProps {
   hasMemoContent?: boolean;
   currentMemoContent?: any;
   breadcrumb?: BreadcrumbItem;
+  // Subpage context
+  isSubpage?: boolean;
+  investorSlug?: string;
+  investorId?: string;
+  investorName?: string;
+  accessKeyId?: string;
 }
 
 export default function CircuitLayout({
@@ -44,6 +50,11 @@ export default function CircuitLayout({
   hasMemoContent,
   currentMemoContent,
   breadcrumb,
+  isSubpage = false,
+  investorSlug,
+  investorId,
+  investorName,
+  accessKeyId,
 }: CircuitLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -134,6 +145,11 @@ export default function CircuitLayout({
           onUpdateMemoContent={onUpdateMemoContent}
           hasMemoContent={hasMemoContent}
           currentMemoContent={currentMemoContent}
+          isSubpage={isSubpage}
+          investorSlug={investorSlug}
+          investorId={investorId}
+          investorName={investorName}
+          accessKeyId={accessKeyId}
         />
       </div>
     </>

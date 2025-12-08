@@ -15,11 +15,9 @@ import {
   ExternalLink, 
   RefreshCw,
   Calendar,
-  Eye,
-  Clock,
   Loader2
 } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import {
   Popover,
   PopoverContent,
@@ -30,15 +28,15 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 interface InvestorMemoProps {
   roundSlug?: string;
   investorSlug?: string;
+  onAccessKeyLoaded?: (accessKeyId: string) => void;
 }
 
-export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoProps) {
+export default function InvestorMemo({ roundSlug, investorSlug, onAccessKeyLoaded }: InvestorMemoProps) {
   const { user, profile } = useFounderAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isGeneratingKey, setIsGeneratingKey] = useState(false);
-  const [expiryDate, setExpiryDate] = useState<Date | undefined>();
 
   // Fetch round
   const { data: roundData, isLoading: roundLoading } = useQuery({
@@ -98,6 +96,13 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
     enabled: !!roundData?.id && !!investor?.id,
   });
 
+  // Notify parent when access key is loaded
+  useEffect(() => {
+    if (accessKey?.id && onAccessKeyLoaded) {
+      onAccessKeyLoaded(accessKey.id);
+    }
+  }, [accessKey?.id, onAccessKeyLoaded]);
+
   // Track if we've already attempted generation
   const hasAttemptedGeneration = useRef(false);
 
@@ -137,25 +142,6 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
     
     generateKey();
   }, [roundData?.id, investor?.id, roundLoading, investorLoading, accessKeyLoading, accessKey, isGeneratingKey, refetchAccessKey, toast]);
-
-  // Fetch access logs for this key
-  const { data: accessLogs = [] } = useQuery({
-    queryKey: ["access-logs", accessKey?.id],
-    queryFn: async () => {
-      if (!accessKey?.id) return [];
-      
-      const { data, error } = await supabase
-        .from("access_logs")
-        .select("*")
-        .eq("access_key_id", accessKey.id)
-        .order("timestamp", { ascending: false })
-        .limit(20);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!accessKey?.id,
-  });
 
   const shareUrl = profile?.company_slug && roundData?.slug && investorSlug
     ? `${window.location.origin}/share/${profile.company_slug}/${roundData.slug}/memo/${investorSlug}`
@@ -227,7 +213,6 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
   const handleSetExpiry = async (date: Date | undefined) => {
     if (!accessKey) return;
     setIsUpdating(true);
-    setExpiryDate(date);
     
     try {
       const { error } = await supabase
@@ -253,6 +238,7 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
     }
     if (!accessKey) return <Badge variant="outline">No Access Key</Badge>;
     if (accessKey.status === 'revoked') return <Badge variant="destructive">Revoked</Badge>;
+    if (accessKey.status === 'voided') return <Badge className="bg-muted text-muted-foreground border-muted">Voided</Badge>;
     if (accessKey.expires_at && new Date(accessKey.expires_at) < new Date()) {
       return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Expired</Badge>;
     }
@@ -440,40 +426,6 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
               <div>
                 <Label className="text-muted-foreground text-xs">Entity Type</Label>
                 <p className="capitalize">{investor.entity_type}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Access Logs */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Eye className="w-4 h-4" />
-              Access Logs
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {accessLogs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No access logs yet</p>
-            ) : (
-              <div className="space-y-3">
-                {accessLogs.map((log) => (
-                  <div key={log.id} className="flex items-start justify-between text-sm border-b border-border pb-3 last:border-0">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <div>
-                        <p className="font-medium capitalize">{log.action.replace(/_/g, ' ')}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(log.timestamp), "MMM d, h:mm a")}
-                    </span>
-                  </div>
-                ))}
               </div>
             )}
           </CardContent>
