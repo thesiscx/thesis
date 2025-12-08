@@ -22,6 +22,7 @@ export type ActivityActionType =
   // Pipeline actions
   | "investor_added"
   | "investor_updated"
+  | "investor_marked_passed"
   // Round actions
   | "round_created"
   | "round_opened"
