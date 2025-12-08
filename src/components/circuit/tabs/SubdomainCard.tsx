@@ -37,7 +37,7 @@ export function SubdomainCard() {
             <Label className="text-xs text-muted-foreground">Your Circuit URL</Label>
             {currentSubdomain ? (
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs bg-background/50 px-3 py-2 rounded border border-border">
+                <code className="flex-1 text-xs bg-transparent px-3 py-2 rounded border border-border">
                   https://{currentSubdomain}
                 </code>
                 <Button
@@ -73,7 +73,7 @@ export function SubdomainCard() {
                   To connect a custom domain (e.g., invest.yourcompany.com), 
                   add these DNS records at your registrar:
                 </p>
-                <div className="bg-background/50 rounded p-2 font-mono text-[10px] space-y-1">
+                <div className="bg-transparent border border-border rounded p-2 font-mono text-[10px] space-y-1">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Type:</span>
                     <span>A</span>
@@ -87,7 +87,7 @@ export function SubdomainCard() {
                     <span>185.158.133.1</span>
                   </div>
                 </div>
-                <div className="bg-background/50 rounded p-2 font-mono text-[10px] space-y-1">
+                <div className="bg-transparent border border-border rounded p-2 font-mono text-[10px] space-y-1">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Type:</span>
                     <span>TXT</span>

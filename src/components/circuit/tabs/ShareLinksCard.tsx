@@ -223,8 +223,8 @@ export function ShareLinksCard({ roundId, roundSlug }: ShareLinksCardProps) {
       className={cn(
         "flex items-center justify-between px-3 py-2 rounded-lg border border-border cursor-pointer transition-colors",
         isVoided 
-          ? "bg-muted/50 opacity-60" 
-          : "bg-background hover:bg-secondary/50"
+          ? "bg-transparent opacity-60" 
+          : "bg-transparent hover:bg-secondary/50"
       )}
     >
       {/* Investor name */}

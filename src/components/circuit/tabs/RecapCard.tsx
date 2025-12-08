@@ -175,7 +175,7 @@ Keep it brief and encouraging.`
             {/* Stats row */}
             <div className="grid grid-cols-3 gap-2">
               {recapContent.stats.map((stat, i) => (
-                <div key={i} className="text-center p-2 rounded-lg bg-background border border-border">
+                <div key={i} className="text-center p-2 rounded-lg bg-transparent border border-border">
                   <p className="text-lg font-semibold">{stat.value}</p>
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
                 </div>
