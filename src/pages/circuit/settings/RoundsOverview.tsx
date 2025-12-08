@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import CloseRoundDialog from "@/components/circuit/CloseRoundDialog";
 import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
 import { 
-  ArrowLeft, 
+  X, 
   Loader2, 
   Users, 
   FileText, 
@@ -926,18 +926,19 @@ export default function RoundsOverview() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-3xl py-8 px-6">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(-1)}
-          className="mb-6 -ml-2 hover:bg-secondary"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        
-        <div className="mb-8">
-          <h1 className="text-2xl font-heading font-semibold mb-1">Rounds Overview</h1>
-          <p className="text-muted-foreground text-sm">Manage your fundraising rounds and terms</p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-heading font-semibold mb-1">Configure Rounds</h1>
+            <p className="text-muted-foreground text-sm">Manage your fundraising rounds and terms</p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="h-8 w-8 hover:bg-secondary"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
         <div className="space-y-6">
