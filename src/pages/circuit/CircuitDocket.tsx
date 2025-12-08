@@ -14,12 +14,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function ThesisDocket() {
   const { roundSlug, variantSlug } = useParams();
   const [createRoundOpen, setCreateRoundOpen] = useState(false);
+  const [accessKeyId, setAccessKeyId] = useState<string | undefined>();
   const { user } = useFounderAuth();
   
   const { rounds, isLoading: roundsLoading } = useRounds();
   const { investors } = useInvestors();
 
   const isGlobal = !variantSlug || variantSlug === "global";
+  const isInvestorSubpage = !isGlobal;
 
   // Fetch investor name for breadcrumb when on investor docket page
   const { data: investorData } = useQuery({
@@ -39,7 +41,7 @@ export default function ThesisDocket() {
       
       const { data: investor } = await supabase
         .from("investors")
-        .select("name")
+        .select("id, name")
         .eq("slug", variantSlug)
         .eq("workspace_id", round.workspace_id)
         .single();
@@ -55,6 +57,8 @@ export default function ThesisDocket() {
     : !isGlobal && variantSlug
     ? { label: variantSlug.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) }
     : undefined;
+
+  const investorName = investorData?.name || variantSlug?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "Investor";
 
   if (roundsLoading) {
     return (
@@ -76,11 +80,20 @@ export default function ThesisDocket() {
         investors={investors}
         onCreateRound={() => setCreateRoundOpen(true)}
         breadcrumb={breadcrumb}
+        isSubpage={isInvestorSubpage}
+        investorSlug={variantSlug}
+        investorId={investorData?.id}
+        investorName={isInvestorSubpage ? investorName : undefined}
+        accessKeyId={accessKeyId}
       >
         {isGlobal ? (
           <GlobalDocket roundSlug={roundSlug} />
         ) : (
-          <InvestorDocket roundSlug={roundSlug} investorSlug={variantSlug} />
+          <InvestorDocket 
+            roundSlug={roundSlug} 
+            investorSlug={variantSlug}
+            onAccessKeyLoaded={setAccessKeyId}
+          />
         )}
       </CircuitLayout>
 

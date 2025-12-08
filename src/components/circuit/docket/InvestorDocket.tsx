@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { Button } from "@/components/ui/button";
@@ -29,9 +30,10 @@ import { logActivity } from "@/lib/activityLogger";
 interface InvestorDocketProps {
   roundSlug?: string;
   investorSlug?: string;
+  onAccessKeyLoaded?: (accessKeyId: string) => void;
 }
 
-export default function InvestorDocket({ roundSlug, investorSlug }: InvestorDocketProps) {
+export default function InvestorDocket({ roundSlug, investorSlug, onAccessKeyLoaded }: InvestorDocketProps) {
   const { user, profile } = useFounderAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -160,6 +162,13 @@ export default function InvestorDocket({ roundSlug, investorSlug }: InvestorDock
     },
     enabled: !!roundData?.id && !!investor?.id,
   });
+
+  // Notify parent when access key is loaded
+  useEffect(() => {
+    if (accessKey?.id && onAccessKeyLoaded) {
+      onAccessKeyLoaded(accessKey.id);
+    }
+  }, [accessKey?.id, onAccessKeyLoaded]);
 
   // Initialize side letter from docket
   useState(() => {
