@@ -462,7 +462,6 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                   <SortableHeader field="url">Share Link</SortableHeader>
                   <SortableHeader field="key">Access Key</SortableHeader>
                   <SortableHeader field="updated">Last Updated</SortableHeader>
-                  <TableHead className="font-medium text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -554,63 +553,6 @@ export default function GlobalDocket({ roundSlug }: GlobalDocketProps) {
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {docket.updated_at ? format(new Date(docket.updated_at), "MMM d, yyyy") : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              handleRowClick(docket);
-                            }}>
-                              <ExternalLink className="w-4 h-4 mr-2" />
-                              View Docket
-                            </DropdownMenuItem>
-                            {docket.shareUrl && docket.accessKey && (
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                copyToClipboard(docket.shareUrl, "Share link");
-                              }}>
-                                <Copy className="w-4 h-4 mr-2" />
-                                Copy Share Link
-                              </DropdownMenuItem>
-                            )}
-                            {docket.accessKey && (
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                copyToClipboard(docket.accessKey, "Access key");
-                              }}>
-                                <Copy className="w-4 h-4 mr-2" />
-                                Copy Access Key
-                              </DropdownMenuItem>
-                            )}
-                            {actions.includes("void") && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  onClick={(e) => handleVoidDocket(docket, e)}
-                                  className="text-destructive"
-                                >
-                                  <XCircle className="w-4 h-4 mr-2" />
-                                  Void Docket
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {actions.includes("archive") && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={(e) => handleArchiveDocket(docket, e)}>
-                                  <Archive className="w-4 h-4 mr-2" />
-                                  Archive Docket
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   );
