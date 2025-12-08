@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clock, Activity, Mail } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import { StatusLine } from "./StatusLine";
 
 interface PipelineActivityCardProps {
   investorId?: string;
@@ -35,11 +36,11 @@ export function PipelineActivityCard({ investorId, investorName }: PipelineActiv
 
   if (isLoading) {
     return (
-      <Card className="border-border">
-        <CardHeader className="pb-3">
+      <Card className="border-border bg-transparent">
+        <CardHeader className="pb-3 border-b border-border">
           <Skeleton className="h-5 w-40" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-12 w-full" />
@@ -50,63 +51,72 @@ export function PipelineActivityCard({ investorId, investorName }: PipelineActiv
     );
   }
 
-  return (
-    <Card className="border-border">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Activity className="w-4 h-4" />
-          Activity & Communication
-        </CardTitle>
-        {investorName && (
-          <p className="text-xs text-muted-foreground">{investorName}</p>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Activity Logs */}
-        <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2">Activity History</p>
-          {activityLogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No activity recorded yet</p>
-          ) : (
-            <div className="space-y-3 max-h-[200px] overflow-y-auto">
-              {activityLogs.map((log) => (
-                <div 
-                  key={log.id} 
-                  className="flex items-start justify-between text-sm border-b border-border pb-3 last:border-0"
-                >
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <div>
-                      <p className="font-medium capitalize text-xs">
-                        {log.action_type.replace(/_/g, ' ')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {format(new Date(log.created_at), "MMM d, h:mm a")}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+  const activityCount = activityLogs.length;
+  const statusText = activityCount === 0 
+    ? "No activity recorded yet" 
+    : `${activityCount} event${activityCount !== 1 ? 's' : ''} tracked`;
 
-        {/* Email History Placeholder */}
-        <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-            <Mail className="w-3 h-3" />
-            Email History
-          </p>
-          <div className="bg-muted/50 rounded-lg p-3 border border-dashed border-border">
-            <p className="text-xs text-muted-foreground italic">
-              Email integration coming soon. Connect your email to see communication history with this investor.
-            </p>
+  return (
+    <>
+      <Card className="border-border bg-transparent">
+        <CardHeader className="pb-3 border-b border-border">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Activity className="w-4 h-4" />
+            Activity & Communication
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4 space-y-4">
+          {investorName && (
+            <p className="text-xs text-muted-foreground">{investorName}</p>
+          )}
+          
+          {/* Activity Logs */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Activity History</p>
+            {activityLogs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No activity recorded yet</p>
+            ) : (
+              <div className="space-y-3 max-h-[200px] overflow-y-auto">
+                {activityLogs.map((log) => (
+                  <div 
+                    key={log.id} 
+                    className="flex items-start justify-between text-sm border-b border-border pb-3 last:border-0"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="font-medium capitalize text-xs">
+                          {log.action_type.replace(/_/g, ' ')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(log.created_at), "MMM d, h:mm a")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      </CardContent>
-    </Card>
+
+          {/* Email History Placeholder */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+              <Mail className="w-3 h-3" />
+              Email History
+            </p>
+            <div className="bg-muted/50 rounded-lg p-3 border border-dashed border-border">
+              <p className="text-xs text-muted-foreground italic">
+                Email integration coming soon. Connect your email to see communication history with this investor.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <StatusLine status="idle" idleText={statusText} />
+    </>
   );
 }

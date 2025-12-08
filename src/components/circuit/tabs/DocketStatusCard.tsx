@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Check, Circle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { StatusLine } from "./StatusLine";
 
 interface DocketStatusCardProps {
   docketId?: string;
@@ -47,11 +48,11 @@ export function DocketStatusCard({ docketId, investorName }: DocketStatusCardPro
 
   if (isLoading) {
     return (
-      <Card className="border-border">
-        <CardHeader className="pb-3">
+      <Card className="border-border bg-transparent">
+        <CardHeader className="pb-3 border-b border-border">
           <Skeleton className="h-5 w-32" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <div className="space-y-4">
             {[1, 2, 3, 4, 5].map((i) => (
               <Skeleton key={i} className="h-8 w-full" />
@@ -63,95 +64,99 @@ export function DocketStatusCard({ docketId, investorName }: DocketStatusCardPro
   }
 
   const currentStageIndex = getStageIndex(docket?.status || "drafted");
+  const currentStage = DOCKET_STAGES[currentStageIndex]?.label || "Drafted";
 
   return (
-    <Card className="border-border">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <FileText className="w-4 h-4" />
-          Docket Status
-        </CardTitle>
-        {investorName && (
-          <p className="text-xs text-muted-foreground">{investorName}</p>
-        )}
-      </CardHeader>
-      <CardContent>
-        {!docketId ? (
-          <p className="text-sm text-muted-foreground">No docket found</p>
-        ) : (
-          <div className="space-y-0">
-            {DOCKET_STAGES.map((stage, index) => {
-              const isCompleted = index < currentStageIndex;
-              const isCurrent = index === currentStageIndex;
-              const isPending = index > currentStageIndex;
-              
-              // Determine timestamp to show
-              let timestamp: string | null = null;
-              if (isCompleted || isCurrent) {
-                if (stage.key === "drafted" && docket?.created_at) {
-                  timestamp = format(new Date(docket.created_at), "MMM d, h:mm a");
-                } else if (stage.key === "funded" && docket?.wire_received_at) {
-                  timestamp = format(new Date(docket.wire_received_at), "MMM d, h:mm a");
-                } else if (isCurrent && docket?.updated_at) {
-                  timestamp = format(new Date(docket.updated_at), "MMM d, h:mm a");
+    <>
+      <Card className="border-border bg-transparent">
+        <CardHeader className="pb-3 border-b border-border">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Docket Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          {investorName && (
+            <p className="text-xs text-muted-foreground mb-3">{investorName}</p>
+          )}
+          {!docketId ? (
+            <p className="text-sm text-muted-foreground">No docket found</p>
+          ) : (
+            <div className="space-y-0">
+              {DOCKET_STAGES.map((stage, index) => {
+                const isCompleted = index < currentStageIndex;
+                const isCurrent = index === currentStageIndex;
+                const isPending = index > currentStageIndex;
+                
+                // Determine timestamp to show
+                let timestamp: string | null = null;
+                if (isCompleted || isCurrent) {
+                  if (stage.key === "drafted" && docket?.created_at) {
+                    timestamp = format(new Date(docket.created_at), "MMM d, h:mm a");
+                  } else if (stage.key === "funded" && docket?.wire_received_at) {
+                    timestamp = format(new Date(docket.wire_received_at), "MMM d, h:mm a");
+                  } else if (isCurrent && docket?.updated_at) {
+                    timestamp = format(new Date(docket.updated_at), "MMM d, h:mm a");
+                  }
                 }
-              }
-              
-              return (
-                <div key={stage.key} className="relative">
-                  {/* Connecting line */}
-                  {index < DOCKET_STAGES.length - 1 && (
-                    <div 
-                      className={cn(
-                        "absolute left-[11px] top-[24px] w-0.5 h-8",
-                        isCompleted ? "bg-foreground" : "bg-border"
-                      )}
-                    />
-                  )}
-                  
-                  {/* Stage row */}
-                  <div className="flex items-center gap-3 py-2">
-                    {/* Status indicator */}
-                    <div className="relative z-10">
-                      {isCompleted ? (
-                        <div className="w-6 h-6 rounded-full bg-foreground flex items-center justify-center">
-                          <Check className="w-3.5 h-3.5 text-background" />
-                        </div>
-                      ) : isCurrent ? (
-                        <div className="w-6 h-6 rounded-full bg-foreground flex items-center justify-center ring-4 ring-foreground/20">
-                          <Circle className="w-2.5 h-2.5 fill-background text-background" />
-                        </div>
-                      ) : (
-                        <div className="w-6 h-6 rounded-full border-2 border-border bg-background flex items-center justify-center">
-                          <Circle className="w-2 h-2 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Label and timestamp */}
-                    <div className="flex-1 flex items-center justify-between">
-                      <span className={cn(
-                        "text-sm font-medium",
-                        isPending && "text-muted-foreground"
-                      )}>
-                        {stage.label}
-                        {isCurrent && (
-                          <span className="ml-2 text-xs text-muted-foreground">← Current</span>
+                
+                return (
+                  <div key={stage.key} className="relative">
+                    {/* Connecting line */}
+                    {index < DOCKET_STAGES.length - 1 && (
+                      <div 
+                        className={cn(
+                          "absolute left-[11px] top-[24px] w-0.5 h-8",
+                          isCompleted ? "bg-foreground" : "bg-border"
                         )}
-                      </span>
-                      {timestamp && (
-                        <span className="text-xs text-muted-foreground">
-                          {timestamp}
+                      />
+                    )}
+                    
+                    {/* Stage row */}
+                    <div className="flex items-center gap-3 py-2">
+                      {/* Status indicator */}
+                      <div className="relative z-10">
+                        {isCompleted ? (
+                          <div className="w-6 h-6 rounded-full bg-foreground flex items-center justify-center">
+                            <Check className="w-3.5 h-3.5 text-background" />
+                          </div>
+                        ) : isCurrent ? (
+                          <div className="w-6 h-6 rounded-full bg-foreground flex items-center justify-center ring-4 ring-foreground/20">
+                            <Circle className="w-2.5 h-2.5 fill-background text-background" />
+                          </div>
+                        ) : (
+                          <div className="w-6 h-6 rounded-full border-2 border-border bg-background flex items-center justify-center">
+                            <Circle className="w-2 h-2 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Label and timestamp */}
+                      <div className="flex-1 flex items-center justify-between">
+                        <span className={cn(
+                          "text-sm font-medium",
+                          isPending && "text-muted-foreground"
+                        )}>
+                          {stage.label}
+                          {isCurrent && (
+                            <span className="ml-2 text-xs text-muted-foreground">← Current</span>
+                          )}
                         </span>
-                      )}
+                        {timestamp && (
+                          <span className="text-xs text-muted-foreground">
+                            {timestamp}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <StatusLine status="idle" idleText={`Current stage: ${currentStage}`} />
+    </>
   );
 }
