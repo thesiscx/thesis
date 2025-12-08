@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { FolderPlus, Loader2 } from "lucide-react";
+import { FolderPlus, Loader2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRounds } from "@/hooks/useRounds";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { StatusLine, StatusState } from "./StatusLine";
@@ -24,56 +30,56 @@ export function CreateDocketCard({ roundId, roundSlug, onSuccess }: CreateDocket
   
   const [status, setStatus] = useState<StatusState>("idle");
   const [createdName, setCreatedName] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-  });
+  const [selectedInvestorId, setSelectedInvestorId] = useState<string>("");
 
   const activeRound = roundId 
     ? { id: roundId, slug: roundSlug }
     : openRound;
 
+  // Fetch all investors
+  const { data: allInvestors = [] } = useQuery({
+    queryKey: ["investors", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("investors")
+        .select("id, name, email, slug")
+        .eq("workspace_id", user.id)
+        .order("name");
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch investors who already have dockets in this round
+  const { data: investorsWithDockets = [] } = useQuery({
+    queryKey: ["investors-with-dockets", activeRound?.id],
+    queryFn: async () => {
+      if (!activeRound?.id) return [];
+      const { data } = await supabase
+        .from("dockets")
+        .select("investor_id")
+        .eq("round_id", activeRound.id)
+        .eq("is_global", false)
+        .not("investor_id", "is", null);
+      return data?.map(d => d.investor_id) || [];
+    },
+    enabled: !!activeRound?.id,
+  });
+
+  // Available investors = all investors minus those with dockets
+  const availableInvestors = allInvestors.filter(
+    inv => !investorsWithDockets.includes(inv.id)
+  );
+
+  const selectedInvestor = allInvestors.find(inv => inv.id === selectedInvestorId);
+
   const handleSubmit = async () => {
-    if (!formData.name.trim() || !activeRound || !user) return;
+    if (!selectedInvestorId || !activeRound || !user || !selectedInvestor) return;
     
     setStatus("loading");
     
     try {
-      // Generate investor slug
-      const investorSlug = formData.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "")
-        .slice(0, 30);
-
-      // First, check if investor already exists or create new
-      let investorId: string;
-      
-      const { data: existingInvestor } = await supabase
-        .from("investors")
-        .select("id")
-        .eq("workspace_id", user.id)
-        .eq("slug", investorSlug)
-        .maybeSingle();
-
-      if (existingInvestor) {
-        investorId = existingInvestor.id;
-      } else {
-        const { data: newInvestor, error: investorError } = await supabase
-          .from("investors")
-          .insert({
-            name: formData.name.trim(),
-            slug: investorSlug,
-            email: formData.email?.trim() || null,
-            workspace_id: user.id,
-          })
-          .select("id")
-          .single();
-
-        if (investorError) throw investorError;
-        investorId = newInvestor.id;
-      }
-
       // Generate access key
       const accessKey = crypto.randomUUID().split("-").slice(0, 2).join("-");
       
@@ -81,7 +87,7 @@ export function CreateDocketCard({ roundId, roundSlug, onSuccess }: CreateDocket
         .from("access_keys")
         .insert({
           key: accessKey,
-          investor_id: investorId,
+          investor_id: selectedInvestorId,
           round_id: activeRound.id,
           workspace_id: user.id,
           created_by: user.id,
@@ -98,9 +104,9 @@ export function CreateDocketCard({ roundId, roundSlug, onSuccess }: CreateDocket
         .from("dockets")
         .insert({
           round_id: activeRound.id,
-          investor_id: investorId,
-          investor_name: formData.name.trim(),
-          investor_email: formData.email?.trim() || null,
+          investor_id: selectedInvestorId,
+          investor_name: selectedInvestor.name,
+          investor_email: selectedInvestor.email || null,
           access_key_id: accessKeyData.id,
           is_global: false,
           status: "draft",
@@ -109,17 +115,17 @@ export function CreateDocketCard({ roundId, roundSlug, onSuccess }: CreateDocket
 
       if (docketError) throw docketError;
 
-      setCreatedName(formData.name);
+      setCreatedName(selectedInvestor.name);
       setStatus("success");
       queryClient.invalidateQueries({ queryKey: ["dockets"] });
       queryClient.invalidateQueries({ queryKey: ["dockets-summary"] });
-      queryClient.invalidateQueries({ queryKey: ["investors"] });
+      queryClient.invalidateQueries({ queryKey: ["investors-with-dockets"] });
       toast({ title: "Docket created" });
       onSuccess?.();
       
       // Reset form after brief delay
       setTimeout(() => {
-        setFormData({ name: "", email: "" });
+        setSelectedInvestorId("");
         setStatus("idle");
         setCreatedName(null);
       }, 2000);
@@ -169,33 +175,43 @@ export function CreateDocketCard({ roundId, roundSlug, onSuccess }: CreateDocket
           
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Investor Name *</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Sequoia Capital"
-                className="bg-background"
-                disabled={status === "loading"}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Email</Label>
-              <Input
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="partner@sequoia.com"
-                type="email"
-                className="bg-background"
-                disabled={status === "loading"}
-              />
+              <Label className="text-xs text-muted-foreground">Select Investor *</Label>
+              {availableInvestors.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2">
+                  {allInvestors.length === 0 
+                    ? "No investors in pipeline. Add investors first."
+                    : "All investors already have dockets."}
+                </p>
+              ) : (
+                <Select
+                  value={selectedInvestorId}
+                  onValueChange={setSelectedInvestorId}
+                  disabled={status === "loading"}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Choose an investor..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    {availableInvestors.map((investor) => (
+                      <SelectItem key={investor.id} value={investor.id}>
+                        <span>{investor.name}</span>
+                        {investor.email && (
+                          <span className="text-muted-foreground ml-2">
+                            ({investor.email})
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
           <Button 
             size="sm" 
             onClick={handleSubmit} 
-            disabled={!formData.name.trim() || status === "loading"}
+            disabled={!selectedInvestorId || status === "loading" || availableInvestors.length === 0}
             className="w-full"
           >
             {status === "loading" ? (
@@ -210,7 +226,7 @@ export function CreateDocketCard({ roundId, roundSlug, onSuccess }: CreateDocket
       
       <StatusLine 
         status={status}
-        idleText="Ready to create docket"
+        idleText={availableInvestors.length > 0 ? "Ready to create docket" : "Add investors to pipeline first"}
         loadingText="Creating docket..."
         successText={createdName ? `Docket for ${createdName} created` : "Docket created"}
         errorText="Failed to create docket"
