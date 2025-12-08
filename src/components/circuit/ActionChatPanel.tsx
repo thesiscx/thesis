@@ -398,7 +398,7 @@ export default function ActionChatPanel({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 px-6 py-6 overflow-y-auto">
-        <div className="rounded-xl border border-border bg-secondary/50 p-6">
+        <div className="rounded-xl border border-border bg-transparent p-6">
           <div className="text-center py-8">
             <p className="text-sm text-muted-foreground">
               Welcome to Circuit

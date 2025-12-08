@@ -153,7 +153,7 @@ Keep it brief and encouraging.`
 
   if (isGenerating && !recapContent) {
     return (
-      <div className="rounded-xl border border-border bg-secondary/50 p-6">
+      <div className="rounded-xl border border-border bg-transparent p-6">
         <div className="flex flex-col items-center justify-center gap-3 py-8">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Generating recap...</span>
@@ -163,8 +163,8 @@ Keep it brief and encouraging.`
   }
 
   return (
-    <div className="rounded-xl border border-border bg-secondary/50 overflow-hidden">
-      <div className="px-4 py-3 border-b border-border bg-secondary/30 flex items-center gap-2">
+    <div className="rounded-xl border border-border bg-transparent overflow-hidden">
+      <div className="px-4 py-3 border-b border-border flex items-center gap-2">
         <History className="w-4 h-4 text-foreground" />
         <span className="text-sm font-medium">Weekly Recap</span>
       </div>
