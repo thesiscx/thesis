@@ -165,7 +165,7 @@ export default function ActionChatPanel({
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   memoSubpageTab === tab.key 
                     ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine" 
-                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/50 hover:bg-muted/50 tab-button-shine-muted"
+                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
                 <tab.icon className="w-3.5 h-3.5" />
@@ -207,7 +207,7 @@ export default function ActionChatPanel({
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   docketSubpageTab === tab.key 
                     ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine" 
-                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/50 hover:bg-muted/50 tab-button-shine-muted"
+                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
                 <tab.icon className="w-3.5 h-3.5" />
@@ -252,7 +252,7 @@ export default function ActionChatPanel({
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   pipelineSubpageTab === tab.key 
                     ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine" 
-                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/50 hover:bg-muted/50 tab-button-shine-muted"
+                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
                 <tab.icon className="w-3.5 h-3.5" />
@@ -293,7 +293,7 @@ export default function ActionChatPanel({
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   pipelineTab === tab.key 
                     ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine" 
-                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/50 hover:bg-muted/50 tab-button-shine-muted"
+                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
                 <tab.icon className="w-3.5 h-3.5" />
@@ -340,7 +340,7 @@ export default function ActionChatPanel({
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   memoTab === tab.key 
                     ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine" 
-                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/50 hover:bg-muted/50 tab-button-shine-muted"
+                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
                 <tab.icon className="w-3.5 h-3.5" />
@@ -381,7 +381,7 @@ export default function ActionChatPanel({
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   docketTab === tab.key 
                     ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine" 
-                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/50 hover:bg-muted/50 tab-button-shine-muted"
+                    : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
                 <tab.icon className="w-3.5 h-3.5" />
