@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link2, Copy, Check, Loader2, RefreshCw, Key } from "lucide-react";
+import { Link2, Copy, Check, Loader2, RefreshCw, Key, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -240,67 +240,60 @@ export function ShareLinksCard({ roundId, roundSlug }: ShareLinksCardProps) {
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {investorLinks.map((link) => (
                 <div
                   key={link.investorId}
                   className={cn(
-                    "p-3 rounded-lg border border-border bg-background",
+                    "px-3 py-2 rounded-lg border border-border bg-background",
                     "hover:bg-secondary/50 transition-colors"
                   )}
                 >
                   {/* Investor name - clickable to navigate */}
                   <div 
                     onClick={() => handleNavigateToInvestor(link.investorSlug)}
-                    className="text-sm font-medium mb-2 cursor-pointer hover:text-primary transition-colors"
+                    className="text-sm font-medium mb-1.5 cursor-pointer hover:text-primary transition-colors"
                   >
                     {link.investorName}
                   </div>
                   
-                  {/* URL row */}
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Link2 className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <span className="text-xs text-muted-foreground truncate flex-1 font-mono">
-                      {link.url.replace(window.location.origin, '')}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyToClipboard(link.url, "URL", link.investorName);
-                      }}
-                      className="h-6 px-1.5 shrink-0"
-                    >
-                      {copiedItem === `${link.investorName}-URL` ? (
-                        <Check className="w-3 h-3 text-green-600" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                    </Button>
-                  </div>
-                  
-                  {/* Access Key row */}
-                  <div className="flex items-center gap-2">
-                    <Key className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <span className="text-xs text-muted-foreground truncate flex-1 font-mono">
-                      {link.accessKey}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyToClipboard(link.accessKey, "Key", link.investorName);
-                      }}
-                      className="h-6 px-1.5 shrink-0"
-                    >
-                      {copiedItem === `${link.investorName}-Key` ? (
-                        <Check className="w-3 h-3 text-green-600" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                    </Button>
+                  {/* Compact icon rows */}
+                  <div className="flex items-center gap-3">
+                    {/* Key: copy */}
+                    <div className="flex items-center gap-1">
+                      <Key className="w-3 h-3 text-muted-foreground" />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyToClipboard(link.accessKey, "Key", link.investorName);
+                        }}
+                        className="h-5 w-5 p-0"
+                      >
+                        {copiedItem === `${link.investorName}-Key` ? (
+                          <Check className="w-3 h-3 text-green-600" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {/* Link: open in new tab */}
+                    <div className="flex items-center gap-1">
+                      <Link2 className="w-3 h-3 text-muted-foreground" />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(link.url, "_blank");
+                        }}
+                        className="h-5 w-5 p-0"
+                      >
+                        <ArrowUpRight className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
