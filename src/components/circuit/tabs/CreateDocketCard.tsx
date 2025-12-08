@@ -144,8 +144,8 @@ export function CreateDocketCard({ roundId, roundSlug, onSuccess }: CreateDocket
   if (!activeRound) {
     return (
       <>
-        <div className="rounded-xl border border-border bg-secondary/50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-secondary/30 flex items-center gap-2">
+        <div className="rounded-xl border border-border bg-transparent overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
             <FolderPlus className="w-4 h-4 text-foreground" />
             <span className="text-sm font-medium">Create Docket</span>
           </div>
@@ -162,8 +162,8 @@ export function CreateDocketCard({ roundId, roundSlug, onSuccess }: CreateDocket
 
   return (
     <>
-      <div className="rounded-xl border border-border bg-secondary/50 overflow-hidden">
-        <div className="px-4 py-3 border-b border-border bg-secondary/30 flex items-center gap-2">
+      <div className="rounded-xl border border-border bg-transparent overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
           <FolderPlus className="w-4 h-4 text-foreground" />
           <span className="text-sm font-medium">Create Docket</span>
         </div>

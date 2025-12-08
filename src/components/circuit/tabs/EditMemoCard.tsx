@@ -81,8 +81,8 @@ export function EditMemoCard({
   if (!openRound) {
     return (
       <>
-        <div className="rounded-xl border border-border bg-secondary/50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-secondary/30 flex items-center gap-2">
+        <div className="rounded-xl border border-border bg-transparent overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
             <FileEdit className="w-4 h-4 text-foreground" />
             <span className="text-sm font-medium">Edit Memo</span>
           </div>
@@ -99,8 +99,8 @@ export function EditMemoCard({
 
   return (
     <>
-      <div className="rounded-xl border border-border bg-secondary/50 overflow-hidden">
-        <div className="px-4 py-3 border-b border-border bg-secondary/30 flex items-center gap-2">
+      <div className="rounded-xl border border-border bg-transparent overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
           <FileEdit className="w-4 h-4 text-foreground" />
           <span className="text-sm font-medium">Edit Memo</span>
         </div>
