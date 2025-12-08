@@ -41,7 +41,7 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
   const [expiryDate, setExpiryDate] = useState<Date | undefined>();
 
   // Fetch round
-  const { data: roundData } = useQuery({
+  const { data: roundData, isLoading: roundLoading } = useQuery({
     queryKey: ["round", roundSlug, user?.id],
     queryFn: async () => {
       if (!roundSlug || !user?.id) return null;
@@ -60,7 +60,7 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
   });
 
   // Fetch investor by slug
-  const { data: investor } = useQuery({
+  const { data: investor, isLoading: investorLoading } = useQuery({
     queryKey: ["investor", investorSlug, roundData?.workspace_id],
     queryFn: async () => {
       if (!investorSlug || !roundData?.workspace_id) return null;
@@ -101,11 +101,16 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
   // Track if we've already attempted generation
   const hasAttemptedGeneration = useRef(false);
 
+  // Combined loading state - all dependencies must be loaded
+  const isLoadingDependencies = roundLoading || investorLoading || accessKeyLoading || isGeneratingKey;
+
   // Auto-generate access key if missing (only once per mount)
   useEffect(() => {
     const generateKey = async () => {
-      // Skip if already generated, still loading, key exists, or already generating
-      if (hasAttemptedGeneration.current || accessKeyLoading || accessKey || isGeneratingKey) return;
+      // Wait for all queries to complete first
+      if (roundLoading || investorLoading || accessKeyLoading) return;
+      // Skip if already attempted, key exists, or already generating
+      if (hasAttemptedGeneration.current || accessKey || isGeneratingKey) return;
       // Need round and investor data
       if (!roundData?.id || !investor?.id) return;
       
@@ -131,7 +136,7 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
     };
     
     generateKey();
-  }, [roundData?.id, investor?.id, accessKeyLoading, accessKey, isGeneratingKey, refetchAccessKey, toast]);
+  }, [roundData?.id, investor?.id, roundLoading, investorLoading, accessKeyLoading, accessKey, isGeneratingKey, refetchAccessKey, toast]);
 
   // Fetch access logs for this key
   const { data: accessLogs = [] } = useQuery({
@@ -242,8 +247,8 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
   };
 
   const getStatusBadge = () => {
-    // Show loading while queries are still loading or key is being generated
-    if (accessKeyLoading || isGeneratingKey) {
+    // Show loading while any dependency is still loading
+    if (isLoadingDependencies) {
       return <Badge variant="outline" className="gap-1"><Loader2 className="w-3 h-3 animate-spin" />Loading...</Badge>;
     }
     if (!accessKey) return <Badge variant="outline">No Access Key</Badge>;
@@ -254,7 +259,8 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
     return <Badge className="bg-green-600/10 text-green-700 border-green-600/20">Active</Badge>;
   };
 
-  if (accessKeyLoading) {
+  // Show skeleton while loading parent dependencies
+  if (roundLoading || investorLoading) {
     return (
       <div className="h-[calc(100vh-3.5rem)] p-8">
         <Skeleton className="h-8 w-48 mb-6" />
