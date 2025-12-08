@@ -22,6 +22,7 @@ export default function ThesisMemo() {
   const [isEditing, setIsEditing] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useFounderAuth();
+  const [accessKeyId, setAccessKeyId] = useState<string | undefined>();
   
   const { rounds, isLoading: roundsLoading } = useRounds();
   const { investors } = useInvestors();
@@ -159,6 +160,8 @@ export default function ThesisMemo() {
 
   // If this is an investor subpage, render InvestorMemo instead
   if (isInvestorSubpage) {
+    const investorName = investorData?.name || variantSlug?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "Investor";
+    
     return (
       <>
         <CircuitLayout
@@ -169,8 +172,16 @@ export default function ThesisMemo() {
           hasMemoContent={hasMemoContent}
           currentMemoContent={currentMemoContent}
           breadcrumb={investorBreadcrumb}
+          isSubpage={true}
+          investorSlug={variantSlug}
+          investorName={investorName}
+          accessKeyId={accessKeyId}
         >
-          <InvestorMemo roundSlug={roundSlug} investorSlug={variantSlug} />
+          <InvestorMemo 
+            roundSlug={roundSlug} 
+            investorSlug={variantSlug}
+            onAccessKeyLoaded={setAccessKeyId}
+          />
         </CircuitLayout>
 
         <CreateRoundDialog

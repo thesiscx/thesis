@@ -10,3 +10,6 @@ export { CreateDocketCard } from "./CreateDocketCard";
 export { ActivityCard } from "./ActivityCard";
 export { RoundsCard } from "./RoundsCard";
 export { SubdomainCard } from "./SubdomainCard";
+export { LogsCard } from "./LogsCard";
+export { VoidCard } from "./VoidCard";
+export { ManageInvestorCard } from "./ManageInvestorCard";

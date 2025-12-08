@@ -8,7 +8,10 @@ import {
   Globe,
   FolderPlus,
   TrendingUp,
-  Loader2
+  Loader2,
+  Eye,
+  AlertTriangle,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
@@ -23,7 +26,10 @@ import {
   EditMemoCard,
   ShareLinksCard,
   FinancingSummaryCard,
-  CreateDocketCard
+  CreateDocketCard,
+  LogsCard,
+  VoidCard,
+  ManageInvestorCard
 } from "./tabs";
 
 type PageKey = "stage" | "memo" | "docket" | "pipeline";
@@ -33,6 +39,11 @@ type PipelineTab = "bulletin" | "agenda" | "add-investor";
 type MemoTab = "publish" | "edit" | "share";
 type DocketTab = "summary" | "create";
 
+// Subpage tab definitions
+type MemoSubpageTab = "logs" | "void";
+type DocketSubpageTab = "logs" | "void";
+type PipelineSubpageTab = "logs" | "manage";
+
 interface ActionChatPanelProps {
   pageKey: PageKey;
   roundId?: string;
@@ -41,6 +52,12 @@ interface ActionChatPanelProps {
   onUpdateMemoContent?: (content: any) => void;
   hasMemoContent?: boolean;
   currentMemoContent?: any;
+  // Subpage props
+  isSubpage?: boolean;
+  investorSlug?: string;
+  investorId?: string;
+  investorName?: string;
+  accessKeyId?: string;
 }
 
 const PIPELINE_TABS = [
@@ -60,6 +77,22 @@ const DOCKET_TABS = [
   { key: "create" as const, label: "Create", icon: FolderPlus },
 ];
 
+// Subpage tabs
+const MEMO_SUBPAGE_TABS = [
+  { key: "logs" as const, label: "Logs", icon: Eye },
+  { key: "void" as const, label: "Void", icon: AlertTriangle },
+];
+
+const DOCKET_SUBPAGE_TABS = [
+  { key: "logs" as const, label: "Logs", icon: Eye },
+  { key: "void" as const, label: "Void", icon: AlertTriangle },
+];
+
+const PIPELINE_SUBPAGE_TABS = [
+  { key: "logs" as const, label: "Logs", icon: Eye },
+  { key: "manage" as const, label: "Manage", icon: Trash2 },
+];
+
 export default function ActionChatPanel({
   pageKey,
   roundId,
@@ -68,6 +101,11 @@ export default function ActionChatPanel({
   onUpdateMemoContent,
   hasMemoContent,
   currentMemoContent,
+  isSubpage = false,
+  investorSlug,
+  investorId,
+  investorName,
+  accessKeyId,
 }: ActionChatPanelProps) {
   const { user, isLoading: authLoading } = useFounderAuth();
   
@@ -75,6 +113,11 @@ export default function ActionChatPanel({
   const [pipelineTab, setPipelineTab] = useState<PipelineTab>("bulletin");
   const [memoTab, setMemoTab] = useState<MemoTab>("publish");
   const [docketTab, setDocketTab] = useState<DocketTab>("summary");
+  
+  // Subpage tab state
+  const [memoSubpageTab, setMemoSubpageTab] = useState<MemoSubpageTab>("logs");
+  const [docketSubpageTab, setDocketSubpageTab] = useState<DocketSubpageTab>("logs");
+  const [pipelineSubpageTab, setPipelineSubpageTab] = useState<PipelineSubpageTab>("logs");
 
   if (authLoading) {
     return (
@@ -89,6 +132,131 @@ export default function ActionChatPanel({
       <div className="flex flex-col items-center justify-center h-full text-center py-12 px-6">
         <p className="text-sm font-medium mb-1">Circuit</p>
         <p className="text-xs text-muted-foreground">Sign in to continue</p>
+      </div>
+    );
+  }
+
+  // Render Memo subpage tabs
+  if (isSubpage && pageKey === "memo") {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 px-6 py-6 overflow-y-auto">
+          {memoSubpageTab === "logs" && (
+            <LogsCard accessKeyId={accessKeyId} investorName={investorName} />
+          )}
+          {memoSubpageTab === "void" && (
+            <VoidCard 
+              accessKeyId={accessKeyId} 
+              investorName={investorName}
+              roundSlug={roundSlug}
+              tool="memo"
+            />
+          )}
+        </div>
+        
+        <div className="px-6 pb-8">
+          <div className="flex items-center gap-2 flex-wrap">
+            {MEMO_SUBPAGE_TABS.map((tab) => (
+              <Button
+                key={tab.key}
+                size="sm"
+                onClick={() => setMemoSubpageTab(tab.key)}
+                className={cn(
+                  "h-8 text-xs gap-1.5 transition-all",
+                  memoSubpageTab === tab.key 
+                    ? "bg-foreground text-background hover:bg-foreground/90" 
+                    : "bg-secondary text-foreground hover:bg-secondary/80"
+                )}
+              >
+                <tab.icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render Docket subpage tabs
+  if (isSubpage && pageKey === "docket") {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 px-6 py-6 overflow-y-auto">
+          {docketSubpageTab === "logs" && (
+            <LogsCard accessKeyId={accessKeyId} investorName={investorName} />
+          )}
+          {docketSubpageTab === "void" && (
+            <VoidCard 
+              accessKeyId={accessKeyId} 
+              investorName={investorName}
+              roundSlug={roundSlug}
+              tool="docket"
+            />
+          )}
+        </div>
+        
+        <div className="px-6 pb-8">
+          <div className="flex items-center gap-2 flex-wrap">
+            {DOCKET_SUBPAGE_TABS.map((tab) => (
+              <Button
+                key={tab.key}
+                size="sm"
+                onClick={() => setDocketSubpageTab(tab.key)}
+                className={cn(
+                  "h-8 text-xs gap-1.5 transition-all",
+                  docketSubpageTab === tab.key 
+                    ? "bg-foreground text-background hover:bg-foreground/90" 
+                    : "bg-secondary text-foreground hover:bg-secondary/80"
+                )}
+              >
+                <tab.icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render Pipeline subpage tabs
+  if (isSubpage && pageKey === "pipeline") {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 px-6 py-6 overflow-y-auto">
+          {pipelineSubpageTab === "logs" && (
+            <LogsCard accessKeyId={accessKeyId} investorName={investorName} />
+          )}
+          {pipelineSubpageTab === "manage" && (
+            <ManageInvestorCard 
+              investorId={investorId}
+              investorName={investorName}
+              roundSlug={roundSlug}
+            />
+          )}
+        </div>
+        
+        <div className="px-6 pb-8">
+          <div className="flex items-center gap-2 flex-wrap">
+            {PIPELINE_SUBPAGE_TABS.map((tab) => (
+              <Button
+                key={tab.key}
+                size="sm"
+                onClick={() => setPipelineSubpageTab(tab.key)}
+                className={cn(
+                  "h-8 text-xs gap-1.5 transition-all",
+                  pipelineSubpageTab === tab.key 
+                    ? "bg-foreground text-background hover:bg-foreground/90" 
+                    : "bg-secondary text-foreground hover:bg-secondary/80"
+                )}
+              >
+                <tab.icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
