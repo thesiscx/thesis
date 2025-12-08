@@ -61,10 +61,8 @@ export default function ThesisDocket() {
     enabled: !!variantSlug && variantSlug !== "global" && !!roundSlug && !!user?.id,
   });
 
-  // Build breadcrumb for investor docket pages - use docket_id instead of name
-  const breadcrumb = !isGlobal && docketData?.docket?.docket_id 
-    ? { label: docketData.docket.docket_id }
-    : !isGlobal && docketData?.investor?.name
+  // Build breadcrumb for investor docket pages - use investor name
+  const breadcrumb = !isGlobal && docketData?.investor?.name
     ? { label: docketData.investor.name }
     : !isGlobal && variantSlug
     ? { label: variantSlug.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) }

@@ -598,6 +598,7 @@ export type Database = {
           id: string
           investor_id: string | null
           is_global: boolean
+          memo_code: string | null
           round_id: string
           updated_at: string
           version: number
@@ -609,6 +610,7 @@ export type Database = {
           id?: string
           investor_id?: string | null
           is_global?: boolean
+          memo_code?: string | null
           round_id: string
           updated_at?: string
           version?: number
@@ -620,6 +622,7 @@ export type Database = {
           id?: string
           investor_id?: string | null
           is_global?: boolean
+          memo_code?: string | null
           round_id?: string
           updated_at?: string
           version?: number
