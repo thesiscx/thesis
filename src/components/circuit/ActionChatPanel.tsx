@@ -63,7 +63,7 @@ interface ActionChatPanelProps {
 const PIPELINE_TABS = [
   { key: "bulletin" as const, label: "Bulletin", icon: Sparkles },
   { key: "agenda" as const, label: "Agenda", icon: Calendar },
-  { key: "add-investor" as const, label: "Add Investor", icon: UserPlus },
+  { key: "add-investor" as const, label: "Add", icon: UserPlus },
 ];
 
 const MEMO_TABS = [

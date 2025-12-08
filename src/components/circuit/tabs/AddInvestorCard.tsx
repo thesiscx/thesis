@@ -3,6 +3,7 @@ import { UserPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -93,7 +94,7 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
         <div className="rounded-xl border border-border bg-secondary/50 overflow-hidden">
           <div className="px-4 py-3 border-b border-border bg-secondary/30 flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-foreground" />
-            <span className="text-sm font-medium">Add</span>
+            <span className="text-sm font-medium">Add Investor</span>
           </div>
           <div className="p-4">
             <p className="text-sm text-muted-foreground text-center py-4">
@@ -111,42 +112,43 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
       <div className="rounded-xl border border-border bg-secondary/50 overflow-hidden">
         <div className="px-4 py-3 border-b border-border bg-secondary/30 flex items-center gap-2">
           <UserPlus className="w-4 h-4 text-foreground" />
-          <span className="text-sm font-medium">Add</span>
+          <span className="text-sm font-medium">Add Investor</span>
         </div>
         
         <div className="p-4 space-y-4">
           <div className="space-y-3">
-            {/* Entity Type Toggle - First */}
+            {/* Entity Type Radio Buttons - First */}
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Type</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, entity_type: "individual" }))}
-                  disabled={status === "loading"}
+              <RadioGroup 
+                value={formData.entity_type} 
+                onValueChange={(v) => setFormData(prev => ({ ...prev, entity_type: v as "individual" | "institutional" }))}
+                className="grid grid-cols-2 gap-1.5"
+                disabled={status === "loading"}
+              >
+                <label
                   className={cn(
-                    "px-3 py-2 rounded-lg border text-sm transition-all",
-                    formData.entity_type === "individual"
-                      ? "border-foreground bg-foreground/5 font-medium"
+                    "flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-xs transition-all",
+                    formData.entity_type === "individual" 
+                      ? "border-foreground bg-foreground/5" 
                       : "border-border hover:bg-secondary/50"
                   )}
                 >
+                  <RadioGroupItem value="individual" className="h-3 w-3" />
                   Individual
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, entity_type: "institutional" }))}
-                  disabled={status === "loading"}
+                </label>
+                <label
                   className={cn(
-                    "px-3 py-2 rounded-lg border text-sm transition-all",
-                    formData.entity_type === "institutional"
-                      ? "border-foreground bg-foreground/5 font-medium"
+                    "flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-xs transition-all",
+                    formData.entity_type === "institutional" 
+                      ? "border-foreground bg-foreground/5" 
                       : "border-border hover:bg-secondary/50"
                   )}
                 >
+                  <RadioGroupItem value="institutional" className="h-3 w-3" />
                   Institutional
-                </button>
-              </div>
+                </label>
+              </RadioGroup>
             </div>
 
             <div className="space-y-1.5">
@@ -198,7 +200,7 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
             ) : (
               <UserPlus className="w-4 h-4 mr-2" />
             )}
-            Add
+            Add Investor
           </Button>
         </div>
       </div>
