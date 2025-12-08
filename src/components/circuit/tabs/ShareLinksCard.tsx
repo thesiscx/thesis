@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link2, Copy, Check, Loader2, RefreshCw, Key, ArrowUpRight } from "lucide-react";
+import { Link2, Copy, Check, Loader2, RefreshCw, Key, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -244,23 +244,21 @@ export function ShareLinksCard({ roundId, roundSlug }: ShareLinksCardProps) {
               {investorLinks.map((link) => (
                 <div
                   key={link.investorId}
+                  onClick={() => handleNavigateToInvestor(link.investorSlug)}
                   className={cn(
-                    "px-3 py-2 rounded-lg border border-border bg-background",
+                    "flex items-center justify-between px-3 py-2 rounded-lg border border-border bg-background cursor-pointer",
                     "hover:bg-secondary/50 transition-colors"
                   )}
                 >
-                  {/* Investor name - clickable to navigate */}
-                  <div 
-                    onClick={() => handleNavigateToInvestor(link.investorSlug)}
-                    className="text-sm font-medium mb-1.5 cursor-pointer hover:text-primary transition-colors"
-                  >
+                  {/* Investor name */}
+                  <span className="text-sm font-medium">
                     {link.investorName}
-                  </div>
+                  </span>
                   
-                  {/* Compact icon rows */}
-                  <div className="flex items-center gap-3">
-                    {/* Key: copy */}
-                    <div className="flex items-center gap-1">
+                  {/* Icons on right */}
+                  <div className="flex items-center gap-2">
+                    {/* Key icon + copy button */}
+                    <div className="flex items-center gap-0.5">
                       <Key className="w-3 h-3 text-muted-foreground" />
                       <Button
                         size="sm"
@@ -269,7 +267,7 @@ export function ShareLinksCard({ roundId, roundSlug }: ShareLinksCardProps) {
                           e.stopPropagation();
                           copyToClipboard(link.accessKey, "Key", link.investorName);
                         }}
-                        className="h-5 w-5 p-0"
+                        className="h-6 w-6 p-0 text-foreground hover:bg-secondary"
                       >
                         {copiedItem === `${link.investorName}-Key` ? (
                           <Check className="w-3 h-3 text-green-600" />
@@ -279,8 +277,8 @@ export function ShareLinksCard({ roundId, roundSlug }: ShareLinksCardProps) {
                       </Button>
                     </div>
                     
-                    {/* Link: open in new tab */}
-                    <div className="flex items-center gap-1">
+                    {/* Link icon + open button */}
+                    <div className="flex items-center gap-0.5">
                       <Link2 className="w-3 h-3 text-muted-foreground" />
                       <Button
                         size="sm"
@@ -289,9 +287,9 @@ export function ShareLinksCard({ roundId, roundSlug }: ShareLinksCardProps) {
                           e.stopPropagation();
                           window.open(link.url, "_blank");
                         }}
-                        className="h-5 w-5 p-0"
+                        className="h-6 w-6 p-0 text-foreground hover:bg-secondary"
                       >
-                        <ArrowUpRight className="w-3 h-3" />
+                        <ExternalLink className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
