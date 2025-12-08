@@ -305,7 +305,7 @@ export function RoundsCard() {
           </Button>
         </div>
         
-        <ScrollArea className="max-h-[400px]">
+        <ScrollArea className="h-[400px]">
           <div className="p-2">
             {isLoading ? (
               <div className="p-4 space-y-2">

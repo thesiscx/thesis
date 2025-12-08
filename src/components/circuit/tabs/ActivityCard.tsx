@@ -109,33 +109,33 @@ export function ActivityCard() {
           <span className="text-sm font-medium">Activity Log</span>
         </div>
         
-        <div className="bg-[#1a1a1a] text-[#00ff00] font-mono text-xs">
-          <ScrollArea className="h-[400px]">
-            <div className="p-3 space-y-1">
-              {isLoading ? (
-                <div className="text-muted-foreground">Loading...</div>
-              ) : logs.length === 0 ? (
-                <div className="text-muted-foreground py-4 text-center">
-                  // No activity yet
-                </div>
-              ) : (
-                logs.map((log) => {
-                  const config = ACTION_CONFIG[log.action_type];
-                  if (!config) return null;
-                  const label = config.label(log.metadata);
-                  const time = formatTime(new Date(log.created_at));
-                  
-                  return (
-                    <div key={log.id} className="flex gap-2 leading-tight">
-                      <span className="text-[#666] shrink-0">[{time}]</span>
-                      <span className="text-[#00ff00]">{label}</span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </ScrollArea>
-        </div>
+        <ScrollArea className="h-[400px]">
+          <div className="p-3 space-y-1.5">
+            {isLoading ? (
+              <div className="text-muted-foreground text-xs">Loading...</div>
+            ) : logs.length === 0 ? (
+              <div className="text-muted-foreground py-4 text-center text-xs">
+                No activity yet
+              </div>
+            ) : (
+              logs.map((log) => {
+                const config = ACTION_CONFIG[log.action_type];
+                if (!config) return null;
+                const Icon = config.icon;
+                const label = config.label(log.metadata);
+                const time = formatTime(new Date(log.created_at));
+                
+                return (
+                  <div key={log.id} className="flex items-start gap-2 text-xs group">
+                    <span className="text-muted-foreground shrink-0 font-mono text-[10px] pt-0.5">{time}</span>
+                    <Icon className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground" />
+                    <span className="text-foreground/80 font-mono">{label}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
       </div>
       
       <StatusLine 
