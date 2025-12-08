@@ -2,7 +2,6 @@ import { useState } from "react";
 import { 
   Sparkles, 
   Calendar, 
-  History, 
   UserPlus,
   FileEdit,
   Link2,
@@ -19,7 +18,6 @@ import { cn } from "@/lib/utils";
 import { 
   BulletinCard, 
   AgendaCard, 
-  RecapCard, 
   AddInvestorCard,
   PublishCard,
   EditMemoCard,
@@ -29,7 +27,7 @@ import {
 type PageKey = "stage" | "memo" | "docket" | "pipeline";
 
 // Tab definitions per page
-type PipelineTab = "bulletin" | "agenda" | "recap" | "add-investor";
+type PipelineTab = "bulletin" | "agenda" | "add-investor";
 type MemoTab = "publish" | "edit" | "share";
 type DocketTab = "add-docket" | "terms";
 
@@ -46,14 +44,13 @@ interface ActionChatPanelProps {
 const PIPELINE_TABS = [
   { key: "bulletin" as const, label: "Bulletin", icon: Sparkles },
   { key: "agenda" as const, label: "Agenda", icon: Calendar },
-  { key: "recap" as const, label: "Recap", icon: History },
   { key: "add-investor" as const, label: "Add Investor", icon: UserPlus },
 ];
 
 const MEMO_TABS = [
   { key: "publish" as const, label: "Publish", icon: Globe },
-  { key: "edit" as const, label: "Edit Memo", icon: FileEdit },
-  { key: "share" as const, label: "Share Links", icon: Link2 },
+  { key: "edit" as const, label: "Edit", icon: FileEdit },
+  { key: "share" as const, label: "Share", icon: Link2 },
 ];
 
 const DOCKET_TABS = [
@@ -102,7 +99,6 @@ export default function ActionChatPanel({
         <div className="flex-1 px-6 py-6 overflow-y-auto">
           {pipelineTab === "bulletin" && <BulletinCard roundId={roundId} />}
           {pipelineTab === "agenda" && <AgendaCard roundId={roundId} />}
-          {pipelineTab === "recap" && <RecapCard roundId={roundId} />}
           {pipelineTab === "add-investor" && (
             <AddInvestorCard 
               roundId={roundId} 
