@@ -9,21 +9,28 @@ import {
   Globe,
   FolderOpen,
   Settings,
-  Pencil
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
-import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Import tab cards
-import { BulletinCard, AgendaCard, RecapCard, AddInvestorCard } from "./tabs";
+import { 
+  BulletinCard, 
+  AgendaCard, 
+  RecapCard, 
+  AddInvestorCard,
+  PublishCard,
+  EditMemoCard,
+  ShareLinksCard
+} from "./tabs";
 
 type PageKey = "stage" | "memo" | "docket" | "pipeline";
 
 // Tab definitions per page
 type PipelineTab = "bulletin" | "agenda" | "recap" | "add-investor";
-type MemoTab = "draft" | "share" | "publish";
+type MemoTab = "publish" | "edit" | "share";
 type DocketTab = "add-docket" | "terms";
 
 interface ActionChatPanelProps {
@@ -44,9 +51,9 @@ const PIPELINE_TABS = [
 ];
 
 const MEMO_TABS = [
-  { key: "draft" as const, label: "Draft", icon: FileEdit },
-  { key: "share" as const, label: "Share", icon: Link2 },
   { key: "publish" as const, label: "Publish", icon: Globe },
+  { key: "edit" as const, label: "Edit Memo", icon: FileEdit },
+  { key: "share" as const, label: "Share Links", icon: Link2 },
 ];
 
 const DOCKET_TABS = [
@@ -67,7 +74,7 @@ export default function ActionChatPanel({
   
   // Tab state per page
   const [pipelineTab, setPipelineTab] = useState<PipelineTab>("bulletin");
-  const [memoTab, setMemoTab] = useState<MemoTab>("draft");
+  const [memoTab, setMemoTab] = useState<MemoTab>("publish");
   const [docketTab, setDocketTab] = useState<DocketTab>("add-docket");
 
   if (authLoading) {
@@ -129,22 +136,29 @@ export default function ActionChatPanel({
     );
   }
 
-  // Render Memo page tabs (placeholder for now - will implement in next phase)
+  // Render Memo page tabs
   if (pageKey === "memo") {
     return (
       <div className="flex flex-col h-full">
+        {/* Card content area */}
         <div className="flex-1 px-6 py-6 overflow-y-auto">
-          <div className="rounded-xl border border-border bg-secondary/50 p-6">
-            <div className="text-center py-8">
-              <p className="text-sm text-muted-foreground">
-                {memoTab === "draft" && "Draft or edit your investor memo"}
-                {memoTab === "share" && "Share memo links with investors"}
-                {memoTab === "publish" && "Publish your memo publicly"}
-              </p>
-            </div>
-          </div>
+          {memoTab === "publish" && (
+            <PublishCard roundId={roundId} roundSlug={roundSlug} />
+          )}
+          {memoTab === "edit" && (
+            <EditMemoCard 
+              roundId={roundId} 
+              roundSlug={roundSlug}
+              onUpdateMemoContent={onUpdateMemoContent}
+              currentMemoContent={currentMemoContent}
+            />
+          )}
+          {memoTab === "share" && (
+            <ShareLinksCard roundId={roundId} roundSlug={roundSlug} />
+          )}
         </div>
         
+        {/* Tab bar */}
         <div className="px-6 pb-8">
           <div className="flex items-center gap-2 flex-wrap">
             {MEMO_TABS.map((tab) => (
