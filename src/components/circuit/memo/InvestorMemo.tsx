@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Copy, 
   ExternalLink, 
@@ -98,12 +98,20 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
     enabled: !!roundData?.id && !!investor?.id,
   });
 
-  // Auto-generate access key if missing
+  // Track if we've already attempted generation
+  const hasAttemptedGeneration = useRef(false);
+
+  // Auto-generate access key if missing (only once per mount)
   useEffect(() => {
     const generateKey = async () => {
-      if (!roundData?.id || !investor?.id || accessKeyLoading || accessKey || isGeneratingKey) return;
+      // Skip if already generated, still loading, key exists, or already generating
+      if (hasAttemptedGeneration.current || accessKeyLoading || accessKey || isGeneratingKey) return;
+      // Need round and investor data
+      if (!roundData?.id || !investor?.id) return;
       
+      hasAttemptedGeneration.current = true;
       setIsGeneratingKey(true);
+      
       try {
         await supabase.functions.invoke("generate-access-key", {
           body: {
@@ -116,13 +124,14 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
         toast({ title: "Access key generated" });
       } catch (error) {
         console.error("Failed to generate access key:", error);
+        hasAttemptedGeneration.current = false; // Allow retry on error
       } finally {
         setIsGeneratingKey(false);
       }
     };
     
     generateKey();
-  }, [roundData?.id, investor?.id, accessKeyLoading, accessKey, isGeneratingKey]);
+  }, [roundData?.id, investor?.id, accessKeyLoading, accessKey, isGeneratingKey, refetchAccessKey, toast]);
 
   // Fetch access logs for this key
   const { data: accessLogs = [] } = useQuery({
@@ -233,7 +242,10 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
   };
 
   const getStatusBadge = () => {
-    if (isGeneratingKey) return <Badge variant="outline" className="gap-1"><Loader2 className="w-3 h-3 animate-spin" />Generating...</Badge>;
+    // Show loading while queries are still loading or key is being generated
+    if (accessKeyLoading || isGeneratingKey) {
+      return <Badge variant="outline" className="gap-1"><Loader2 className="w-3 h-3 animate-spin" />Loading...</Badge>;
+    }
     if (!accessKey) return <Badge variant="outline">No Access Key</Badge>;
     if (accessKey.status === 'revoked') return <Badge variant="destructive">Revoked</Badge>;
     if (accessKey.expires_at && new Date(accessKey.expires_at) < new Date()) {
