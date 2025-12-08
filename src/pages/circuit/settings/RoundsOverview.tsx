@@ -34,7 +34,8 @@ import {
   CreditCard,
   Archive,
   RotateCcw,
-  Plus
+  Plus,
+  Download
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -246,147 +247,177 @@ function ContractPreviewDialog({
                           round.instrument_type === 'note' ? 'Convertible Note' : 
                           'Investment Agreement';
 
+  // Generate the actual SAFE HTML content
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const valuationCapFormatted = terms?.valuation_cap 
+    ? formatCurrency(terms.valuation_cap)
+    : 'N/A';
+
+  const discountSection = terms?.discount_rate 
+    ? `The "Discount Rate" is <strong>${100 - terms.discount_rate}%</strong>.`
+    : '';
+
+  const proRataSection = terms?.pro_rata_enabled ? `
+    <h3 style="font-size: 16px; font-weight: bold; margin-top: 32px; margin-bottom: 16px;">
+      Pro-Rata Rights
+    </h3>
+    <p style="margin-bottom: 12px; text-align: justify; margin-left: 20px;">
+      The Investor shall have a pro-rata right to participate in subsequent Equity Financings to maintain 
+      their ownership percentage in the Company, subject to customary exceptions.
+    </p>
+  ` : '';
+
+  const safeHtml = `
+    <div style="font-family: 'Times New Roman', Times, serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 1.6; color: #333;">
+      <h1 style="text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 8px; letter-spacing: 2px;">
+        SAFE
+      </h1>
+      <h2 style="text-align: center; font-size: 16px; color: #666; margin-bottom: 32px; font-weight: normal;">
+        (Simple Agreement for Future Equity)
+      </h2>
+      
+      <p style="margin-bottom: 20px; text-align: justify; font-size: 11px; text-transform: uppercase; color: #666;">
+        THIS INSTRUMENT AND ANY SECURITIES ISSUABLE PURSUANT HERETO HAVE NOT BEEN REGISTERED 
+        UNDER THE SECURITIES ACT OF 1933, AS AMENDED (THE "SECURITIES ACT"), OR UNDER THE 
+        SECURITIES LAWS OF CERTAIN STATES. THESE SECURITIES MAY NOT BE OFFERED, SOLD OR 
+        OTHERWISE TRANSFERRED, PLEDGED OR HYPOTHECATED EXCEPT AS PERMITTED UNDER THE ACT AND 
+        APPLICABLE STATE SECURITIES LAWS PURSUANT TO AN EFFECTIVE REGISTRATION STATEMENT OR AN 
+        EXEMPTION THEREFROM.
+      </p>
+      
+      <p style="margin-bottom: 24px; text-align: justify;">
+        <strong>${companyName || '[Company Name]'}</strong>, a Delaware corporation (the "Company"), hereby certifies that in exchange for 
+        the payment by <strong>[Investor Name]</strong> (the "Investor") of <strong>[Purchase Amount]</strong> 
+        (the "Purchase Amount") on or about ${currentDate}, the Company issues to the Investor 
+        the right to certain shares of the Company's Capital Stock, subject to the terms 
+        described below.
+      </p>
+
+      <p style="margin-bottom: 24px; text-align: justify;">
+        The "Valuation Cap" is <strong>${valuationCapFormatted}</strong>.
+        ${discountSection}
+      </p>
+
+      <h3 style="font-size: 16px; font-weight: bold; margin-top: 32px; margin-bottom: 16px;">
+        1. Events
+      </h3>
+      
+      <p style="margin-bottom: 16px; text-align: justify; margin-left: 20px;">
+        <strong>(a) Equity Financing.</strong> If there is an Equity Financing before the 
+        termination of this Safe, on the initial closing of such Equity Financing, this Safe 
+        will automatically convert into the number of shares of Safe Preferred Stock equal to 
+        the Purchase Amount divided by the Conversion Price.
+      </p>
+
+      <p style="margin-bottom: 16px; text-align: justify; margin-left: 20px;">
+        <strong>(b) Liquidity Event.</strong> If there is a Liquidity Event before the 
+        termination of this Safe, this Safe will automatically be entitled to receive a portion 
+        of Proceeds, due and payable to the Investor immediately prior to, or concurrent with, 
+        the consummation of such Liquidity Event.
+      </p>
+
+      <p style="margin-bottom: 16px; text-align: justify; margin-left: 20px;">
+        <strong>(c) Dissolution Event.</strong> If there is a Dissolution Event before the 
+        termination of this Safe, the Investor will automatically be entitled to receive a portion 
+        of Proceeds equal to the Cash-Out Amount.
+      </p>
+
+      <h3 style="font-size: 16px; font-weight: bold; margin-top: 32px; margin-bottom: 16px;">
+        2. Definitions
+      </h3>
+      
+      <p style="margin-bottom: 12px; text-align: justify; margin-left: 20px;">
+        "<strong>Capital Stock</strong>" means the capital stock of the Company, including, without limitation, 
+        the "Common Stock" and the "Preferred Stock."
+      </p>
+
+      <p style="margin-bottom: 12px; text-align: justify; margin-left: 20px;">
+        "<strong>Conversion Price</strong>" means either: (1) the Safe Price or (2) the Discount Price, 
+        whichever calculation results in a greater number of shares of Safe Preferred Stock.
+      </p>
+
+      <h3 style="font-size: 16px; font-weight: bold; margin-top: 32px; margin-bottom: 16px;">
+        3. Company Representations
+      </h3>
+      
+      <p style="margin-bottom: 12px; text-align: justify; margin-left: 20px;">
+        The Company is a corporation duly organized, validly existing and in good standing under the 
+        laws of its state of incorporation.
+      </p>
+
+      <h3 style="font-size: 16px; font-weight: bold; margin-top: 32px; margin-bottom: 16px;">
+        4. Investor Representations
+      </h3>
+      
+      <p style="margin-bottom: 12px; text-align: justify; margin-left: 20px;">
+        The Investor is an accredited investor as such term is defined in Rule 501 of Regulation D 
+        under the Securities Act.
+      </p>
+
+      ${proRataSection}
+
+      <div style="margin-top: 60px; padding-top: 32px; border-top: 2px solid #333;">
+        <p style="font-weight: bold; margin-bottom: 24px; text-align: center;">
+          IN WITNESS WHEREOF, the undersigned have caused this Safe to be duly executed and delivered.
+        </p>
+        
+        <div style="display: flex; gap: 60px; margin-top: 40px;">
+          <div style="flex: 1;">
+            <p style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">COMPANY:</p>
+            <p style="margin-bottom: 4px;">${companyName || '[Company Name]'}</p>
+            <div style="border-bottom: 1px solid #000; margin-top: 48px; margin-bottom: 4px;"></div>
+            <p style="font-size: 12px; color: #666;">By: ________________________________</p>
+            <p style="font-size: 12px; color: #666; margin-top: 4px;">Title: Authorized Signatory</p>
+          </div>
+          
+          <div style="flex: 1;">
+            <p style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">INVESTOR:</p>
+            <p style="margin-bottom: 4px;">[Investor Name]</p>
+            <div style="border-bottom: 1px solid #000; margin-top: 48px; margin-bottom: 4px;"></div>
+            <p style="font-size: 12px; color: #666;">By: ________________________________</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Preview {instrumentLabel}</DialogTitle>
         </DialogHeader>
         
-        <div className="prose prose-sm max-w-none">
-          <div className="text-center mb-8">
-            <h2 className="text-xl font-bold mb-2">
-              {round.instrument_type === 'safe' ? 'SIMPLE AGREEMENT FOR FUTURE EQUITY' : 
-               round.instrument_type === 'note' ? 'CONVERTIBLE PROMISSORY NOTE' :
-               'INVESTMENT AGREEMENT'}
-            </h2>
-            <p className="text-muted-foreground">{companyName || '[Company Name]'}</p>
-          </div>
-
-          <div className="space-y-6 text-sm">
-            <section>
-              <h3 className="font-semibold text-base mb-2">Investment Terms</h3>
-              <div className="grid grid-cols-2 gap-4 bg-muted/30 p-4 rounded-lg">
-                <div>
-                  <p className="text-muted-foreground">Valuation Cap</p>
-                  <p className="font-medium">
-                    {terms?.valuation_cap ? `$${terms.valuation_cap.toLocaleString()}` : 'Not set'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Discount Rate</p>
-                  <p className="font-medium">
-                    {terms?.discount_rate ? `${terms.discount_rate}%` : 'Not set'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Minimum Investment</p>
-                  <p className="font-medium">
-                    {terms?.minimum_ticket ? `$${terms.minimum_ticket.toLocaleString()}` : 'Not set'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Instrument Type</p>
-                  <p className="font-medium">{instrumentLabel}</p>
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h3 className="font-semibold text-base mb-2">Rights & Provisions</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                {terms?.pro_rata_enabled && (
-                  <li>Pro-rata rights to participate in future financing rounds</li>
-                )}
-                {terms?.mfn_enabled && (
-                  <li>Most Favored Nation (MFN) clause applicable</li>
-                )}
-                <li>Standard {round.instrument_type.toUpperCase()} terms and conditions apply</li>
-              </ul>
-            </section>
-
-            <section>
-              <h3 className="font-semibold text-base mb-2">Wire Instructions</h3>
-              {terms?.wire_bank_name ? (
-                <div className="bg-muted/30 p-4 rounded-lg space-y-2 font-mono text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Bank Name:</span>
-                    <span>{terms.wire_bank_name}</span>
-                  </div>
-                  {terms.wire_account_name && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Account Name:</span>
-                      <span>{terms.wire_account_name}</span>
-                    </div>
-                  )}
-                  {terms.wire_account_number && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Account Number:</span>
-                      <span>{terms.wire_account_number}</span>
-                    </div>
-                  )}
-                  {terms.wire_routing_number && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Routing Number:</span>
-                      <span>{terms.wire_routing_number}</span>
-                    </div>
-                  )}
-                  {terms.wire_swift_code && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">SWIFT Code:</span>
-                      <span>{terms.wire_swift_code}</span>
-                    </div>
-                  )}
-                  {terms.wire_bank_address && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Bank Address:</span>
-                      <span>{terms.wire_bank_address}</span>
-                    </div>
-                  )}
-                  {terms.wire_reference && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Reference:</span>
-                      <span>{terms.wire_reference}</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-muted-foreground italic">Wire instructions not configured</p>
-              )}
-            </section>
-
-            <section className="border-t pt-4 mt-6">
-              <p className="text-xs text-muted-foreground text-center">
-                This is a preview of the investment agreement. The final document will be 
-                generated when creating investor-specific dockets.
-              </p>
-            </section>
-          </div>
-        </div>
+        <div 
+          className="bg-white text-black rounded-lg p-4 border"
+          dangerouslySetInnerHTML={{ __html: safeHtml }}
+        />
       </DialogContent>
     </Dialog>
   );
 }
 
-function RoundTermsEditor({ round }: { round: Round }) {
+function RoundTermsEditor({ round, onTermsChange }: { round: Round; onTermsChange?: () => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [saving, setSaving] = useState(false);
+  const [savingTerms, setSavingTerms] = useState(false);
+  const [savingWire, setSavingWire] = useState(false);
   const [parsing, setParsing] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isOpen = round.state === "open";
-
-  // Listen for preview event from parent
-  useEffect(() => {
-    const handlePreviewEvent = (e: CustomEvent<{ roundId: string }>) => {
-      if (e.detail.roundId === round.id) {
-        setPreviewOpen(true);
-      }
-    };
-    window.addEventListener('openContractPreview', handlePreviewEvent as EventListener);
-    return () => window.removeEventListener('openContractPreview', handlePreviewEvent as EventListener);
-  }, [round.id]);
 
   const { data: terms, isLoading, refetch } = useQuery({
     queryKey: ["round-terms", round.id],
@@ -437,10 +468,10 @@ function RoundTermsEditor({ round }: { round: Round }) {
     }
   }, [terms]);
 
-  const handleSave = async () => {
+  const handleSaveTerms = async () => {
     if (!isOpen) return;
     
-    setSaving(true);
+    setSavingTerms(true);
     try {
       const { error } = await supabase
         .from("round_terms")
@@ -451,6 +482,28 @@ function RoundTermsEditor({ round }: { round: Round }) {
           pro_rata_enabled: formData.pro_rata_enabled,
           mfn_enabled: formData.mfn_enabled,
           minimum_ticket: formData.minimum_ticket,
+        }, { onConflict: "round_id" });
+
+      if (error) throw error;
+      toast({ title: "Investment terms saved" });
+      refetch();
+      onTermsChange?.();
+    } catch (error: any) {
+      toast({ title: "Failed to save terms", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingTerms(false);
+    }
+  };
+
+  const handleSaveWireInstructions = async () => {
+    if (!isOpen) return;
+    
+    setSavingWire(true);
+    try {
+      const { error } = await supabase
+        .from("round_terms")
+        .upsert({
+          round_id: round.id,
           wire_bank_name: formData.wire_bank_name || null,
           wire_account_name: formData.wire_account_name || null,
           wire_account_number: formData.wire_account_number || null,
@@ -461,12 +514,13 @@ function RoundTermsEditor({ round }: { round: Round }) {
         }, { onConflict: "round_id" });
 
       if (error) throw error;
-      toast({ title: "Terms saved" });
+      toast({ title: "Wire instructions saved" });
       refetch();
+      onTermsChange?.();
     } catch (error: any) {
-      toast({ title: "Failed to save terms", description: error.message, variant: "destructive" });
+      toast({ title: "Failed to save wire instructions", description: error.message, variant: "destructive" });
     } finally {
-      setSaving(false);
+      setSavingWire(false);
     }
   };
 
@@ -633,6 +687,15 @@ function RoundTermsEditor({ round }: { round: Round }) {
             <Label>MFN Clause</Label>
           </div>
         </div>
+
+        {isOpen && (
+          <div className="flex justify-end pt-4">
+            <Button onClick={handleSaveTerms} disabled={savingTerms} size="sm">
+              {savingTerms && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Terms
+            </Button>
+          </div>
+        )}
       </div>
 
       <Separator />
@@ -743,23 +806,16 @@ function RoundTermsEditor({ round }: { round: Round }) {
             disabled={!isOpen}
           />
         </div>
+
+        {isOpen && (
+          <div className="flex justify-end pt-4">
+            <Button onClick={handleSaveWireInstructions} disabled={savingWire} size="sm">
+              {savingWire && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Wire Instructions
+            </Button>
+          </div>
+        )}
       </div>
-
-      {isOpen && (
-        <div className="flex justify-end pt-2">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Terms
-          </Button>
-        </div>
-      )}
-
-      <ContractPreviewDialog 
-        open={previewOpen} 
-        onOpenChange={setPreviewOpen} 
-        round={round}
-        terms={terms}
-      />
     </div>
   );
 }
@@ -778,7 +834,38 @@ function RoundCard({
   hasOpenRound: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(isActive);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [instrumentType, setInstrumentType] = useState(round.instrument_type);
+  const [savingInstrument, setSavingInstrument] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { companyName } = useFounderAuth();
+
+  // Check if dockets exist (locks instrument type)
+  const { data: hasDockets } = useQuery({
+    queryKey: ["round-has-dockets", round.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("dockets")
+        .select("*", { count: "exact", head: true })
+        .eq("round_id", round.id)
+        .eq("is_global", false);
+      return (count || 0) > 0;
+    },
+  });
+
+  // Fetch terms for preview
+  const { data: terms } = useQuery({
+    queryKey: ["round-terms", round.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("round_terms")
+        .select("*")
+        .eq("round_id", round.id)
+        .maybeSingle();
+      return data as RoundTerms | null;
+    },
+  });
 
   const handleReopenClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -792,6 +879,45 @@ function RoundCard({
     }
     onReopenRound(round);
   };
+
+  const handleInstrumentChange = async (value: string) => {
+    if (hasDockets) {
+      toast({
+        title: "Cannot change instrument type",
+        description: "Dockets have already been generated for this round",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setInstrumentType(value);
+    setSavingInstrument(true);
+    try {
+      const { error } = await supabase
+        .from("rounds")
+        .update({ instrument_type: value })
+        .eq("id", round.id);
+      
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["rounds"] });
+      toast({ title: "Instrument type updated" });
+    } catch (error: any) {
+      toast({ title: "Failed to update instrument type", description: error.message, variant: "destructive" });
+      setInstrumentType(round.instrument_type);
+    } finally {
+      setSavingInstrument(false);
+    }
+  };
+
+  const handleDownloadAgreement = () => {
+    // Generate simple downloadable PDF placeholder
+    toast({ title: "Download started", description: "Generating agreement template..." });
+    // For now, just open preview - actual PDF generation would need html2pdf
+  };
+
+  const instrumentLabel = instrumentType === 'safe' ? 'SAFE' : 
+                          instrumentType === 'note' ? 'Convertible Note' : 
+                          'Investment Agreement';
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -808,7 +934,7 @@ function RoundCard({
                     {!isActive && <Badge variant="secondary" className="text-xs">Closed</Badge>}
                   </div>
                   <CardDescription className="mt-1">
-                    {ROUND_TYPE_LABELS[round.round_type]} • {round.instrument_type.toUpperCase()}
+                    {ROUND_TYPE_LABELS[round.round_type]} • {instrumentType.toUpperCase()}
                   </CardDescription>
                 </div>
               </div>
@@ -842,22 +968,57 @@ function RoundCard({
             {/* Round Agreement / Document Section */}
             <div>
               <h4 className="font-medium mb-4">Round Agreement</h4>
-              <div className="bg-secondary/30 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Preview how your investment agreement will appear to investors based on your configured terms.
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    // Find the RoundTermsEditor and trigger its preview
-                    const previewEvent = new CustomEvent('openContractPreview', { detail: { roundId: round.id } });
-                    window.dispatchEvent(previewEvent);
-                  }}
-                  className="gap-2"
-                >
-                  <Eye className="w-4 h-4" />
-                  Preview Agreement
-                </Button>
+              <div className="bg-secondary/30 rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Instrument Type</p>
+                    <p className="text-xs text-muted-foreground">
+                      {hasDockets ? "Locked (dockets have been generated)" : "Select the type of investment agreement"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {hasDockets && <Lock className="w-4 h-4 text-muted-foreground" />}
+                    <Select 
+                      value={instrumentType} 
+                      onValueChange={handleInstrumentChange}
+                      disabled={hasDockets || !isActive || savingInstrument}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="safe">SAFE</SelectItem>
+                        <SelectItem value="note">Convertible Note</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Preview how your {instrumentLabel} will appear to investors based on your configured terms.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setPreviewOpen(true)}
+                      className="gap-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Preview Agreement
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleDownloadAgreement}
+                      className="gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Template
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -892,6 +1053,13 @@ function RoundCard({
           </CardContent>
         </CollapsibleContent>
       </Card>
+
+      <ContractPreviewDialog 
+        open={previewOpen} 
+        onOpenChange={setPreviewOpen} 
+        round={{ ...round, instrument_type: instrumentType }}
+        terms={terms}
+      />
     </Collapsible>
   );
 }
