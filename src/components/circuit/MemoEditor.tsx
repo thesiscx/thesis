@@ -12,6 +12,7 @@ import TextStyle from '@tiptap/extension-text-style';
 import Youtube from '@tiptap/extension-youtube';
 import { FontSize } from '@/components/circuit/editor/FontSize';
 import { Citation } from '@/components/circuit/editor/Citation';
+import { Embed } from '@/components/circuit/editor/Embed';
 import { EditorToolbar } from '@/components/circuit/editor/EditorToolbar';
 import '@/components/circuit/editor/EditorStyles.css';
 import { useEffect, useCallback, useRef } from 'react';
@@ -116,6 +117,7 @@ export default function MemoEditor({
         controls: true,
         nocookie: true,
       }),
+      Embed,
       Citation,
     ],
     content: '', // Start empty, content is set via useEffect

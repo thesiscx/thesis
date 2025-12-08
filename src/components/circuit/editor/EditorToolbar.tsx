@@ -91,10 +91,10 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
   };
 
-  const addVideo = () => {
-    const url = window.prompt('Enter YouTube URL');
+  const addEmbed = () => {
+    const url = window.prompt('Paste video URL (YouTube, Vimeo, Loom, Wistia, Mux, etc.)');
     if (url) {
-      editor.chain().focus().setYoutubeVideo({ src: url }).run();
+      editor.chain().focus().setEmbed({ src: url }).run();
     }
   };
 
@@ -266,7 +266,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         <ToolbarButton onClick={addTable} title="Add Table">
           <Table className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton onClick={addVideo} title="Add Video">
+        <ToolbarButton onClick={addEmbed} title="Embed Video">
           <Video className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
