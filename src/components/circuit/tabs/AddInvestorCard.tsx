@@ -3,8 +3,6 @@ import { UserPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,18 +18,9 @@ interface AddInvestorCardProps {
 interface InvestorFormData {
   name: string;
   email: string;
-  entity_name: string;
-  entity_type: string;
-  address: string;
+  entity_type: "individual" | "institutional";
+  firm_name: string;
 }
-
-const ENTITY_TYPES = [
-  { value: "individual", label: "Individual" },
-  { value: "llc", label: "LLC" },
-  { value: "corporation", label: "Corporation" },
-  { value: "partnership", label: "Partnership" },
-  { value: "trust", label: "Trust" },
-];
 
 export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
   const { toast } = useToast();
@@ -43,9 +32,8 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
   const [formData, setFormData] = useState<InvestorFormData>({
     name: "",
     email: "",
-    entity_name: "",
     entity_type: "individual",
-    address: "",
+    firm_name: "",
   });
 
   const handleSubmit = async () => {
@@ -64,9 +52,8 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
         name: formData.name.trim(),
         slug,
         email: formData.email?.trim() || null,
-        entity_name: formData.entity_name?.trim() || null,
-        entity_type: formData.entity_type || "individual",
-        address: formData.address?.trim() || null,
+        entity_name: formData.entity_type === "institutional" ? formData.firm_name?.trim() || null : null,
+        entity_type: formData.entity_type,
         workspace_id: openRound.workspace_id,
       });
 
@@ -83,9 +70,8 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
         setFormData({
           name: "",
           email: "",
-          entity_name: "",
           entity_type: "individual",
-          address: "",
+          firm_name: "",
         });
         setStatus("idle");
         setAddedName(null);
@@ -107,7 +93,7 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
         <div className="rounded-xl border border-border bg-secondary/50 overflow-hidden">
           <div className="px-4 py-3 border-b border-border bg-secondary/30 flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-foreground" />
-            <span className="text-sm font-medium">Add Investor</span>
+            <span className="text-sm font-medium">Add</span>
           </div>
           <div className="p-4">
             <p className="text-sm text-muted-foreground text-center py-4">
@@ -125,17 +111,50 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
       <div className="rounded-xl border border-border bg-secondary/50 overflow-hidden">
         <div className="px-4 py-3 border-b border-border bg-secondary/30 flex items-center gap-2">
           <UserPlus className="w-4 h-4 text-foreground" />
-          <span className="text-sm font-medium">Add Investor</span>
+          <span className="text-sm font-medium">Add</span>
         </div>
         
         <div className="p-4 space-y-4">
           <div className="space-y-3">
+            {/* Entity Type Toggle - First */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Type</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, entity_type: "individual" }))}
+                  disabled={status === "loading"}
+                  className={cn(
+                    "px-3 py-2 rounded-lg border text-sm transition-all",
+                    formData.entity_type === "individual"
+                      ? "border-foreground bg-foreground/5 font-medium"
+                      : "border-border hover:bg-secondary/50"
+                  )}
+                >
+                  Individual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, entity_type: "institutional" }))}
+                  disabled={status === "loading"}
+                  className={cn(
+                    "px-3 py-2 rounded-lg border text-sm transition-all",
+                    formData.entity_type === "institutional"
+                      ? "border-foreground bg-foreground/5 font-medium"
+                      : "border-border hover:bg-secondary/50"
+                  )}
+                >
+                  Institutional
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Name *</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Sequoia Capital"
+                placeholder={formData.entity_type === "institutional" ? "Jane Smith" : "John Doe"}
                 className="bg-background"
                 disabled={status === "loading"}
               />
@@ -146,60 +165,26 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
               <Input
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="partner@sequoia.com"
+                placeholder={formData.entity_type === "institutional" ? "partner@sequoia.com" : "john@email.com"}
                 type="email"
                 className="bg-background"
                 disabled={status === "loading"}
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Entity Name</Label>
-              <Input
-                value={formData.entity_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, entity_name: e.target.value }))}
-                placeholder="Sequoia Capital Operations LLC"
-                className="bg-background"
-                disabled={status === "loading"}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Entity Type</Label>
-              <RadioGroup 
-                value={formData.entity_type} 
-                onValueChange={(v) => setFormData(prev => ({ ...prev, entity_type: v }))}
-                className="grid grid-cols-2 gap-1.5"
-                disabled={status === "loading"}
-              >
-                {ENTITY_TYPES.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-xs transition-all",
-                      formData.entity_type === opt.value 
-                        ? "border-foreground bg-foreground/5" 
-                        : "border-border hover:bg-secondary/50"
-                    )}
-                  >
-                    <RadioGroupItem value={opt.value} className="h-3 w-3" />
-                    {opt.label}
-                  </label>
-                ))}
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Address</Label>
-              <Textarea
-                value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="2800 Sand Hill Road, Menlo Park, CA 94025"
-                rows={2}
-                className="text-sm resize-none bg-background"
-                disabled={status === "loading"}
-              />
-            </div>
+            {/* Firm Name - Only for Institutional */}
+            {formData.entity_type === "institutional" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Firm Name</Label>
+                <Input
+                  value={formData.firm_name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, firm_name: e.target.value }))}
+                  placeholder="Sequoia Capital"
+                  className="bg-background"
+                  disabled={status === "loading"}
+                />
+              </div>
+            )}
           </div>
 
           <Button 
@@ -213,7 +198,7 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
             ) : (
               <UserPlus className="w-4 h-4 mr-2" />
             )}
-            Add Investor
+            Add
           </Button>
         </div>
       </div>
