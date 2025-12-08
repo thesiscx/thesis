@@ -37,7 +37,7 @@ export function PipelineActivityCard({ investorId, investorName }: PipelineActiv
   if (isLoading) {
     return (
       <Card className="border-border bg-transparent">
-        <CardHeader className="pb-3 border-b border-border">
+        <CardHeader className="py-3 border-b border-border">
           <Skeleton className="h-5 w-40" />
         </CardHeader>
         <CardContent className="pt-4">
@@ -59,7 +59,7 @@ export function PipelineActivityCard({ investorId, investorName }: PipelineActiv
   return (
     <>
       <Card className="border-border bg-transparent">
-        <CardHeader className="pb-3 border-b border-border">
+        <CardHeader className="py-3 border-b border-border">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Activity className="w-4 h-4" />
             Activity & Communication
