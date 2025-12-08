@@ -93,7 +93,7 @@ Investment memo documents.
 | created_by | uuid | Creator's user id |
 
 ### dockets
-Deal documentation and agreements.
+Deal documentation and agreements. Each docket represents an investor's SAFE agreement for a specific round.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -101,26 +101,57 @@ Deal documentation and agreements.
 | round_id | uuid | FK to rounds |
 | investor_id | uuid | FK to investors |
 | is_global | boolean | True for template |
-| docket_id | text | Auto-generated (S-1, PS-2, etc.) |
+| docket_id | text | Auto-generated ID (S-1, PS-2, A-3, etc.) based on round_type |
 | docket_number | integer | Sequential per round |
-| status | text | Docket status (see below) |
-| commitment_status | text | Commitment flow status |
-| commitment_flow_state | jsonb | Flow state persistence |
-| amount | numeric | Investment amount |
-| investor_* | text | Investor details captured |
-| custom_terms | text | Side letter terms |
-| show_deal_terms | boolean | Show terms on memo |
-| wire_received | boolean | Funds received |
-| wire_received_at | timestamp | When funds received |
-| access_key_id | uuid | FK to access_keys |
+| status | text | Docket lifecycle status (see below) |
+| commitment_status | text | 'none', 'signed' |
+| commitment_flow_state | jsonb | Persisted flow state (current_step, completed_steps, form data) |
+| amount | numeric | Investment amount entered by investor |
+| investor_name | text | Name captured during flow |
+| investor_email | text | Email captured during flow |
+| investor_phone | text | Phone captured during flow |
+| investor_address | text | Address captured during flow |
+| investor_entity_type | text | 'individual' or 'entity' |
+| investor_entity_name | text | Entity name if applicable |
+| custom_terms | text | Side letter / custom terms (markdown) |
+| show_deal_terms | boolean | Founder toggle: show terms to investor |
+| wire_received | boolean | Founder marks funds received |
+| wire_received_at | timestamp | When wire was confirmed |
+| access_key_id | uuid | FK to access_keys for this docket |
+| created_by | uuid | Founder who created docket |
 
-**Docket Status Values:**
-- `Drafted` - Created, not yet shared
-- `Viewed` - Investor has accessed
-- `Signed` - Investor has signed
-- `Executed` - Counter-signed
-- `Funded` - Wire received
-- `Voided` - Cancelled (only before signing)
+**Docket Status Lifecycle:**
+```
+Drafted → Viewed → Signed → Executed → Funded
+    ↓
+  Voided (only from Drafted state)
+```
+
+| Status | Description | Constraints |
+|--------|-------------|-------------|
+| `Drafted` | Created, link not yet accessed | Can be voided |
+| `Viewed` | Investor accessed the docket link | Cannot void |
+| `Signed` | Investor completed e-signature | Cannot void, legally binding |
+| `Executed` | Counter-signature applied | Cannot void |
+| `Funded` | wire_received=true | Final state, deal complete |
+| `Voided` | Cancelled by founder | Only from Drafted status |
+
+**commitment_flow_state Structure:**
+```json
+{
+  "current_step": "sign",
+  "completed_steps": ["terms", "details", "amount", "generate"],
+  "investor_details": { "name": "...", "email": "...", ... },
+  "amount": 50000
+}
+```
+
+**Docket ID Format:**
+Generated via `generate_docket_id()` trigger using round_type prefix:
+- Pre-Seed: `PS-1`, `PS-2`
+- Seed: `S-1`, `S-2`
+- Series A: `A-1`, `A-2`
+- Friends & Family: `FF-1`, `FF-2`
 
 ### access_keys
 Shareable access tokens for investors.

@@ -114,61 +114,150 @@
 6. Access logged, investor status → 'pitch'
 ```
 
-### 10. Investment Commitment Flow
+### 10. Investment Commitment Flow (Investor Docket)
 
+**Route:** `/share/:companySlug/:roundSlug/docket/:investorSlug`
+
+**Prerequisites:**
+- Founder created docket for investor
+- Founder shared docket link with access key
+- Investor has valid access key
+
+**Full Flow:**
 ```
-1. Access docket link (/share/company/round/docket/investor)
-2. Enter access key
-3. View Circuit splash screen
-4. 8-step commitment flow:
+1. Navigate to docket link
+2. Enter access key (llzk-rxqh-ryya-epep format)
+3. System validates key (validate-access-key edge function)
+4. Circuit splash screen plays (~2.5 seconds)
+5. Docket status updates: Drafted → Viewed
+6. 8-step commitment flow begins:
 
    Step 1: Review Terms
-   - View deal terms (valuation cap, discount)
-   - View company details
-   - Click "Continue"
+   ┌─────────────────────────────────────────┐
+   │ Company logo + name + address           │
+   │ Valuation Cap: $X                       │
+   │ Discount: X%                            │
+   │ Instrument: SAFE                        │
+   │ [Continue →]                            │
+   └─────────────────────────────────────────┘
+   - If show_deal_terms=false, terms hidden
 
    Step 2: Investor Details
-   - Enter name, email, phone
-   - Enter address
-   - Select entity type (Individual/Entity)
-   - If entity: enter entity name
-   - Click "Continue"
+   ┌─────────────────────────────────────────┐
+   │ Name: [_______________]                 │
+   │ Email: [_______________]                │
+   │ Phone: [_______________]                │
+   │ Address: [_______________]              │
+   │ Entity Type: ○ Individual  ○ Entity    │
+   │ Entity Name: [_______________] (if entity)│
+   │ [Continue →]                            │
+   └─────────────────────────────────────────┘
+   - All fields saved to docket on submit
 
    Step 3: Investment Amount
-   - Enter amount (must meet minimum ticket)
-   - Click "Continue"
+   ┌─────────────────────────────────────────┐
+   │ Investment Amount: $[________]          │
+   │ Minimum: $X (from round_terms)          │
+   │ [Continue →]                            │
+   └─────────────────────────────────────────┘
+   - Validates against minimum_ticket
 
    Step 4: Generate Agreement
-   - Animated document generation
-   - SAFE populated with details
+   ┌─────────────────────────────────────────┐
+   │ ⟳ Generating your SAFE agreement...    │
+   │ ✓ Loading investor details             │
+   │ ✓ Applying round terms                 │
+   │ ✓ Populating agreement template        │
+   │ ⟳ Finalizing document...               │
+   └─────────────────────────────────────────┘
+   - Uses template substitution (no AI)
    - Auto-advances when complete
 
    Step 5: Sign Agreement
-   - Review SAFE document
-   - Type signature
-   - Check consent box
-   - Click "Sign Agreement"
-   - Signature + IP + timestamp recorded
+   ┌─────────────────────────────────────────┐
+   │ [SAFE Document Preview - scrollable]    │
+   │                                         │
+   │ Your Signature: [_______________]       │
+   │ ☐ I agree to the terms above           │
+   │ [Sign Agreement →]                      │
+   └─────────────────────────────────────────┘
+   - Captures: signature_data, IP, timestamp
+   - Creates signature record in signatures table
+   - Updates docket status: Viewed → Signed
+   - Updates commitment_status: 'signed'
+   - Logs activity: investor_signed
 
    Step 6: Execute
-   - Animated counter-signature
-   - Shows: Validating signature ✓
-   - Shows: Applying counter-signature ✓
-   - Shows: Generating audit trail ✓
-   - Shows: Finalizing document ✓
+   ┌─────────────────────────────────────────┐
+   │ ✓ Validating investor signature         │
+   │ ✓ Applying pre-authorized counter-sig   │
+   │ ✓ Generating audit trail                │
+   │ ✓ Preparing executed agreement          │
+   │ ⟳ Finalizing document...               │
+   └─────────────────────────────────────────┘
+   - Uses founder's pre-authorized signature
+   - Creates company signature record
+   - Updates docket status: Signed → Executed
+   - Logs activity: deal_executed
    - Auto-advances when complete
 
    Step 7: Wire Instructions
-   - Display wire details
-   - Copy functionality
-   - 72-hour disclaimer
-   - Status: "Awaiting Funds"
-   - Real-time listener for wire_received
+   ┌─────────────────────────────────────────┐
+   │ AWAITING FUNDS ⟳                        │
+   │                                         │
+   │ Bank: [Mercury Bank] [Copy]             │
+   │ Account: [123456789] [Copy]             │
+   │ Routing: [987654321] [Copy]             │
+   │ Reference: [S-1 / Ali Ahmed] [Copy]     │
+   │                                         │
+   │ ⚠ 72-hour disclaimer                    │
+   └─────────────────────────────────────────┘
+   - Wire fields from round_terms
+   - Realtime subscription listens for wire_received
+   - Auto-advances when founder confirms funds
 
-   Step 8: Finalize (after wire received)
-   - "Investment Complete" confirmation
-   - Download executed agreement
-   - CTA to create investor account
+   Step 8: Finalize
+   ┌─────────────────────────────────────────┐
+   │ ✓ INVESTMENT COMPLETE                   │
+   │                                         │
+   │ [Download Executed Agreement]           │
+   │                                         │
+   │ [Create Account →] (optional CTA)       │
+   └─────────────────────────────────────────┘
+   - Only accessible when wire_received=true
+   - PDF includes both signatures + audit trail
+   - Docket status: Executed → Funded
+```
+
+**State Persistence:**
+- All progress saved to `dockets.commitment_flow_state`
+- Investor can leave and resume from last step
+- On reload: if wire_received=true, forces step 8
+
+**Founder-Side Docket Controls:**
+```
+InvestorDocket page (/docket/:investorSlug):
+┌─────────────────────────────────────────┐
+│ [Ali Ahmed] - S-1           [Executed]  │
+├─────────────────────────────────────────┤
+│ Share Link: [copy] [open]               │
+│ Access Key: llzk-rxqh-ryya-epep [copy]  │
+├─────────────────────────────────────────┤
+│ Investment: $50,000                     │
+│ Entity: Individual                      │
+│ Email: ali@example.com                  │
+├─────────────────────────────────────────┤
+│ ☑ Show Deal Terms to Investor           │
+│ ☐ Wire Received                         │
+├─────────────────────────────────────────┤
+│ Side Letter / Custom Terms:             │
+│ [___________________________________]   │
+│ [Save]                                  │
+├─────────────────────────────────────────┤
+│ Deal Progress:                          │
+│ ●──●──●──●──○──○                        │
+│ Created Viewed Signed Executed Funded   │
+└─────────────────────────────────────────┘
 ```
 
 ### 11. Investor Status Transitions

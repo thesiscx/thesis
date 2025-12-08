@@ -160,33 +160,59 @@ Investor memo viewing:
 - Table of contents
 - Exit button
 
-### InvestorCommit
-8-step commitment flow:
-1. Review Terms
-2. Investor Details
-3. Investment Amount
-4. Generate Agreement
-5. Sign Agreement
-6. Execute (counter-sign)
-7. Wire Instructions
-8. Finalize
+### InvestorCommit (`pages/public/InvestorCommit.tsx`)
+The core investor-facing commitment flow. A single dynamic component that loads investor-specific data based on URL and access key validation.
 
-### CommitmentSteps
-Step components in `components/public/steps/`:
-- ReviewTermsStep
-- InvestorDetailsStep
-- InvestmentAmountStep
-- GenerateDocumentStep
-- SignAgreementStep
-- ExecuteStep
-- WireStep
-- FinalizeStep
+**Route:** `/share/:companySlug/:roundSlug/docket/:investorSlug`
 
-### CircuitSplash
-Animated splash screen with Circuit logo GIF. Displays before commitment flow.
+**8-Step Flow:**
 
-### PoweredByCircuit
-Footer branding for investor pages with trust badges.
+| Step | Component | Purpose |
+|------|-----------|---------|
+| 1. Terms | `ReviewTermsStep` | Display deal terms (valuation cap, discount, instrument type), company details with logo |
+| 2. Details | `InvestorDetailsStep` | Collect investor info: name, email, phone, address, entity type (Individual/Entity) |
+| 3. Amount | `InvestmentAmountStep` | Investment amount input with minimum ticket validation |
+| 4. Generate | `GenerateDocumentStep` | Animated SAFE document generation using template substitution |
+| 5. Sign | `SignAgreementStep` | E-signature capture with typed signature, consent checkbox, legal text |
+| 6. Execute | `ExecuteStep` | Animated counter-signature with progress ticks (validating, counter-signing, audit trail, finalizing) |
+| 7. Wire | `WireStep` | Display wire instructions with copy buttons, 72-hour disclaimer, realtime listener for `wire_received` |
+| 8. Finalize | `FinalizeStep` | "Investment Complete" confirmation, download executed agreement, CTA to create account |
+
+**Key Behaviors:**
+- Flow state persists in `dockets.commitment_flow_state` (jsonb)
+- Step 8 only accessible when `wire_received=true`
+- Realtime subscription auto-advances from Wire to Finalize when funds confirmed
+- Session validates investorSlug matches to prevent cross-docket access
+
+**UI Layout:**
+- Centered card layout with fixed height (appears cut off at bottom)
+- Left sidebar shows step navigation with rounded-l-md indicators
+- "Close Terms" button (X icon) top-left
+- "Powered by Circuit" branding in sidebar footer
+- Internal scrolling within card (no page scroll)
+
+### CommitmentSteps (`components/public/steps/`)
+Individual step components:
+
+| Component | Key Fields/Features |
+|-----------|---------------------|
+| `ReviewTermsStep` | Company logo, name, address, valuation cap, discount rate |
+| `InvestorDetailsStep` | Name, email, phone, address, entity type radio (Individual/Entity), entity name |
+| `InvestmentAmountStep` | Amount input with formatting, minimum ticket validation |
+| `GenerateDocumentStep` | Animated progress, SAFE template population with investor + round data |
+| `SignAgreementStep` | SAFE document preview, signature text input, consent checkbox, IP/timestamp capture |
+| `ExecuteStep` | Animated checkmarks: signature validation, counter-signature, audit trail, finalization |
+| `WireStep` | Wire fields with copy buttons, 72-hour disclaimer, realtime `wire_received` subscription |
+| `FinalizeStep` | Success message, download button, account creation CTA |
+
+### CircuitSplash (`components/public/CircuitSplash.tsx`)
+Animated splash screen with Circuit logo GIF. Plays once (not looped), fades out after ~2.5 seconds. Establishes premium brand perception before commitment flow.
+
+### PoweredByCircuit (`components/public/PoweredByCircuit.tsx`)
+Footer branding for investor pages:
+- "Powered by Circuit" text
+- "E-Sign Act & UETA compliant" trust badge
+- Appears near e-signature section for legitimacy
 
 ## Utility Components
 
