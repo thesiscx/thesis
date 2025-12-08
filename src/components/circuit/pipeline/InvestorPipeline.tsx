@@ -33,7 +33,7 @@ const STATUS_OPTIONS = [
 interface InvestorPipelineProps {
   roundSlug?: string;
   investorSlug?: string;
-  onInvestorLoaded?: (investor: { id: string; name: string }) => void;
+  onInvestorLoaded?: (investor: { id: string; name: string; status?: string }) => void;
 }
 
 export default function InvestorPipeline({ roundSlug, investorSlug, onInvestorLoaded }: InvestorPipelineProps) {
@@ -72,7 +72,7 @@ export default function InvestorPipeline({ roundSlug, investorSlug, onInvestorLo
         .maybeSingle();
       
       if (data && onInvestorLoaded) {
-        onInvestorLoaded({ id: data.id, name: data.name });
+        onInvestorLoaded({ id: data.id, name: data.name, status: data.status || undefined });
       }
       
       return data;
