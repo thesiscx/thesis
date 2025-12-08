@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
@@ -6,17 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { logActivity } from "@/lib/activityLogger";
 import { 
-  FileText, 
-  FolderOpen, 
   Mail, 
   Building2, 
   MapPin, 
-  Calendar,
   ArrowLeft,
   Bot,
-  MessageSquare
+  MessageSquare,
+  XCircle,
+  FolderOpen
 } from "lucide-react";
+import { useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 
 const STATUS_OPTIONS = [
@@ -37,6 +39,8 @@ interface InvestorPipelineProps {
 export default function InvestorPipeline({ roundSlug, investorSlug, onInvestorLoaded }: InvestorPipelineProps) {
   const { user } = useFounderAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isMarkingPassed, setIsMarkingPassed] = useState(false);
 
   // Fetch round data
   const { data: roundData } = useQuery({
@@ -177,24 +181,44 @@ export default function InvestorPipeline({ roundSlug, investorSlug, onInvestorLo
               </p>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/${roundSlug}/memo/${investor.slug}`)}
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              View Memo
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/${roundSlug}/docket/${investor.slug}`)}
-            >
-              <FolderOpen className="w-4 h-4 mr-2" />
-              View Docket
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              if (!user?.id || !investor) return;
+              setIsMarkingPassed(true);
+              try {
+                const { error } = await supabase
+                  .from("investors")
+                  .update({ status: "lost" })
+                  .eq("id", investor.id);
+                
+                if (error) throw error;
+                
+                await logActivity({
+                  workspaceId: user.id,
+                  actionType: "investor_marked_passed",
+                  investorId: investor.id,
+                  roundId: roundData?.id,
+                  metadata: { investor_name: investor.name }
+                });
+                
+                toast.success(`${investor.name} marked as passed`);
+                queryClient.invalidateQueries({ queryKey: ["investors"] });
+                queryClient.invalidateQueries({ queryKey: ["investor", investorSlug] });
+                navigate(`/${roundSlug}/pipeline`);
+              } catch (err) {
+                console.error("Failed to mark as passed:", err);
+                toast.error("Failed to mark investor as passed");
+              } finally {
+                setIsMarkingPassed(false);
+              }
+            }}
+            disabled={investor.status === "lost" || isMarkingPassed}
+          >
+            <XCircle className="w-4 h-4 mr-2" />
+            {isMarkingPassed ? "Marking..." : investor.status === "lost" ? "Already Passed" : "Mark as Passed"}
+          </Button>
         </div>
 
         {/* AI Summary Card */}
