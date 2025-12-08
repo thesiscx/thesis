@@ -10,6 +10,7 @@ export interface Investor {
   entity_name: string | null;
   entity_type: string | null;
   address: string | null;
+  status: string | null;
 }
 
 export function useInvestors() {
