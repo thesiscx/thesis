@@ -6,8 +6,8 @@ import {
   FileEdit,
   Link2,
   Globe,
-  FolderOpen,
-  Settings,
+  FolderPlus,
+  TrendingUp,
   Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,9 @@ import {
   AddInvestorCard,
   PublishCard,
   EditMemoCard,
-  ShareLinksCard
+  ShareLinksCard,
+  FinancingSummaryCard,
+  CreateDocketCard
 } from "./tabs";
 
 type PageKey = "stage" | "memo" | "docket" | "pipeline";
@@ -29,7 +31,7 @@ type PageKey = "stage" | "memo" | "docket" | "pipeline";
 // Tab definitions per page
 type PipelineTab = "bulletin" | "agenda" | "add-investor";
 type MemoTab = "publish" | "edit" | "share";
-type DocketTab = "add-docket" | "terms";
+type DocketTab = "summary" | "create";
 
 interface ActionChatPanelProps {
   pageKey: PageKey;
@@ -54,8 +56,8 @@ const MEMO_TABS = [
 ];
 
 const DOCKET_TABS = [
-  { key: "add-docket" as const, label: "Add Docket", icon: FolderOpen },
-  { key: "terms" as const, label: "Terms", icon: Settings },
+  { key: "summary" as const, label: "Summary", icon: TrendingUp },
+  { key: "create" as const, label: "Create", icon: FolderPlus },
 ];
 
 export default function ActionChatPanel({
@@ -72,7 +74,7 @@ export default function ActionChatPanel({
   // Tab state per page
   const [pipelineTab, setPipelineTab] = useState<PipelineTab>("bulletin");
   const [memoTab, setMemoTab] = useState<MemoTab>("publish");
-  const [docketTab, setDocketTab] = useState<DocketTab>("add-docket");
+  const [docketTab, setDocketTab] = useState<DocketTab>("summary");
 
   if (authLoading) {
     return (
@@ -179,19 +181,21 @@ export default function ActionChatPanel({
     );
   }
 
-  // Render Docket page tabs (placeholder for now - will implement in next phase)
+  // Render Docket page tabs
   if (pageKey === "docket") {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 px-6 py-6 overflow-y-auto">
-          <div className="rounded-xl border border-border bg-secondary/50 p-6">
-            <div className="text-center py-8">
-              <p className="text-sm text-muted-foreground">
-                {docketTab === "add-docket" && "Create a new investor docket"}
-                {docketTab === "terms" && "Configure deal terms"}
-              </p>
-            </div>
-          </div>
+          {docketTab === "summary" && (
+            <FinancingSummaryCard roundId={roundId} />
+          )}
+          {docketTab === "create" && (
+            <CreateDocketCard 
+              roundId={roundId} 
+              roundSlug={roundSlug}
+              onSuccess={() => setDocketTab("summary")} 
+            />
+          )}
         </div>
         
         <div className="px-6 pb-8">
