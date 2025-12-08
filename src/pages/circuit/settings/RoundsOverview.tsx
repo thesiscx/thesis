@@ -154,19 +154,26 @@ function SankeyChart({ roundId }: { roundId: string }) {
         .select("*", { count: "exact", head: true })
         .eq("round_id", roundId);
 
-      // Get dockets sent
+      // Get access logs to count memo views
+      const { count: memoViews } = await supabase
+        .from("activity_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("round_id", roundId)
+        .eq("action_type", "memo_viewed");
+
+      // Get dockets sent (non-global dockets for this round)
       const { count: docketsSent } = await supabase
         .from("dockets")
         .select("*", { count: "exact", head: true })
         .eq("round_id", roundId)
         .eq("is_global", false);
 
-      // Get signed dockets
+      // Get signed dockets (status is 'Signed', 'Executed', or 'Funded')
       const { count: signed } = await supabase
         .from("dockets")
         .select("*", { count: "exact", head: true })
         .eq("round_id", roundId)
-        .eq("status", "signed");
+        .in("status", ["Signed", "Executed", "Funded"]);
 
       // Get wire received
       const { count: wired } = await supabase
@@ -177,7 +184,7 @@ function SankeyChart({ roundId }: { roundId: string }) {
 
       return {
         links: linksGenerated || 0,
-        viewed: Math.round((linksGenerated || 0) * 0.7), // Placeholder
+        viewed: memoViews || 0,
         dockets: docketsSent || 0,
         signed: signed || 0,
         wired: wired || 0,
@@ -186,11 +193,11 @@ function SankeyChart({ roundId }: { roundId: string }) {
   });
 
   const stages = [
-    { label: "Links Generated", value: flowData?.links || 0, color: "bg-blue-500" },
-    { label: "Memo Viewed", value: flowData?.viewed || 0, color: "bg-indigo-500" },
-    { label: "Docket Sent", value: flowData?.dockets || 0, color: "bg-purple-500" },
-    { label: "Signed", value: flowData?.signed || 0, color: "bg-green-500" },
-    { label: "Wire Received", value: flowData?.wired || 0, color: "bg-emerald-500" },
+    { label: "Links Generated", value: flowData?.links || 0 },
+    { label: "Memo Viewed", value: flowData?.viewed || 0 },
+    { label: "Docket Sent", value: flowData?.dockets || 0 },
+    { label: "Signed", value: flowData?.signed || 0 },
+    { label: "Wire Received", value: flowData?.wired || 0 },
   ];
 
   const maxValue = Math.max(...stages.map(s => s.value), 1);
@@ -199,18 +206,25 @@ function SankeyChart({ roundId }: { roundId: string }) {
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">Round Funnel</p>
       <div className="space-y-2">
-        {stages.map((stage, i) => (
-          <div key={stage.label} className="flex items-center gap-3">
-            <div className="w-32 text-sm text-muted-foreground">{stage.label}</div>
-            <div className="flex-1 h-6 bg-secondary/50 rounded overflow-hidden">
-              <div 
-                className={`h-full ${stage.color} transition-all duration-500`}
-                style={{ width: `${(stage.value / maxValue) * 100}%` }}
-              />
+        {stages.map((stage, i) => {
+          // Calculate opacity based on position (lighter to darker)
+          const opacity = 0.4 + (i * 0.15);
+          return (
+            <div key={stage.label} className="flex items-center gap-3">
+              <div className="w-32 text-sm text-muted-foreground">{stage.label}</div>
+              <div className="flex-1 h-6 bg-secondary/50 rounded overflow-hidden">
+                <div 
+                  className="h-full bg-foreground transition-all duration-500"
+                  style={{ 
+                    width: `${(stage.value / maxValue) * 100}%`,
+                    opacity: opacity,
+                  }}
+                />
+              </div>
+              <div className="w-12 text-sm font-medium text-right">{stage.value}</div>
             </div>
-            <div className="w-12 text-sm font-medium text-right">{stage.value}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -362,6 +376,17 @@ function RoundTermsEditor({ round }: { round: Round }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isOpen = round.state === "open";
+
+  // Listen for preview event from parent
+  useEffect(() => {
+    const handlePreviewEvent = (e: CustomEvent<{ roundId: string }>) => {
+      if (e.detail.roundId === round.id) {
+        setPreviewOpen(true);
+      }
+    };
+    window.addEventListener('openContractPreview', handlePreviewEvent as EventListener);
+    return () => window.removeEventListener('openContractPreview', handlePreviewEvent as EventListener);
+  }, [round.id]);
 
   const { data: terms, isLoading, refetch } = useQuery({
     queryKey: ["round-terms", round.id],
@@ -521,16 +546,6 @@ function RoundTermsEditor({ round }: { round: Round }) {
           Terms cannot be edited for closed rounds
         </div>
       )}
-
-      {/* Preview Button */}
-      <Button 
-        variant="outline" 
-        onClick={() => setPreviewOpen(true)}
-        className="gap-2"
-      >
-        <Eye className="w-4 h-4" />
-        Preview Agreement
-      </Button>
 
       {/* Investment Terms */}
       <div>
@@ -824,6 +839,30 @@ function RoundCard({
 
             <Separator />
 
+            {/* Round Agreement / Document Section */}
+            <div>
+              <h4 className="font-medium mb-4">Round Agreement</h4>
+              <div className="bg-secondary/30 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Preview how your investment agreement will appear to investors based on your configured terms.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    // Find the RoundTermsEditor and trigger its preview
+                    const previewEvent = new CustomEvent('openContractPreview', { detail: { roundId: round.id } });
+                    window.dispatchEvent(previewEvent);
+                  }}
+                  className="gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Preview Agreement
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Close/Reopen Actions */}
             <div className="flex justify-end gap-3">
               {isActive ? (
@@ -932,12 +971,13 @@ export default function RoundsOverview() {
             <p className="text-muted-foreground text-sm">Manage your fundraising rounds and terms</p>
           </div>
           <Button 
-            variant="ghost" 
-            size="icon"
+            variant="outline" 
+            size="sm"
             onClick={() => navigate(-1)}
-            className="h-8 w-8 hover:bg-secondary"
+            className="h-8 px-3 gap-2"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
+            Exit
           </Button>
         </div>
 
