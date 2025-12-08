@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import CircuitLayout from "@/components/circuit/CircuitLayout";
 import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
+import InvestorPipeline from "@/components/circuit/pipeline/InvestorPipeline";
 import { useRounds } from "@/hooks/useRounds";
 import { useInvestors } from "@/hooks/useInvestors";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,7 +54,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useNavigate } from "react-router-dom";
 
 const STATUS_OPTIONS = [
   { value: "prospect", label: "Prospect", color: "bg-muted text-muted-foreground" },
@@ -74,7 +75,7 @@ interface InvestorFormData {
 }
 
 export default function ThesisCircuit() {
-  const { roundSlug } = useParams();
+  const { roundSlug, variantSlug } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,6 +89,7 @@ export default function ThesisCircuit() {
   const [editingInvestor, setEditingInvestor] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [investorData, setInvestorData] = useState<{ id: string; name: string } | null>(null);
 
   const [formData, setFormData] = useState<InvestorFormData>({
     name: "",
@@ -96,6 +98,9 @@ export default function ThesisCircuit() {
     entity_type: "individual",
     address: "",
   });
+
+  const isGlobal = !variantSlug;
+  const isInvestorSubpage = !isGlobal;
 
   const activeRound = rounds?.find((r) => r.slug === roundSlug);
 
@@ -252,12 +257,27 @@ export default function ThesisCircuit() {
     );
   }
 
+  // Generate breadcrumb for investor subpage
+  const breadcrumb = isInvestorSubpage && investorData
+    ? { label: investorData.name }
+    : isInvestorSubpage && variantSlug
+    ? { label: variantSlug.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) }
+    : undefined;
+
+  const investorName = investorData?.name || variantSlug?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "Investor";
+
   return (
     <CircuitLayout
       rounds={rounds || []}
       investors={investors || []}
       onCreateRound={() => setCreateRoundOpen(true)}
+      breadcrumb={breadcrumb}
+      isSubpage={isInvestorSubpage}
+      investorSlug={variantSlug}
+      investorId={investorData?.id}
+      investorName={isInvestorSubpage ? investorName : undefined}
     >
+      {isGlobal ? (
       <div className="flex-1 overflow-auto">
         <div className="max-w-6xl mx-auto p-8">
           {/* Header */}
@@ -305,7 +325,11 @@ export default function ThesisCircuit() {
                 </TableHeader>
                 <TableBody>
                   {filteredInvestors.map((investor) => (
-                    <TableRow key={investor.id}>
+                    <TableRow 
+                      key={investor.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/${roundSlug}/pipeline/${investor.slug}`)}
+                    >
                       <TableCell className="font-medium">{investor.name}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {investor.email || "—"}
@@ -313,7 +337,7 @@ export default function ThesisCircuit() {
                       <TableCell className="text-muted-foreground">
                         {investor.entity_name || investor.entity_type || "—"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -360,6 +384,13 @@ export default function ThesisCircuit() {
           )}
         </div>
       </div>
+      ) : (
+        <InvestorPipeline 
+          roundSlug={roundSlug} 
+          investorSlug={variantSlug}
+          onInvestorLoaded={setInvestorData}
+        />
+      )}
 
       {/* Add Investor Dialog */}
       <Dialog open={addInvestorOpen} onOpenChange={setAddInvestorOpen}>
