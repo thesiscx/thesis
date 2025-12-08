@@ -297,7 +297,7 @@ export default function CircuitHeader({
               {/* Round Actions */}
               <DropdownMenuItem onClick={() => navigate("/settings/rounds")}>
                 <LayoutList className="w-4 h-4 mr-2" />
-                Rounds Overview
+                Configure Rounds
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
