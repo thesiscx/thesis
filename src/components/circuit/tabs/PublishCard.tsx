@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Globe, Copy, Check, Loader2, RefreshCw } from "lucide-react";
+import { Globe, Copy, Check, Loader2, RefreshCw, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -131,6 +131,15 @@ export function PublishCard({ roundId, roundSlug }: PublishCardProps) {
                 ) : (
                   <Copy className="w-3.5 h-3.5" />
                 )}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => publicUrl && window.open(publicUrl, '_blank')}
+                disabled={!publicUrl}
+                className="shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
               </Button>
             </div>
           </div>
