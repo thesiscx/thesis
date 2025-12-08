@@ -117,7 +117,7 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
   });
 
   const shareUrl = profile?.company_slug && roundData?.slug && investorSlug
-    ? `${window.location.origin}/share/${profile.company_slug}/${roundData.slug}/memo`
+    ? `${window.location.origin}/share/${profile.company_slug}/${roundData.slug}/memo/${investorSlug}`
     : null;
 
   const copyToClipboard = async (text: string, label: string) => {

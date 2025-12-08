@@ -1534,7 +1534,7 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
         if (error) throw error;
         
         const url = profile?.company_slug && roundSlug
-          ? `${window.location.origin}/share/${profile.company_slug}/${roundSlug}/memo`
+          ? `${window.location.origin}/share/${profile.company_slug}/${roundSlug}/memo/${investor.slug}`
           : undefined;
         
         // Update with key
