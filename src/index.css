@@ -209,3 +209,36 @@
   opacity: 1;
   animation: shine 0.6s ease-out forwards;
 }
+
+/* Muted variant for light background buttons */
+.tab-button-shine-muted {
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-button-shine-muted::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.08) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-position: -100% 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.tab-button-shine-muted:hover::after {
+  opacity: 1;
+  animation: shine 0.6s ease-out forwards;
+}
