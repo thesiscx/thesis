@@ -159,6 +159,14 @@ export function FounderAuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setProfileLoaded(false);
     
+    // Clear React Query persisted cache to prevent stale data on next login
+    try {
+      window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+      console.log("[Auth] Cleared React Query cache");
+    } catch (e) {
+      console.error("[Auth] Failed to clear React Query cache:", e);
+    }
+    
     // Sign out with local scope to avoid server-side session issues
     try {
       await supabase.auth.signOut({ scope: 'local' });
