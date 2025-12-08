@@ -194,10 +194,10 @@ export default function Homepage() {
                   size="sm"
                   onClick={() => setActiveTab(tab.key)}
                   className={cn(
-                    "h-8 text-xs gap-1.5 transition-all tab-button-shine rounded-full",
+                    "h-8 text-xs gap-1.5 transition-all rounded-md",
                     activeTab === tab.key 
-                      ? "bg-foreground text-background hover:bg-foreground/90" 
-                      : "bg-muted/80 text-foreground border border-border/50 hover:bg-muted"
+                      ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine" 
+                      : "bg-[hsl(var(--canvas))] text-foreground border border-border/50 hover:bg-muted/50 tab-button-shine-muted"
                   )}
                 >
                   <tab.icon className="w-3.5 h-3.5" />
