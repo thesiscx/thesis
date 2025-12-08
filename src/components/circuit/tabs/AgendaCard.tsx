@@ -44,7 +44,7 @@ export function AgendaCard({ roundId }: AgendaCardProps) {
         <div className="p-4">
           <div className="space-y-3">
             {upcomingMeetings.map((meeting) => (
-              <div key={meeting.id} className="p-3 rounded-lg bg-background border border-border">
+              <div key={meeting.id} className="p-3 rounded-lg bg-transparent border border-border">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
                     {getMeetingIcon(meeting.type)}

@@ -113,7 +113,7 @@ export function EditMemoCard({
               onChange={(e) => setEditPrompt(e.target.value)}
               placeholder="e.g., Make the problem section more concise and add recent traction metrics..."
               rows={4}
-              className="text-sm resize-none bg-background"
+              className="text-sm resize-none"
               disabled={status === "loading"}
             />
           </div>

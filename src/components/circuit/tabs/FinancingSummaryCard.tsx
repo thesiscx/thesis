@@ -143,7 +143,7 @@ export function FinancingSummaryCard({ roundId }: FinancingSummaryCardProps) {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-background/50 p-3 space-y-1">
+            <div className="rounded-lg bg-transparent border border-border p-3 space-y-1">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <Users className="w-3.5 h-3.5" />
                 <span className="text-xs">Investors</span>
@@ -151,7 +151,7 @@ export function FinancingSummaryCard({ roundId }: FinancingSummaryCardProps) {
               <p className="text-lg font-semibold">{stats?.investorCount || 0}</p>
             </div>
             
-            <div className="rounded-lg bg-background/50 p-3 space-y-1">
+            <div className="rounded-lg bg-transparent border border-border p-3 space-y-1">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <DollarSign className="w-3.5 h-3.5" />
                 <span className="text-xs">Avg. Check</span>

@@ -101,15 +101,15 @@ function RoundItem({ round, isActive }: { round: Round; isActive: boolean }) {
           <div className="px-3 pb-3 space-y-4">
             {/* Quick Stats */}
             <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="bg-background/50 rounded p-2 text-center">
+              <div className="bg-transparent border border-border rounded p-2 text-center">
                 <div className="text-muted-foreground">Investors</div>
                 <div className="font-semibold">{stats?.investors || 0}</div>
               </div>
-              <div className="bg-background/50 rounded p-2 text-center">
+              <div className="bg-transparent border border-border rounded p-2 text-center">
                 <div className="text-muted-foreground">Dockets</div>
                 <div className="font-semibold">{stats?.dockets || 0}</div>
               </div>
-              <div className="bg-background/50 rounded p-2 text-center">
+              <div className="bg-transparent border border-border rounded p-2 text-center">
                 <div className="text-muted-foreground">Raised</div>
                 <div className="font-semibold">${((stats?.raised || 0) / 1000).toFixed(0)}k</div>
               </div>
@@ -123,7 +123,7 @@ function RoundItem({ round, isActive }: { round: Round; isActive: boolean }) {
                   {termsLoading ? (
                     <Skeleton className="h-12" />
                   ) : hasTerms ? (
-                    <div className="text-xs space-y-1.5 bg-background/50 rounded-lg p-3">
+                    <div className="text-xs space-y-1.5 bg-transparent border border-border rounded-lg p-3">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Cap:</span>
                         <span className="font-medium">

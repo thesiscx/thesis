@@ -188,10 +188,10 @@ export function CreateDocketCard({ roundId, roundSlug, onSuccess }: CreateDocket
                   onValueChange={setSelectedInvestorId}
                   disabled={status === "loading"}
                 >
-                  <SelectTrigger className="bg-background">
+                  <SelectTrigger className="bg-transparent">
                     <SelectValue placeholder="Choose an investor..." />
                   </SelectTrigger>
-                  <SelectContent className="bg-background border border-border z-50">
+                  <SelectContent className="bg-secondary border border-border z-50">
                     {availableInvestors.map((investor) => (
                       <SelectItem key={investor.id} value={investor.id}>
                         <span>{investor.name}</span>

@@ -117,7 +117,7 @@ export function PublishCard({ roundId, roundSlug }: PublishCardProps) {
               <Input
                 value={publicUrl || "Generating..."}
                 readOnly
-                className="bg-background text-xs font-mono"
+                className="text-xs font-mono"
               />
               <Button
                 size="sm"
@@ -142,7 +142,7 @@ export function PublishCard({ roundId, roundSlug }: PublishCardProps) {
               <Input
                 value={isLoadingKey ? "Generating..." : (accessKeyData?.key || "—")}
                 readOnly
-                className="bg-background text-xs font-mono"
+                className="text-xs font-mono"
               />
               <Button
                 size="sm"

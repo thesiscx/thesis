@@ -157,7 +157,6 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder={formData.entity_type === "institutional" ? "Jane Smith" : "John Doe"}
-                className="bg-background"
                 disabled={status === "loading"}
               />
             </div>
@@ -169,7 +168,6 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 placeholder={formData.entity_type === "institutional" ? "partner@sequoia.com" : "john@email.com"}
                 type="email"
-                className="bg-background"
                 disabled={status === "loading"}
               />
             </div>
@@ -182,7 +180,6 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
                   value={formData.firm_name}
                   onChange={(e) => setFormData(prev => ({ ...prev, firm_name: e.target.value }))}
                   placeholder="Sequoia Capital"
-                  className="bg-background"
                   disabled={status === "loading"}
                 />
               </div>
