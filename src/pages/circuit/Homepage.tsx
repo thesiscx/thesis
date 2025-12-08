@@ -32,19 +32,19 @@ const tools = [
   },
 ];
 
-type HomeTab = "activity" | "rounds" | "subdomain";
+type HomeTab = "rounds" | "subdomain" | "activity";
 
 const HOME_TABS = [
-  { key: "activity" as const, label: "Activity", icon: Activity },
   { key: "rounds" as const, label: "Rounds", icon: DollarSign },
   { key: "subdomain" as const, label: "Domain", icon: Globe },
+  { key: "activity" as const, label: "Activity", icon: Activity },
 ];
 
 export default function Homepage() {
   const navigate = useNavigate();
   const { profile } = useFounderAuth();
   const { openRound, rounds } = useRounds();
-  const [activeTab, setActiveTab] = useState<HomeTab>("activity");
+  const [activeTab, setActiveTab] = useState<HomeTab>("rounds");
 
   // Get the first name from full_name
   const firstName = profile?.full_name?.split(" ")[0] || "there";

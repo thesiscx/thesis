@@ -1,30 +1,24 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useRounds, ROUND_TYPE_LABELS, Round } from "@/hooks/useRounds";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { StatusLine, StatusState } from "./StatusLine";
+import { StatusLine } from "./StatusLine";
 import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
 import CloseRoundDialog from "@/components/circuit/CloseRoundDialog";
 import { 
-  Loader2, 
   Plus,
   ChevronRight,
   DollarSign,
-  Users,
-  CheckCircle,
   Settings,
   Archive,
-  RotateCcw,
-  Upload
+  RotateCcw
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -32,24 +26,15 @@ interface RoundTerms {
   valuation_cap: number | null;
   discount_rate: number | null;
   pro_rata_enabled: boolean | null;
-  mfn_enabled: boolean | null;
   minimum_ticket: number | null;
-  wire_bank_name: string | null;
-  wire_account_name: string | null;
-  wire_account_number: string | null;
-  wire_routing_number: string | null;
-  wire_swift_code: string | null;
-  wire_bank_address: string | null;
 }
 
 function RoundItem({ round, isActive }: { round: Round; isActive: boolean }) {
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const { reopenRound, closeRound } = useRounds();
   const [isOpen, setIsOpen] = useState(isActive);
-  const [saving, setSaving] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const isOpenRound = round.state === "open";
 
   const { data: terms, isLoading: termsLoading } = useQuery({
@@ -57,7 +42,7 @@ function RoundItem({ round, isActive }: { round: Round; isActive: boolean }) {
     queryFn: async () => {
       const { data } = await supabase
         .from("round_terms")
-        .select("*")
+        .select("valuation_cap, discount_rate, pro_rata_enabled, minimum_ticket")
         .eq("round_id", round.id)
         .maybeSingle();
       return data as RoundTerms | null;
@@ -83,43 +68,6 @@ function RoundItem({ round, isActive }: { round: Round; isActive: boolean }) {
     enabled: isOpen,
   });
 
-  const [formData, setFormData] = useState({
-    valuation_cap: null as number | null,
-    discount_rate: null as number | null,
-    pro_rata_enabled: false,
-    mfn_enabled: false,
-    minimum_ticket: null as number | null,
-  });
-
-  useEffect(() => {
-    if (terms) {
-      setFormData({
-        valuation_cap: terms.valuation_cap,
-        discount_rate: terms.discount_rate,
-        pro_rata_enabled: terms.pro_rata_enabled || false,
-        mfn_enabled: terms.mfn_enabled || false,
-        minimum_ticket: terms.minimum_ticket,
-      });
-    }
-  }, [terms]);
-
-  const handleSave = async () => {
-    if (!isOpenRound) return;
-    setSaving(true);
-    try {
-      await supabase.from("round_terms").upsert({
-        round_id: round.id,
-        ...formData,
-      }, { onConflict: "round_id" });
-      toast({ title: "Terms saved" });
-      queryClient.invalidateQueries({ queryKey: ["round-terms", round.id] });
-    } catch (e: any) {
-      toast({ title: "Failed to save", variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleReopen = async () => {
     try {
       await reopenRound.mutateAsync(round.id);
@@ -128,6 +76,8 @@ function RoundItem({ round, isActive }: { round: Round; isActive: boolean }) {
       toast({ title: e.message, variant: "destructive" });
     }
   };
+
+  const hasTerms = terms?.valuation_cap || terms?.discount_rate;
 
   return (
     <>
@@ -165,87 +115,65 @@ function RoundItem({ round, isActive }: { round: Round; isActive: boolean }) {
               </div>
             </div>
 
-            {/* Terms Editor (only for open rounds) */}
+            {/* Terms Summary + Configure (only for open rounds) */}
             {isOpenRound && (
               <>
                 <Separator />
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                    <Settings className="w-3 h-3" />
-                    Terms
-                  </div>
-                  
                   {termsLoading ? (
-                    <Skeleton className="h-20" />
+                    <Skeleton className="h-12" />
+                  ) : hasTerms ? (
+                    <div className="text-xs space-y-1.5 bg-background/50 rounded-lg p-3">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cap:</span>
+                        <span className="font-medium">
+                          {terms.valuation_cap ? `$${(terms.valuation_cap / 1000000).toFixed(1)}M` : "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Discount:</span>
+                        <span className="font-medium">
+                          {terms.discount_rate ? `${terms.discount_rate}%` : "—"}
+                        </span>
+                      </div>
+                      {terms.minimum_ticket && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Min:</span>
+                          <span className="font-medium">${(terms.minimum_ticket / 1000).toFixed(0)}k</span>
+                        </div>
+                      )}
+                      {terms.pro_rata_enabled && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Pro-rata:</span>
+                          <span className="font-medium">Yes</span>
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Valuation Cap</Label>
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
-                          <Input
-                            type="number"
-                            value={formData.valuation_cap || ""}
-                            onChange={(e) => setFormData(p => ({ ...p, valuation_cap: e.target.value ? Number(e.target.value) : null }))}
-                            className="h-8 text-xs pl-5"
-                            placeholder="10M"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Discount</Label>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            value={formData.discount_rate || ""}
-                            onChange={(e) => setFormData(p => ({ ...p, discount_rate: e.target.value ? Number(e.target.value) : null }))}
-                            className="h-8 text-xs pr-6"
-                            placeholder="20"
-                          />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Min. Ticket</Label>
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
-                          <Input
-                            type="number"
-                            value={formData.minimum_ticket || ""}
-                            onChange={(e) => setFormData(p => ({ ...p, minimum_ticket: e.target.value ? Number(e.target.value) : null }))}
-                            className="h-8 text-xs pl-5"
-                            placeholder="25k"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1 flex flex-col justify-end">
-                        <div className="flex items-center gap-2 h-8">
-                          <Switch
-                            checked={formData.pro_rata_enabled}
-                            onCheckedChange={(c) => setFormData(p => ({ ...p, pro_rata_enabled: c }))}
-                            className="scale-75"
-                          />
-                          <Label className="text-xs">Pro-rata</Label>
-                        </div>
-                      </div>
+                    <div className="text-xs text-muted-foreground text-center py-2">
+                      No terms configured yet
                     </div>
                   )}
 
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleSave} disabled={saving} className="flex-1 h-7 text-xs">
-                      {saving && <Loader2 className="w-3 h-3 animate-spin mr-1" />}
-                      Save Terms
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => setCloseDialogOpen(true)}
-                      className="h-7 text-xs gap-1"
-                    >
-                      <Archive className="w-3 h-3" />
-                      Close
-                    </Button>
-                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => navigate('/settings/rounds')}
+                    className="w-full h-7 text-xs gap-1.5"
+                  >
+                    <Settings className="w-3 h-3" />
+                    Configure Round
+                  </Button>
+                  
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => setCloseDialogOpen(true)}
+                    className="w-full h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <Archive className="w-3 h-3" />
+                    Close Round
+                  </Button>
                 </div>
               </>
             )}
