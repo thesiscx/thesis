@@ -11,7 +11,8 @@ import {
   Loader2,
   Activity,
   AlertTriangle,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
@@ -31,7 +32,8 @@ import {
   ManageInvestorCard,
   AccessLogsCard,
   DocketStatusCard,
-  PipelineActivityCard
+  PipelineActivityCard,
+  ExportDocketCard
 } from "./tabs";
 
 type PageKey = "stage" | "memo" | "docket" | "pipeline";
@@ -39,7 +41,7 @@ type PageKey = "stage" | "memo" | "docket" | "pipeline";
 // Tab definitions per page
 type PipelineTab = "bulletin" | "agenda" | "add-investor";
 type MemoTab = "publish" | "edit" | "share";
-type DocketTab = "summary" | "create";
+type DocketTab = "summary" | "create" | "export";
 
 // Subpage tab definitions
 type MemoSubpageTab = "status" | "void";
@@ -78,6 +80,7 @@ const MEMO_TABS = [
 const DOCKET_TABS = [
   { key: "summary" as const, label: "Summary", icon: TrendingUp },
   { key: "create" as const, label: "Create", icon: FolderPlus },
+  { key: "export" as const, label: "Export", icon: Download },
 ];
 
 // Subpage tabs
@@ -370,6 +373,9 @@ export default function ActionChatPanel({
               roundSlug={roundSlug}
               onSuccess={() => setDocketTab("summary")} 
             />
+          )}
+          {docketTab === "export" && (
+            <ExportDocketCard roundId={roundId} roundSlug={roundSlug} />
           )}
         </div>
         
