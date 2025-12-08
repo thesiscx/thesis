@@ -164,7 +164,7 @@ export default function ActionChatPanel({
                 className={cn(
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   memoSubpageTab === tab.key 
-                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-transparent" 
+                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-border/80"
                     : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
@@ -206,7 +206,7 @@ export default function ActionChatPanel({
                 className={cn(
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   docketSubpageTab === tab.key 
-                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-transparent" 
+                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-border/80"
                     : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
@@ -251,7 +251,7 @@ export default function ActionChatPanel({
                 className={cn(
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   pipelineSubpageTab === tab.key 
-                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-transparent" 
+                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-border/80"
                     : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
@@ -292,7 +292,7 @@ export default function ActionChatPanel({
                 className={cn(
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   pipelineTab === tab.key 
-                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-transparent" 
+                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-border/80"
                     : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
@@ -339,7 +339,7 @@ export default function ActionChatPanel({
                 className={cn(
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   memoTab === tab.key 
-                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-transparent" 
+                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-border/80"
                     : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >
@@ -380,7 +380,7 @@ export default function ActionChatPanel({
                 className={cn(
                   "h-8 text-xs gap-1.5 transition-all rounded-md",
                   docketTab === tab.key 
-                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-transparent" 
+                    ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-border/80" 
                     : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                 )}
               >

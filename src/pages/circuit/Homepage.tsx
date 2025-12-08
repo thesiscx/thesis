@@ -196,7 +196,7 @@ export default function Homepage() {
                   className={cn(
                     "h-8 text-xs gap-1.5 transition-all rounded-md",
                     activeTab === tab.key 
-                      ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-transparent" 
+                      ? "bg-foreground text-background hover:bg-foreground/90 tab-button-shine border border-border/80" 
                       : "bg-[hsl(var(--canvas))] text-foreground border border-border/80 hover:bg-muted/50 tab-button-shine-muted"
                   )}
                 >
