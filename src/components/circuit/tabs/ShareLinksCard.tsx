@@ -267,7 +267,7 @@ export function ShareLinksCard({ roundId, roundSlug }: ShareLinksCardProps) {
                           e.stopPropagation();
                           copyToClipboard(link.accessKey, "Key", link.investorName);
                         }}
-                        className="h-6 w-6 p-0 text-foreground hover:bg-secondary"
+                        className="h-6 w-6 p-0 text-foreground hover:bg-accent hover:text-accent-foreground"
                       >
                         {copiedItem === `${link.investorName}-Key` ? (
                           <Check className="w-3 h-3 text-green-600" />
@@ -287,7 +287,7 @@ export function ShareLinksCard({ roundId, roundSlug }: ShareLinksCardProps) {
                           e.stopPropagation();
                           window.open(link.url, "_blank");
                         }}
-                        className="h-6 w-6 p-0 text-foreground hover:bg-secondary"
+                        className="h-6 w-6 p-0 text-foreground hover:bg-accent hover:text-accent-foreground"
                       >
                         <ExternalLink className="w-3 h-3" />
                       </Button>
