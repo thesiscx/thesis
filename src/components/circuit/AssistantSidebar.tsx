@@ -17,6 +17,7 @@ interface AssistantSidebarProps {
   investorId?: string;
   investorName?: string;
   accessKeyId?: string;
+  docketId?: string;
 }
 
 export default function AssistantSidebar({ 
@@ -32,6 +33,7 @@ export default function AssistantSidebar({
   investorId,
   investorName,
   accessKeyId,
+  docketId,
 }: AssistantSidebarProps) {
   return (
     <aside className="w-96 h-screen bg-[hsl(var(--canvas))] flex flex-col shrink-0">
@@ -55,6 +57,7 @@ export default function AssistantSidebar({
           investorId={investorId}
           investorName={investorName}
           accessKeyId={accessKeyId}
+          docketId={docketId}
         />
       </div>
     </aside>

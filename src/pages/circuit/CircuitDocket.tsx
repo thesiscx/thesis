@@ -96,6 +96,7 @@ export default function ThesisDocket() {
         investorId={investorData?.id}
         investorName={isInvestorSubpage ? investorName : undefined}
         accessKeyId={accessKeyId}
+        docketId={docketData?.docket?.id}
       >
         {isGlobal ? (
           <GlobalDocket roundSlug={roundSlug} />
