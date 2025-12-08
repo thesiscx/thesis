@@ -143,7 +143,60 @@ export default function ThesisCircuit() {
       return map;
     },
     enabled: !!user?.id,
+    staleTime: 30 * 1000,
   });
+
+  // Fetch docket statuses to derive accurate pipeline status
+  const { data: docketStatusMap = {} } = useQuery({
+    queryKey: ["investor-docket-statuses", activeRound?.id],
+    queryFn: async () => {
+      if (!activeRound?.id) return {};
+      const { data } = await supabase
+        .from("dockets")
+        .select("investor_id, status, commitment_status, wire_received")
+        .eq("round_id", activeRound.id)
+        .eq("is_global", false);
+      
+      const map: Record<string, { status: string; commitment_status: string | null; wire_received: boolean | null }> = {};
+      data?.forEach((d) => {
+        if (d.investor_id) {
+          map[d.investor_id] = {
+            status: d.status,
+            commitment_status: d.commitment_status,
+            wire_received: d.wire_received,
+          };
+        }
+      });
+      return map;
+    },
+    enabled: !!activeRound?.id,
+    staleTime: 30 * 1000,
+  });
+
+  // Derive pipeline status from docket data
+  const deriveStatus = (investorId: string, baseStatus: string): InvestorStatus => {
+    const docket = docketStatusMap[investorId];
+    if (!docket) return (baseStatus as InvestorStatus) || "prospect";
+    if (docket.wire_received) return "won";
+    if (docket.commitment_status === "signed" || docket.status === "Signed" || docket.status === "Executed" || docket.status === "Funded") return "contract";
+    if (docket.status && docket.status !== "draft" && docket.status !== "Drafted") return "pitch";
+    return (baseStatus as InvestorStatus) || "prospect";
+  };
+
+  // Generate next step (dummy for now)
+  const getNextStep = (investorId: string, status: InvestorStatus): string => {
+    // Simple hash-based random selection for demo
+    const steps: Record<InvestorStatus, string[]> = {
+      prospect: ["Send memo", "Schedule intro", "Follow up"],
+      pitch: ["Waiting on response", "Schedule call", "Send deck"],
+      contract: ["Review docs", "Finalize terms", "Awaiting signature"],
+      won: ["Wire pending", "Send welcome", "Complete"],
+      lost: ["Archive", "Revisit later", "—"],
+    };
+    const options = steps[status] || steps.prospect;
+    const index = investorId.charCodeAt(0) % options.length;
+    return options[index];
+  };
 
   // Filter, sort, and transform investors
   const filteredInvestors = useMemo(() => {
@@ -154,11 +207,15 @@ export default function ThesisCircuit() {
         inv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         inv.email?.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      .map((inv) => ({
-        ...inv,
-        status: (inv.status as InvestorStatus) || "prospect",
-        lastContact: lastContactMap[inv.id] || null,
-      }))
+      .map((inv) => {
+        const derivedStatus = deriveStatus(inv.id, inv.status || "prospect");
+        return {
+          ...inv,
+          status: derivedStatus,
+          lastContact: lastContactMap[inv.id] || null,
+          nextStep: getNextStep(inv.id, derivedStatus),
+        };
+      })
       .filter((inv) => activeFilters.includes(inv.status));
 
     // Sort
@@ -190,7 +247,7 @@ export default function ThesisCircuit() {
     });
 
     return processed;
-  }, [investors, searchQuery, activeFilters, sortField, sortDirection, lastContactMap]);
+  }, [investors, searchQuery, activeFilters, sortField, sortDirection, lastContactMap, docketStatusMap]);
 
   const toggleFilter = (status: InvestorStatus) => {
     setActiveFilters(prev => 
@@ -491,6 +548,7 @@ export default function ThesisCircuit() {
                     <SortableHeader field="email">Email</SortableHeader>
                     <SortableHeader field="lastContact">Last Contact</SortableHeader>
                     <SortableHeader field="status">Status</SortableHeader>
+                    <TableHead className="font-medium">Next Steps</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -522,6 +580,9 @@ export default function ThesisCircuit() {
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(investor.status)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {investor.nextStep}
                       </TableCell>
                     </TableRow>
                   ))}

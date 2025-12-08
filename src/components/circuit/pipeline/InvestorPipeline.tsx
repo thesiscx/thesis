@@ -48,23 +48,24 @@ export default function InvestorPipeline({ roundSlug, investorSlug, onInvestorLo
         .select("id, workspace_id, name")
         .eq("slug", roundSlug)
         .eq("created_by", user.id)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!roundSlug && !!user?.id,
+    staleTime: 60 * 1000,
   });
 
-  // Fetch investor data
+  // Fetch investor data - use user.id directly as workspace_id to avoid dependency chain
   const { data: investor, isLoading: investorLoading } = useQuery({
-    queryKey: ["investor", investorSlug, roundData?.workspace_id],
+    queryKey: ["investor", investorSlug, user?.id],
     queryFn: async () => {
-      if (!investorSlug || !roundData?.workspace_id) return null;
+      if (!investorSlug || !user?.id) return null;
       const { data } = await supabase
         .from("investors")
         .select("*")
         .eq("slug", investorSlug)
-        .eq("workspace_id", roundData.workspace_id)
-        .single();
+        .eq("workspace_id", user.id)
+        .maybeSingle();
       
       if (data && onInvestorLoaded) {
         onInvestorLoaded({ id: data.id, name: data.name });
@@ -72,7 +73,8 @@ export default function InvestorPipeline({ roundSlug, investorSlug, onInvestorLo
       
       return data;
     },
-    enabled: !!investorSlug && !!roundData?.workspace_id,
+    enabled: !!investorSlug && !!user?.id,
+    staleTime: 60 * 1000,
   });
 
   // Fetch activity logs for this investor
@@ -90,6 +92,7 @@ export default function InvestorPipeline({ roundSlug, investorSlug, onInvestorLo
       return data || [];
     },
     enabled: !!investor?.id && !!user?.id,
+    staleTime: 60 * 1000,
   });
 
   // Fetch docket status for this investor
@@ -103,10 +106,11 @@ export default function InvestorPipeline({ roundSlug, investorSlug, onInvestorLo
         .eq("investor_id", investor.id)
         .eq("round_id", roundData.id)
         .eq("is_global", false)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!investor?.id && !!roundData?.id,
+    staleTime: 60 * 1000,
   });
 
   const getStatusColor = (status?: string) => {
