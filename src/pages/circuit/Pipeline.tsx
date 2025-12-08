@@ -69,7 +69,7 @@ const STATUS_OPTIONS = [
 
 type InvestorStatus = typeof STATUS_OPTIONS[number]["value"];
 
-type SortField = "name" | "entity" | "email" | "lastContact" | "status";
+type SortField = "name" | "firm" | "email" | "lastContact" | "status";
 type SortDirection = "asc" | "desc";
 
 interface InvestorFormData {
@@ -97,9 +97,9 @@ export default function ThesisCircuit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [investorData, setInvestorData] = useState<{ id: string; name: string } | null>(null);
   
-  // Filter & sort state
+  // Filter & sort state - exclude won/lost by default
   const [activeFilters, setActiveFilters] = useState<InvestorStatus[]>([
-    "prospect", "pitch", "contract", "won"
+    "prospect", "pitch", "contract"
   ]);
   const [sortField, setSortField] = useState<SortField>("lastContact");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -226,7 +226,7 @@ export default function ThesisCircuit() {
         case "name":
           comparison = a.name.localeCompare(b.name);
           break;
-        case "entity":
+        case "firm":
           comparison = (a.entity_name || "").localeCompare(b.entity_name || "");
           break;
         case "email":
@@ -544,7 +544,7 @@ export default function ThesisCircuit() {
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
                     <SortableHeader field="name">Name</SortableHeader>
-                    <SortableHeader field="entity">Entity</SortableHeader>
+                    <SortableHeader field="firm">Firm</SortableHeader>
                     <SortableHeader field="email">Email</SortableHeader>
                     <SortableHeader field="lastContact">Last Contact</SortableHeader>
                     <SortableHeader field="status">Status</SortableHeader>
