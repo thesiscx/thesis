@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Copy, 
   ExternalLink, 
@@ -17,7 +17,7 @@ import {
   Calendar,
   Eye,
   Clock,
-  ShieldX
+  Loader2
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
@@ -37,6 +37,7 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isGeneratingKey, setIsGeneratingKey] = useState(false);
   const [expiryDate, setExpiryDate] = useState<Date | undefined>();
 
   // Fetch round
@@ -78,7 +79,7 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
   });
 
   // Fetch access key for this investor + round + memo
-  const { data: accessKey, isLoading: accessKeyLoading } = useQuery({
+  const { data: accessKey, isLoading: accessKeyLoading, refetch: refetchAccessKey } = useQuery({
     queryKey: ["access-key-memo", roundData?.id, investor?.id],
     queryFn: async () => {
       if (!roundData?.id || !investor?.id) return null;
@@ -96,6 +97,32 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
     },
     enabled: !!roundData?.id && !!investor?.id,
   });
+
+  // Auto-generate access key if missing
+  useEffect(() => {
+    const generateKey = async () => {
+      if (!roundData?.id || !investor?.id || accessKeyLoading || accessKey || isGeneratingKey) return;
+      
+      setIsGeneratingKey(true);
+      try {
+        await supabase.functions.invoke("generate-access-key", {
+          body: {
+            roundId: roundData.id,
+            tool: "memo",
+            investorId: investor.id,
+          },
+        });
+        await refetchAccessKey();
+        toast({ title: "Access key generated" });
+      } catch (error) {
+        console.error("Failed to generate access key:", error);
+      } finally {
+        setIsGeneratingKey(false);
+      }
+    };
+    
+    generateKey();
+  }, [roundData?.id, investor?.id, accessKeyLoading, accessKey, isGeneratingKey]);
 
   // Fetch access logs for this key
   const { data: accessLogs = [] } = useQuery({
@@ -206,6 +233,7 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
   };
 
   const getStatusBadge = () => {
+    if (isGeneratingKey) return <Badge variant="outline" className="gap-1"><Loader2 className="w-3 h-3 animate-spin" />Generating...</Badge>;
     if (!accessKey) return <Badge variant="outline">No Access Key</Badge>;
     if (accessKey.status === 'revoked') return <Badge variant="destructive">Revoked</Badge>;
     if (accessKey.expires_at && new Date(accessKey.expires_at) < new Date()) {
@@ -240,57 +268,139 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
 
         <Separator />
 
-        {/* Share Link & Access Key */}
-        {(shareUrl || accessKey) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Share Link</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {shareUrl && (
+        {/* Share Link, Access Key & Controls */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Share Link</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* URL */}
+            {shareUrl && (
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-secondary/50 px-3 py-2 rounded border border-border break-all">
+                  {shareUrl}
+                </code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(shareUrl, "URL")}
+                  className="shrink-0"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(shareUrl, "_blank")}
+                  className="shrink-0"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+            
+            {/* Access Key */}
+            {accessKey && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Access Key</Label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs bg-secondary/50 px-3 py-2 rounded border border-border break-all">
-                    {shareUrl}
+                  <code className="flex-1 text-xs bg-secondary/50 px-3 py-2 rounded border border-border font-mono">
+                    {accessKey.key}
                   </code>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyToClipboard(shareUrl, "URL")}
+                    onClick={() => copyToClipboard(accessKey.key, "Access key")}
                     className="shrink-0"
                   >
                     <Copy className="w-4 h-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(shareUrl, "_blank")}
-                    className="shrink-0"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
                 </div>
-              )}
-              {accessKey && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Access Key</Label>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs bg-secondary/50 px-3 py-2 rounded border border-border font-mono">
-                      {accessKey.key}
-                    </code>
+              </div>
+            )}
+
+            <Separator />
+            
+            {/* Access Controls - Inline */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Revoke Access</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Prevent this investor from accessing
+                  </p>
+                </div>
+                <Switch
+                  checked={accessKey?.status === 'revoked'}
+                  onCheckedChange={handleRevokeAccess}
+                  disabled={isUpdating || !accessKey}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Refresh Key</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Generate new key, invalidate old
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshKey}
+                  disabled={isUpdating}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Set Expiry</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {accessKey?.expires_at 
+                      ? `Expires ${format(new Date(accessKey.expires_at), "MMM d, yyyy")}`
+                      : "No expiry set"}
+                  </p>
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => copyToClipboard(accessKey.key, "Access key")}
-                      className="shrink-0"
+                      disabled={isUpdating || !accessKey}
                     >
-                      <Copy className="w-4 h-4" />
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {accessKey?.expires_at ? "Change" : "Set"}
                     </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <CalendarComponent
+                      mode="single"
+                      selected={accessKey?.expires_at ? new Date(accessKey.expires_at) : undefined}
+                      onSelect={handleSetExpiry}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                    />
+                    {accessKey?.expires_at && (
+                      <div className="p-2 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => handleSetExpiry(undefined)}
+                        >
+                          Remove Expiry
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Investor Details */}
         <Card>
@@ -314,94 +424,6 @@ export default function InvestorMemo({ roundSlug, investorSlug }: InvestorMemoPr
                 <p className="capitalize">{investor.entity_type}</p>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Access Controls */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Access Controls</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm font-medium">Revoke Access</Label>
-                <p className="text-xs text-muted-foreground">
-                  Prevent this investor from accessing the memo
-                </p>
-              </div>
-              <Switch
-                checked={accessKey?.status === 'revoked'}
-                onCheckedChange={handleRevokeAccess}
-                disabled={isUpdating || !accessKey}
-              />
-            </div>
-            
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm font-medium">Refresh Key</Label>
-                <p className="text-xs text-muted-foreground">
-                  Generate new key, invalidate old one
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefreshKey}
-                disabled={isUpdating}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
-            
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm font-medium">Set Expiry</Label>
-                <p className="text-xs text-muted-foreground">
-                  {accessKey?.expires_at 
-                    ? `Expires ${format(new Date(accessKey.expires_at), "MMM d, yyyy")}`
-                    : "No expiry set"}
-                </p>
-              </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isUpdating || !accessKey}
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    {accessKey?.expires_at ? "Change" : "Set"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <CalendarComponent
-                    mode="single"
-                    selected={accessKey?.expires_at ? new Date(accessKey.expires_at) : undefined}
-                    onSelect={handleSetExpiry}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                  />
-                  {accessKey?.expires_at && (
-                    <div className="p-2 border-t">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => handleSetExpiry(undefined)}
-                      >
-                        Remove Expiry
-                      </Button>
-                    </div>
-                  )}
-                </PopoverContent>
-              </Popover>
-            </div>
           </CardContent>
         </Card>
 

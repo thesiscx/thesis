@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link2, Copy, Check, Loader2, RefreshCw, ExternalLink } from "lucide-react";
+import { Link2, Copy, Check, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -162,11 +162,11 @@ export function ShareLinksCard({ roundId, roundSlug }: ShareLinksCardProps) {
     }
   }, [isLoadingInvestors, isLoadingKeys, investors.length, existingKeys.length, effectiveRoundId]);
 
-  const handleCopyKey = async (key: string, name: string) => {
-    await navigator.clipboard.writeText(key);
-    setCopiedKey(key);
+  const copyUrl = async (url: string, name: string) => {
+    await navigator.clipboard.writeText(url);
+    setCopiedKey(url);
     setTimeout(() => setCopiedKey(null), 2000);
-    toast({ title: `Key for ${name} copied` });
+    toast({ title: `Link for ${name} copied` });
   };
 
   const handleNavigateToInvestor = (investorSlug: string) => {
@@ -240,21 +240,18 @@ export function ShareLinksCard({ roundId, roundSlug }: ShareLinksCardProps) {
                     "cursor-pointer hover:bg-secondary/50 transition-colors"
                   )}
                 >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="text-sm font-medium truncate">{link.investorName}</span>
-                    <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
-                  </div>
+                  <span className="text-sm font-medium truncate">{link.investorName}</span>
                   
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleCopyKey(link.accessKey, link.investorName);
+                      copyUrl(link.url, link.investorName);
                     }}
                     className="h-7 px-2 shrink-0"
                   >
-                    {copiedKey === link.accessKey ? (
+                    {copiedKey === link.url ? (
                       <Check className="w-3.5 h-3.5 text-green-600" />
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
