@@ -61,6 +61,7 @@ interface ActionChatPanelProps {
   investorSlug?: string;
   investorId?: string;
   investorName?: string;
+  investorStatus?: string;
   accessKeyId?: string;
   docketId?: string;
 }
@@ -111,6 +112,7 @@ export default function ActionChatPanel({
   investorSlug,
   investorId,
   investorName,
+  investorStatus,
   accessKeyId,
   docketId,
 }: ActionChatPanelProps) {
@@ -242,6 +244,7 @@ export default function ActionChatPanel({
             <ManageInvestorCard 
               investorId={investorId}
               investorName={investorName}
+              investorStatus={investorStatus}
               roundSlug={roundSlug}
             />
           )}

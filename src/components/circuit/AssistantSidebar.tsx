@@ -16,6 +16,7 @@ interface AssistantSidebarProps {
   investorSlug?: string;
   investorId?: string;
   investorName?: string;
+  investorStatus?: string;
   accessKeyId?: string;
   docketId?: string;
 }
@@ -32,6 +33,7 @@ export default function AssistantSidebar({
   investorSlug,
   investorId,
   investorName,
+  investorStatus,
   accessKeyId,
   docketId,
 }: AssistantSidebarProps) {
@@ -56,6 +58,7 @@ export default function AssistantSidebar({
           investorSlug={investorSlug}
           investorId={investorId}
           investorName={investorName}
+          investorStatus={investorStatus}
           accessKeyId={accessKeyId}
           docketId={docketId}
         />

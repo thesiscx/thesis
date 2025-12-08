@@ -38,6 +38,7 @@ interface CircuitLayoutProps {
   investorSlug?: string;
   investorId?: string;
   investorName?: string;
+  investorStatus?: string;
   accessKeyId?: string;
   docketId?: string;
 }
@@ -55,6 +56,7 @@ export default function CircuitLayout({
   investorSlug,
   investorId,
   investorName,
+  investorStatus,
   accessKeyId,
   docketId,
 }: CircuitLayoutProps) {
@@ -151,6 +153,7 @@ export default function CircuitLayout({
           investorSlug={investorSlug}
           investorId={investorId}
           investorName={investorName}
+          investorStatus={investorStatus}
           accessKeyId={accessKeyId}
           docketId={docketId}
         />

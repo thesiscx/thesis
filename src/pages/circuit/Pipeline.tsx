@@ -95,7 +95,7 @@ export default function ThesisCircuit() {
   const [editingInvestor, setEditingInvestor] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [investorData, setInvestorData] = useState<{ id: string; name: string } | null>(null);
+  const [investorData, setInvestorData] = useState<{ id: string; name: string; status?: string } | null>(null);
   
   // Filter & sort state - exclude won/lost by default
   const [activeFilters, setActiveFilters] = useState<InvestorStatus[]>([
@@ -449,6 +449,7 @@ export default function ThesisCircuit() {
       investorSlug={variantSlug}
       investorId={investorData?.id}
       investorName={isInvestorSubpage ? investorName : undefined}
+      investorStatus={investorData?.status}
     >
       {isGlobal ? (
       <div className="flex-1 overflow-auto">
