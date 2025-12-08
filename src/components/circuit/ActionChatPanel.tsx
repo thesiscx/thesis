@@ -9,7 +9,7 @@ import {
   FolderPlus,
   TrendingUp,
   Loader2,
-  Eye,
+  Activity,
   AlertTriangle,
   Trash2
 } from "lucide-react";
@@ -27,9 +27,11 @@ import {
   ShareLinksCard,
   FinancingSummaryCard,
   CreateDocketCard,
-  LogsCard,
   VoidCard,
-  ManageInvestorCard
+  ManageInvestorCard,
+  AccessLogsCard,
+  DocketStatusCard,
+  PipelineActivityCard
 } from "./tabs";
 
 type PageKey = "stage" | "memo" | "docket" | "pipeline";
@@ -40,9 +42,9 @@ type MemoTab = "publish" | "edit" | "share";
 type DocketTab = "summary" | "create";
 
 // Subpage tab definitions
-type MemoSubpageTab = "logs" | "void";
-type DocketSubpageTab = "logs" | "void";
-type PipelineSubpageTab = "logs" | "manage";
+type MemoSubpageTab = "status" | "void";
+type DocketSubpageTab = "status" | "void";
+type PipelineSubpageTab = "status" | "manage";
 
 interface ActionChatPanelProps {
   pageKey: PageKey;
@@ -58,6 +60,7 @@ interface ActionChatPanelProps {
   investorId?: string;
   investorName?: string;
   accessKeyId?: string;
+  docketId?: string;
 }
 
 const PIPELINE_TABS = [
@@ -79,17 +82,17 @@ const DOCKET_TABS = [
 
 // Subpage tabs
 const MEMO_SUBPAGE_TABS = [
-  { key: "logs" as const, label: "Logs", icon: Eye },
+  { key: "status" as const, label: "Status", icon: Activity },
   { key: "void" as const, label: "Void", icon: AlertTriangle },
 ];
 
 const DOCKET_SUBPAGE_TABS = [
-  { key: "logs" as const, label: "Logs", icon: Eye },
+  { key: "status" as const, label: "Status", icon: Activity },
   { key: "void" as const, label: "Void", icon: AlertTriangle },
 ];
 
 const PIPELINE_SUBPAGE_TABS = [
-  { key: "logs" as const, label: "Logs", icon: Eye },
+  { key: "status" as const, label: "Status", icon: Activity },
   { key: "manage" as const, label: "Manage", icon: Trash2 },
 ];
 
@@ -106,6 +109,7 @@ export default function ActionChatPanel({
   investorId,
   investorName,
   accessKeyId,
+  docketId,
 }: ActionChatPanelProps) {
   const { user, isLoading: authLoading } = useFounderAuth();
   
@@ -115,9 +119,9 @@ export default function ActionChatPanel({
   const [docketTab, setDocketTab] = useState<DocketTab>("summary");
   
   // Subpage tab state
-  const [memoSubpageTab, setMemoSubpageTab] = useState<MemoSubpageTab>("logs");
-  const [docketSubpageTab, setDocketSubpageTab] = useState<DocketSubpageTab>("logs");
-  const [pipelineSubpageTab, setPipelineSubpageTab] = useState<PipelineSubpageTab>("logs");
+  const [memoSubpageTab, setMemoSubpageTab] = useState<MemoSubpageTab>("status");
+  const [docketSubpageTab, setDocketSubpageTab] = useState<DocketSubpageTab>("status");
+  const [pipelineSubpageTab, setPipelineSubpageTab] = useState<PipelineSubpageTab>("status");
 
   if (authLoading) {
     return (
@@ -141,8 +145,8 @@ export default function ActionChatPanel({
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 px-6 py-6 overflow-y-auto">
-          {memoSubpageTab === "logs" && (
-            <LogsCard accessKeyId={accessKeyId} investorName={investorName} />
+          {memoSubpageTab === "status" && (
+            <AccessLogsCard accessKeyId={accessKeyId} investorName={investorName} />
           )}
           {memoSubpageTab === "void" && (
             <VoidCard 
@@ -183,8 +187,8 @@ export default function ActionChatPanel({
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 px-6 py-6 overflow-y-auto">
-          {docketSubpageTab === "logs" && (
-            <LogsCard accessKeyId={accessKeyId} investorName={investorName} />
+          {docketSubpageTab === "status" && (
+            <DocketStatusCard docketId={docketId} investorName={investorName} />
           )}
           {docketSubpageTab === "void" && (
             <VoidCard 
@@ -225,11 +229,10 @@ export default function ActionChatPanel({
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 px-6 py-6 overflow-y-auto">
-          {pipelineSubpageTab === "logs" && (
-            <LogsCard 
+          {pipelineSubpageTab === "status" && (
+            <PipelineActivityCard 
               investorId={investorId} 
               investorName={investorName}
-              context="pipeline"
             />
           )}
           {pipelineSubpageTab === "manage" && (

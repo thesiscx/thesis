@@ -39,6 +39,7 @@ interface CircuitLayoutProps {
   investorId?: string;
   investorName?: string;
   accessKeyId?: string;
+  docketId?: string;
 }
 
 export default function CircuitLayout({
@@ -55,6 +56,7 @@ export default function CircuitLayout({
   investorId,
   investorName,
   accessKeyId,
+  docketId,
 }: CircuitLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -150,6 +152,7 @@ export default function CircuitLayout({
           investorId={investorId}
           investorName={investorName}
           accessKeyId={accessKeyId}
+          docketId={docketId}
         />
       </div>
     </>
