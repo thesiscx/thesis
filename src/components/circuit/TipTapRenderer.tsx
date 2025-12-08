@@ -229,6 +229,18 @@ const renderNode = (node: TipTapNode, index: number, headingIndex: { current: nu
         </div>
       );
 
+    case 'embed':
+      return (
+        <div key={key} className="my-4 aspect-video">
+          <iframe
+            src={node.attrs?.src}
+            className="w-full h-full rounded-lg"
+            allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          />
+        </div>
+      );
+
     case 'hardBreak':
       return <br key={key} />;
 
