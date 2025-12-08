@@ -319,9 +319,16 @@ export default function InvestorDocket({ roundSlug, investorSlug, onAccessKeyLoa
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-heading text-2xl font-semibold mb-1">
-              {investorName}
-            </h1>
+            <div className="flex items-center gap-3 mb-1">
+              {docket?.docket_id && (
+                <Badge variant="outline" className="font-mono text-base px-2.5 py-0.5">
+                  {docket.docket_id}
+                </Badge>
+              )}
+              <h1 className="font-heading text-2xl font-semibold">
+                {investorName}
+              </h1>
+            </div>
             {getStatusBadge(docket?.status, docket?.wire_received)}
           </div>
           

@@ -292,6 +292,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_terms: string | null
+          docket_id: string | null
+          docket_number: number | null
           id: string
           investor_address: string | null
           investor_email: string | null
@@ -317,6 +319,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_terms?: string | null
+          docket_id?: string | null
+          docket_number?: number | null
           id?: string
           investor_address?: string | null
           investor_email?: string | null
@@ -342,6 +346,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_terms?: string | null
+          docket_id?: string | null
+          docket_number?: number | null
           id?: string
           investor_address?: string | null
           investor_email?: string | null
