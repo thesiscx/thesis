@@ -33,7 +33,7 @@ export function AccessLogsCard({ accessKeyId, investorName }: AccessLogsCardProp
   if (isLoading) {
     return (
       <Card className="border-border bg-transparent">
-        <CardHeader className="pb-3 border-b border-border">
+        <CardHeader className="py-3 border-b border-border">
           <Skeleton className="h-5 w-24" />
         </CardHeader>
         <CardContent className="pt-4">
@@ -55,7 +55,7 @@ export function AccessLogsCard({ accessKeyId, investorName }: AccessLogsCardProp
   return (
     <>
       <Card className="border-border bg-transparent">
-        <CardHeader className="pb-3 border-b border-border">
+        <CardHeader className="py-3 border-b border-border">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Eye className="w-4 h-4" />
             Access Logs

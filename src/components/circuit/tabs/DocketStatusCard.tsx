@@ -49,7 +49,7 @@ export function DocketStatusCard({ docketId, investorName }: DocketStatusCardPro
   if (isLoading) {
     return (
       <Card className="border-border bg-transparent">
-        <CardHeader className="pb-3 border-b border-border">
+        <CardHeader className="py-3 border-b border-border">
           <Skeleton className="h-5 w-32" />
         </CardHeader>
         <CardContent className="pt-4">
@@ -69,7 +69,7 @@ export function DocketStatusCard({ docketId, investorName }: DocketStatusCardPro
   return (
     <>
       <Card className="border-border bg-transparent">
-        <CardHeader className="pb-3 border-b border-border">
+        <CardHeader className="py-3 border-b border-border">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Docket Status
