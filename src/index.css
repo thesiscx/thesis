@@ -194,7 +194,7 @@
     120deg,
     transparent 0%,
     transparent 40%,
-    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.15) 50%,
     transparent 60%,
     transparent 100%
   );
@@ -227,7 +227,7 @@
     120deg,
     transparent 0%,
     transparent 40%,
-    rgba(0, 0, 0, 0.08) 50%,
+    rgba(0, 0, 0, 0.04) 50%,
     transparent 60%,
     transparent 100%
   );
