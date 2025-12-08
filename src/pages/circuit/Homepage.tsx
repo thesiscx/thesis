@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import CircuitHeader from "@/components/circuit/CircuitHeader";
 import { ActivityFeed } from "@/components/circuit/ActivityFeed";
+import { RoundsList } from "@/components/circuit/RoundsList";
+import { Separator } from "@/components/ui/separator";
 import { Users, FileText, FolderOpen, ArrowRight, Settings } from "lucide-react";
 import circuitLogo from "@/assets/circuit-logo.png";
 
@@ -171,6 +173,11 @@ export default function Homepage() {
         <div className="h-14 flex items-center px-6 shrink-0">
           <img src={circuitLogo} alt="Circuit" className="h-5" />
         </div>
+
+        {/* Rounds List */}
+        <RoundsList />
+        
+        <Separator className="mx-4" />
 
         {/* Activity Feed Content */}
         <div className="flex-1 overflow-hidden">
