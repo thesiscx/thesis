@@ -1091,6 +1091,146 @@ function AddDocketFlow({
   );
 }
 
+// Share Links flow - generates memo access keys for all pipeline investors
+interface ShareLinkItem {
+  investorId: string;
+  investorName: string;
+  investorSlug: string;
+  key?: string;
+  url?: string;
+  status: 'pending' | 'generating' | 'complete' | 'error';
+}
+
+function ShareLinksFlow({
+  roundId,
+  roundSlug,
+  companySlug,
+  investors,
+  onGenerateKeys,
+  onNavigateToInvestor,
+  shareLinks,
+  isLoading,
+  isComplete,
+  isHistorical,
+}: {
+  roundId: string;
+  roundSlug?: string;
+  companySlug?: string;
+  investors: { id: string; name: string; slug: string }[];
+  onGenerateKeys: () => void;
+  onNavigateToInvestor: (investorSlug: string) => void;
+  shareLinks: ShareLinkItem[];
+  isLoading: boolean;
+  isComplete: boolean;
+  isHistorical?: boolean;
+}) {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Copied to clipboard" });
+    } catch {
+      toast({ title: "Copy failed", variant: "destructive" });
+    }
+  };
+
+  // Historical/complete state - collapsed
+  if (isHistorical) {
+    return (
+      <div className={cn("rounded-xl border border-border p-4", "bg-secondary/30 opacity-60")}>
+        <div className="flex items-center gap-2 text-sm">
+          <Check className="w-4 h-4 text-green-600" />
+          <span className="font-medium">Share links generated</span>
+          <span className="text-muted-foreground">- {investors.length} investor{investors.length !== 1 ? 's' : ''}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <FlowCard title="Memo Share Links">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Generate share links for all pipeline investors
+          </p>
+          {!isComplete && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onGenerateKeys}
+              disabled={isLoading || investors.length === 0}
+              className="h-7 text-xs"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+              ) : (
+                <Link2 className="w-3 h-3 mr-1" />
+              )}
+              {shareLinks.length > 0 ? "Refresh" : "Generate"}
+            </Button>
+          )}
+        </div>
+
+        {investors.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">
+            No investors in your pipeline yet. Add investors first.
+          </p>
+        ) : shareLinks.length === 0 && !isLoading ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">
+            Click "Generate" to create share links for {investors.length} investor{investors.length !== 1 ? 's' : ''}.
+          </p>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {shareLinks.map((link) => (
+              <div 
+                key={link.investorId} 
+                className="p-3 rounded-lg bg-background border border-border space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => onNavigateToInvestor(link.investorSlug)}
+                    className="text-sm font-medium hover:underline text-left"
+                  >
+                    {link.investorName}
+                  </button>
+                  {link.status === 'generating' && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                  )}
+                  {link.status === 'complete' && (
+                    <Check className="w-3.5 h-3.5 text-green-600" />
+                  )}
+                  {link.status === 'error' && (
+                    <span className="text-xs text-destructive">Error</span>
+                  )}
+                </div>
+                
+                {link.status === 'complete' && link.key && (
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-secondary/50 px-2 py-1 rounded border border-border font-mono truncate">
+                      {link.key}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyToClipboard(link.key!)}
+                      className="shrink-0 h-6 w-6 p-0"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </FlowCard>
+  );
+}
+
 // Welcome messages for each page
 const WELCOME_MESSAGES: Record<PageKey, string> = {
   stage: "Welcome to Circuit. I'll help you manage your fundraising rounds. Use the actions below to open a new round or close your current one.",
@@ -1121,6 +1261,11 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
   
   // Edit memo state
   const [editMemoPrompt, setEditMemoPrompt] = useState("");
+  
+  // Share links state
+  const [shareLinks, setShareLinks] = useState<ShareLinkItem[]>([]);
+  
+  const navigate = useNavigate();
 
   // Fetch messages from DB - filtered by round
   const { data: messages = [] } = useQuery({
@@ -1344,6 +1489,87 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     }
   };
 
+  const handleShareLinks = async () => {
+    if (!roundId) {
+      toast({ title: "No round selected", variant: "destructive" });
+      return;
+    }
+    
+    // Create the flow card
+    const cardId = await createFlowCard("share-links");
+    if (cardId) {
+      setActiveFlowId(cardId);
+      // Initialize share links with pending status for all investors
+      setShareLinks(investors.map(inv => ({
+        investorId: inv.id,
+        investorName: inv.name,
+        investorSlug: inv.slug,
+        status: 'pending' as const
+      })));
+    }
+  };
+
+  const generateShareLinkKeys = async () => {
+    if (!roundId || investors.length === 0) return;
+    
+    setIsProcessing(true);
+    setProcessingAction("share-links");
+    
+    // Generate keys for each investor sequentially
+    for (const investor of investors) {
+      // Update status to generating
+      setShareLinks(prev => prev.map(link => 
+        link.investorId === investor.id ? { ...link, status: 'generating' as const } : link
+      ));
+      
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-access-key", {
+          body: { 
+            roundId, 
+            investorId: investor.id,
+            tool: "memo" 
+          }
+        });
+        
+        if (error) throw error;
+        
+        const url = profile?.company_slug && roundSlug
+          ? `${window.location.origin}/share/${profile.company_slug}/${roundSlug}/memo`
+          : undefined;
+        
+        // Update with key
+        setShareLinks(prev => prev.map(link => 
+          link.investorId === investor.id 
+            ? { ...link, status: 'complete' as const, key: data.key, url } 
+            : link
+        ));
+      } catch (error) {
+        console.error(`Failed to generate key for ${investor.name}:`, error);
+        setShareLinks(prev => prev.map(link => 
+          link.investorId === investor.id ? { ...link, status: 'error' as const } : link
+        ));
+      }
+    }
+    
+    // Mark flow complete
+    if (activeFlowId) {
+      const savedLinks = shareLinks.filter(l => l.status === 'complete').map(l => ({
+        investorId: l.investorId,
+        investorName: l.investorName,
+        key: l.key
+      }));
+      await updateFlowCard(activeFlowId, 1, { links: savedLinks }, true);
+    }
+    
+    setIsProcessing(false);
+    setProcessingAction(null);
+    toast({ title: `Generated ${investors.length} share link${investors.length !== 1 ? 's' : ''}` });
+  };
+
+  const navigateToInvestorMemo = (investorSlug: string) => {
+    navigate(`/${roundSlug}/memo/${investorSlug}`);
+  };
+
   const handleDraftMemo = async () => {
     // If memo already exists, create an edit-memo flow card
     if (hasMemoContent) {
@@ -1371,7 +1597,6 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
     setIsProcessing(true);
     
     try {
-      // Call the AI edge function with edit instructions
       const { data: aiResponse, error: aiError } = await supabase.functions.invoke("draft-memo-ai", {
         body: { 
           editMode: true,
@@ -1389,12 +1614,10 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
         throw new Error("No content returned from AI");
       }
 
-      // Update memo content
       if (onUpdateMemoContent) {
         await onUpdateMemoContent(aiResponse.content);
       }
       
-      // Mark flow as complete
       await updateFlowCard(activeFlowId, 0, { prompt }, true);
       setActiveFlowId(null);
       
@@ -1861,6 +2084,21 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             savedData={flowData as { prompt?: string }}
           />
         );
+      case "share-links":
+        return roundId ? (
+          <ShareLinksFlow
+            roundId={roundId}
+            roundSlug={roundSlug}
+            companySlug={profile?.company_slug || undefined}
+            investors={investors}
+            onGenerateKeys={generateShareLinkKeys}
+            onNavigateToInvestor={navigateToInvestorMemo}
+            shareLinks={shareLinks}
+            isLoading={isProcessing && isActive}
+            isComplete={isComplete}
+            isHistorical={isHistorical}
+          />
+        ) : null;
       default:
         return null;
     }
@@ -1907,11 +2145,18 @@ export default function ActionChatPanel({ pageKey, roundId, roundSlug, onOpenRou
             disabled: isButtonDisabled("draft-memo") || hasActiveFlow("draft-memo")
           },
           { 
+            key: "share-links",
+            label: "Share Links", 
+            icon: Link2, 
+            onClick: handleShareLinks,
+            disabled: isButtonDisabled("share-links") || hasActiveFlow("share-links")
+          },
+          { 
             key: "publish",
             label: "Publish", 
             icon: Globe, 
             onClick: handlePublish,
-            disabled: isButtonDisabled("publish") // Publish always creates new card, no hasActiveFlow check
+            disabled: isButtonDisabled("publish")
           },
         ];
       case "docket":

@@ -5,6 +5,7 @@ import MemoEditor from "@/components/circuit/MemoEditor";
 import MemoViewer from "@/components/circuit/MemoViewer";
 import MemoSidebar from "@/components/circuit/MemoSidebar";
 import CreateRoundDialog from "@/components/circuit/CreateRoundDialog";
+import InvestorMemo from "@/components/circuit/memo/InvestorMemo";
 import { useRounds } from "@/hooks/useRounds";
 import { useInvestors } from "@/hooks/useInvestors";
 import { useMemo } from "@/hooks/useMemo";
@@ -12,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 
 export default function ThesisMemo() {
@@ -24,6 +25,28 @@ export default function ThesisMemo() {
   
   const { rounds, isLoading: roundsLoading } = useRounds();
   const { investors } = useInvestors();
+  
+  // Check if this is an investor subpage (variantSlug exists and isn't empty)
+  const isInvestorSubpage = Boolean(variantSlug && variantSlug.length > 0);
+  
+  // Fetch investor name for breadcrumb when on investor subpage
+  const { data: investorData } = useQuery({
+    queryKey: ["investor-name", variantSlug, user?.id],
+    queryFn: async () => {
+      if (!variantSlug || !user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("investors")
+        .select("name")
+        .eq("slug", variantSlug)
+        .eq("workspace_id", user.id)
+        .maybeSingle();
+      
+      if (error) return null;
+      return data;
+    },
+    enabled: isInvestorSubpage && !!user?.id,
+  });
   const { 
     memo, 
     localContent,
@@ -127,6 +150,36 @@ export default function ThesisMemo() {
   // Check if memo has content
   const hasMemoContent = Boolean(localContent || memo?.content);
   const currentMemoContent = localContent ?? memo?.content;
+  
+  // Build breadcrumb for investor subpage
+  const investorBreadcrumb = isInvestorSubpage && investorData ? {
+    label: investorData.name,
+    href: `/${roundSlug}/memo/${variantSlug}`
+  } : undefined;
+
+  // If this is an investor subpage, render InvestorMemo instead
+  if (isInvestorSubpage) {
+    return (
+      <>
+        <CircuitLayout
+          rounds={rounds}
+          investors={investors}
+          onCreateRound={() => setCreateRoundOpen(true)}
+          onUpdateMemoContent={handleUpdateMemoContent}
+          hasMemoContent={hasMemoContent}
+          currentMemoContent={currentMemoContent}
+          breadcrumb={investorBreadcrumb}
+        >
+          <InvestorMemo roundSlug={roundSlug} investorSlug={variantSlug} />
+        </CircuitLayout>
+
+        <CreateRoundDialog
+          open={createRoundOpen}
+          onOpenChange={setCreateRoundOpen}
+        />
+      </>
+    );
+  }
 
   return (
     <>
