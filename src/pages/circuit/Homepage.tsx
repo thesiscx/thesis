@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useFounderAuth } from "@/contexts/FounderAuthContext";
 import { useRounds } from "@/hooks/useRounds";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import CircuitHeader from "@/components/circuit/CircuitHeader";
-import { ActivityFeed } from "@/components/circuit/ActivityFeed";
-import { Users, FileText, FolderOpen, ArrowRight, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Users, FileText, FolderOpen, ArrowRight, Activity, DollarSign, Globe } from "lucide-react";
 import circuitLogo from "@/assets/circuit-logo.png";
+import { ActivityCard, RoundsCard, SubdomainCard } from "@/components/circuit/tabs";
 
 const tools = [
   {
@@ -29,10 +32,19 @@ const tools = [
   },
 ];
 
+type HomeTab = "activity" | "rounds" | "subdomain";
+
+const HOME_TABS = [
+  { key: "activity" as const, label: "Activity", icon: Activity },
+  { key: "rounds" as const, label: "Rounds", icon: DollarSign },
+  { key: "subdomain" as const, label: "Domain", icon: Globe },
+];
+
 export default function Homepage() {
   const navigate = useNavigate();
   const { profile } = useFounderAuth();
   const { openRound, rounds } = useRounds();
+  const [activeTab, setActiveTab] = useState<HomeTab>("activity");
 
   // Get the first name from full_name
   const firstName = profile?.full_name?.split(" ")[0] || "there";
@@ -105,13 +117,6 @@ export default function Homepage() {
                     <span>·</span>
                     <span>${((roundStats?.fundedAmount || 0) / 1000).toFixed(0)}k raised</span>
                   </div>
-                  <Link 
-                    to="/settings/rounds" 
-                    className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mt-1"
-                  >
-                    <Settings className="w-3 h-3" />
-                    Manage Rounds
-                  </Link>
                 </div>
               )}
             </div>
@@ -165,16 +170,42 @@ export default function Homepage() {
         </main>
       </div>
 
-      {/* Right Sidebar - Activity Feed (matches AssistantSidebar styling) */}
+      {/* Right Sidebar - Tab-based */}
       <aside className="w-96 h-screen bg-[hsl(var(--canvas))] flex flex-col shrink-0">
-        {/* Header with Circuit logo - vertically aligned with main header */}
+        {/* Header with Circuit logo */}
         <div className="h-14 flex items-center px-6 shrink-0">
           <img src={circuitLogo} alt="Circuit" className="h-5" />
         </div>
 
-        {/* Activity Feed Content */}
-        <div className="flex-1 overflow-hidden">
-          <ActivityFeed />
+        {/* Tab Content */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 px-6 py-6 overflow-y-auto">
+            {activeTab === "activity" && <ActivityCard />}
+            {activeTab === "rounds" && <RoundsCard />}
+            {activeTab === "subdomain" && <SubdomainCard />}
+          </div>
+          
+          {/* Tab Bar */}
+          <div className="px-6 pb-8">
+            <div className="flex items-center gap-2 flex-wrap">
+              {HOME_TABS.map((tab) => (
+                <Button
+                  key={tab.key}
+                  size="sm"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={cn(
+                    "h-8 text-xs gap-1.5 transition-all",
+                    activeTab === tab.key 
+                      ? "bg-foreground text-background hover:bg-foreground/90" 
+                      : "bg-secondary text-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
       </aside>
     </div>
