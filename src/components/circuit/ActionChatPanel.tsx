@@ -226,7 +226,11 @@ export default function ActionChatPanel({
       <div className="flex flex-col h-full">
         <div className="flex-1 px-6 py-6 overflow-y-auto">
           {pipelineSubpageTab === "logs" && (
-            <LogsCard accessKeyId={accessKeyId} investorName={investorName} />
+            <LogsCard 
+              investorId={investorId} 
+              investorName={investorName}
+              context="pipeline"
+            />
           )}
           {pipelineSubpageTab === "manage" && (
             <ManageInvestorCard 

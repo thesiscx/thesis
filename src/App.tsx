@@ -177,6 +177,7 @@ const App = () => {
               
               {/* Tool pages - new clean URLs without /circuit prefix */}
               <Route path="/:roundSlug/pipeline" element={<><RouteLogger name="pipeline" /><ProtectedRoute routeName="pipeline"><Pipeline /></ProtectedRoute></>} />
+              <Route path="/:roundSlug/pipeline/:variantSlug" element={<><RouteLogger name="pipeline:variant" /><ProtectedRoute routeName="pipeline"><Pipeline /></ProtectedRoute></>} />
               <Route path="/:roundSlug/memo" element={<><RouteLogger name="memo" /><ProtectedRoute routeName="memo"><CircuitMemo /></ProtectedRoute></>} />
               <Route path="/:roundSlug/memo/:variantSlug" element={<><RouteLogger name="memo:variant" /><ProtectedRoute routeName="memo"><CircuitMemo /></ProtectedRoute></>} />
               <Route path="/:roundSlug/docket" element={<><RouteLogger name="docket" /><ProtectedRoute routeName="docket"><CircuitDocket /></ProtectedRoute></>} />
