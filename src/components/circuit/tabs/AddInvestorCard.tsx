@@ -109,16 +109,23 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
 
   return (
     <>
-      {/* Gmail Sync Bar */}
-      <div className="rounded-xl border border-border bg-transparent overflow-hidden mb-4">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 text-foreground" />
-            <span className="text-sm font-medium">Synced with Gmail</span>
-            <Check className="w-3.5 h-3.5 text-muted-foreground" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Last sync: 2m ago</span>
+      <div className="rounded-xl border border-border bg-transparent overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <UserPlus className="w-4 h-4 text-foreground" />
+          <span className="text-sm font-medium">Update Pipeline</span>
+        </div>
+        
+        <div className="p-4 space-y-4">
+          {/* Gmail Sync Section */}
+          <div className="flex items-start justify-between">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-foreground" />
+                <span className="text-sm font-medium">Synced with Gmail</span>
+                <Check className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+              <span className="text-xs text-muted-foreground pl-6">Last sync: 2m ago</span>
+            </div>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -127,23 +134,16 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
               <RefreshCw className="w-3.5 h-3.5" />
             </Button>
           </div>
-        </div>
-      </div>
 
-      {/* Manual Update Section */}
-      <div className="mb-3">
-        <span className="text-xs text-muted-foreground uppercase tracking-wide">Manual Update</span>
-      </div>
+          <div className="border-t border-border" />
 
-      <div className="rounded-xl border border-border bg-transparent overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-          <UserPlus className="w-4 h-4 text-foreground" />
-          <span className="text-sm font-medium">Add Investor</span>
-        </div>
-        
-        <div className="p-4 space-y-4">
+          {/* Manual Update Section */}
+          <div>
+            <span className="text-xs text-muted-foreground uppercase tracking-wide">Manual Update</span>
+          </div>
+
           <div className="space-y-3">
-            {/* Entity Type Radio Buttons - First */}
+            {/* Entity Type Radio Buttons */}
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Type</Label>
               <RadioGroup 
@@ -228,7 +228,6 @@ export function AddInvestorCard({ roundId, onSuccess }: AddInvestorCardProps) {
         </div>
       </div>
       
-      {/* Status Line - Outside Card */}
       <StatusLine 
         status={status}
         idleText="Ready to add investor"
