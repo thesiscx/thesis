@@ -38,6 +38,7 @@ import {
   Undo,
   Redo,
   Superscript,
+  Video,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 
@@ -88,6 +89,13 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
   const addTable = () => {
     editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+  };
+
+  const addVideo = () => {
+    const url = window.prompt('Enter YouTube URL');
+    if (url) {
+      editor.chain().focus().setYoutubeVideo({ src: url }).run();
+    }
   };
 
   const getCurrentFontSize = () => {
@@ -257,6 +265,9 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         </ToolbarButton>
         <ToolbarButton onClick={addTable} title="Add Table">
           <Table className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={addVideo} title="Add Video">
+          <Video className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().setHorizontalRule().run()}

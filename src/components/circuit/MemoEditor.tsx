@@ -9,6 +9,7 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import TextStyle from '@tiptap/extension-text-style';
+import Youtube from '@tiptap/extension-youtube';
 import { FontSize } from '@/components/circuit/editor/FontSize';
 import { Citation } from '@/components/circuit/editor/Citation';
 import { EditorToolbar } from '@/components/circuit/editor/EditorToolbar';
@@ -110,6 +111,10 @@ export default function MemoEditor({
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
+      }),
+      Youtube.configure({
+        controls: true,
+        nocookie: true,
       }),
       Citation,
     ],
