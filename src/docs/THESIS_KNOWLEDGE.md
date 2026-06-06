@@ -44,7 +44,7 @@ Thesis is a professional fundraising infrastructure tool for startup founders. I
 - React + TypeScript + Vite
 - Tailwind CSS + shadcn/ui
 - TipTap for rich text editing
-- Lovable Cloud (Supabase) for backend
+- Supabase for backend (Postgres, Auth, Storage, Edge Functions)
 - React Query for data fetching
 
 ### Design Philosophy
@@ -57,7 +57,7 @@ Thesis is a professional fundraising infrastructure tool for startup founders. I
 
 ## AI Integration
 
-Thesis uses Lovable AI (Gemini) for:
+Thesis uses a configurable AI provider (any OpenAI-compatible API) for:
 - Drafting 15-section investment memos
 - Editing existing memo content
 - Parsing wire instruction PDFs

@@ -84,21 +84,7 @@ export function SubdomainCard() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Value:</span>
-                    <span>185.158.133.1</span>
-                  </div>
-                </div>
-                <div className="bg-transparent border border-border rounded p-2 font-mono text-[10px] space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Type:</span>
-                    <span>TXT</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Name:</span>
-                    <span>_lovable</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Value:</span>
-                    <span>lovable_verify=...</span>
+                    <span>216.24.57.1</span>
                   </div>
                 </div>
               </div>
@@ -108,7 +94,7 @@ export function SubdomainCard() {
               variant="outline"
               size="sm"
               className="w-full text-xs"
-              onClick={() => window.open("https://docs.lovable.dev/features/custom-domain", "_blank")}
+              onClick={() => window.open("https://render.com/docs/custom-domains", "_blank")}
             >
               <ExternalLink className="w-3 h-3 mr-1.5" />
               View Full Setup Guide

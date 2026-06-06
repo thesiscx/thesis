@@ -71,7 +71,7 @@ Creates new access key for an investor.
 ## AI & Content Generation
 
 ### draft-memo-ai
-Generates or edits memo content using Lovable AI (Gemini).
+Generates or edits memo content using the configured AI provider (any OpenAI-compatible API).
 
 **Request (new memo):**
 ```json
@@ -108,7 +108,7 @@ Generates or edits memo content using Lovable AI (Gemini).
 }
 ```
 
-**AI Model:** Uses google/gemini-2.5-flash via Lovable AI.
+**AI Model:** Configurable via `AI_MODEL` (default `gpt-4o-mini`), against any OpenAI-compatible endpoint set by `AI_BASE_URL`.
 
 ### thesis-chat
 AI assistant for fundraising advice (legacy, being replaced by tab cards).
@@ -237,7 +237,7 @@ All edge functions have access to:
 - `SUPABASE_URL` - Supabase project URL
 - `SUPABASE_ANON_KEY` - Public anon key
 - `SUPABASE_SERVICE_ROLE_KEY` - Service role for admin operations
-- `LOVABLE_API_KEY` - For Lovable AI calls
+- `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL` - AI provider config (any OpenAI-compatible API)
 
 ## CORS Configuration
 

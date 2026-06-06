@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-**Thesis** (repo `thesiscx/thesis`) is a Carta-style **fundraising infrastructure platform** for startup founders: manage rounds, write investor memos, generate SAFE agreements, run an investor pipeline, and let investors view memos / sign / commit through shareable links.
+**Thesis** (repo `thesis-run/thesis`) is a Carta-style **fundraising infrastructure platform** for startup founders: manage rounds, write investor memos, generate SAFE agreements, run an investor pipeline, and let investors view memos / sign / commit through shareable links.
 
 > **Naming:** This product was formerly called `circuit` and has been fully renamed to `thesis` throughout the codebase (directories, components, cache keys, edge functions, the DB chat table). Two intentional `circuit` references remain: (1) the **legacy `/circuit/*` redirect routes** in `src/App.tsx`, kept so old pre-rename shared links still resolve; (2) the **historical migration** `supabase/migrations/20251209100124_*.sql`, left immutable as applied history — the rename lives in a later migration. Don't reintroduce "circuit" elsewhere. Note: `~/.superset/projects/circuit` (circuit.cx, the AI relationship-intelligence tool) is a **different product** — do not cross-reference them.
 
-This is a **Lovable** project (Vite + React + shadcn) backed by **Lovable Cloud = Supabase**. Edits made in Lovable auto-commit to this repo, and pushes to the repo reflect back into Lovable.
+Frontend is a Vite + React + shadcn SPA; backend is **Supabase** (Postgres + Auth + Storage + Edge Functions). Hosted on **Render** (static SPA served via `serve`), auto-deployed from `main`.
 
 ## Authoritative docs
 
@@ -20,7 +20,7 @@ This is a **Lovable** project (Vite + React + shadcn) backed by **Lovable Cloud 
 
 ## Commands
 
-Uses **bun** (`bun.lockb` present; `package-lock.json` also committed for npm compatibility).
+Uses **bun** (`bun.lock`) as the only supported package manager — CI and the Render deploy both use it.
 
 ```sh
 bun install              # or: npm i
@@ -53,18 +53,18 @@ There is **no test framework** configured — no test runner, no `test` script.
 
 **Data access**: components don't call Supabase directly for domain data — they go through hooks in `src/hooks/` (`useRounds`, `useInvestors`, `useMemo`) built on **TanStack React Query**, which is **persisted to localStorage** (cache key `thesis-query-cache`, cleared on logout). Mutations log to `activity_logs` via `logActivity()` (`src/lib/activityLogger.ts`) — keep the `ActivityActionType` union there in sync with any new auditable action.
 
-**Backend** — Supabase Edge Functions (Deno) in `supabase/functions/`, deployed automatically. AI features (`draft-memo-ai`, `parse-wire-instructions`, `thesis-chat`) call **Lovable AI (Gemini)** via `LOVABLE_API_KEY`. Functions that act for unauthenticated investors (`log-investor-activity`, `update-investor-docket`, `validate-access-key`) use the service role to bypass RLS and return generic errors to prevent enumeration. DB schema lives in `supabase/migrations/`.
+**Backend** — Supabase Edge Functions (Deno) in `supabase/functions/`, deployed automatically. AI features (`draft-memo-ai`, `parse-wire-instructions`, `thesis-chat`) call a configurable AI provider (OpenAI-compatible) via `AI_API_KEY`/`AI_BASE_URL`/`AI_MODEL`. Functions that act for unauthenticated investors (`log-investor-activity`, `update-investor-docket`, `validate-access-key`) use the service role to bypass RLS and return generic errors to prevent enumeration. DB schema lives in `supabase/migrations/`.
 
 ## Conventions & gotchas
 
 - **Never hand-edit `src/integrations/supabase/client.ts` or `types.ts`** — they are auto-generated (`types.ts` is the full DB type, ~1200 lines). Regenerate them; don't patch by hand.
 - **TypeScript is non-strict by design** (`strict: false`, `noImplicitAny: false`, unused-vars off in both tsconfig and eslint). Don't assume strict-mode guarantees.
 - `@/*` path alias → `src/*` (Vite + tsconfig).
-- `.env` holds `VITE_SUPABASE_*` and is committed — these are public anon/publishable keys, safe to ship to the client. Secrets (service role, `LOVABLE_API_KEY`) live only in edge-function env, never in the client bundle.
+- `.env` holds `VITE_SUPABASE_*` and is committed — these are public anon/publishable keys, safe to ship to the client. Secrets (service role, `AI_API_KEY`) live only in edge-function env, never in the client bundle.
 - UI is **shadcn/ui** (`src/components/ui/`, config in `components.json`) + Tailwind. Design language: minimalist/document-focused, transparent cards & inputs, focus rings removed globally — match it. Color tokens are HSL CSS variables in `src/index.css`.
 - All RLS is keyed on `auth.uid()` (user-owned data) or `has_role()` (admin); public document access flows through `access_keys` / `share_links`.
 
 ## Workspace rules (from ~/CLAUDE.md)
 
-- **Always push to `main`** when work is done — no PRs, no "should I push?". Push to main = deployed (also syncs back to Lovable).
-- This repo belongs to the **`syedos`** identity orbit (`thesiscx` org). Use the correct GitHub token; do not cross-contaminate with `roboalias`/`buxor`.
+- **Always push to `main`** when work is done — no PRs, no "should I push?". Push to main = deployed (Render auto-deploys from `main`).
+- This repo belongs to the **`syedos`** identity orbit (`thesis-run` org). Use the correct GitHub token; do not cross-contaminate with `roboalias`/`buxor`.

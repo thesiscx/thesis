@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+
+# Local environment (use .env.example as a template)
+.env
+.env.local
+.env.*.local

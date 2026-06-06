@@ -1,8 +1,30 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "thesis",
+  "description": "Open-source fundraising infrastructure for founders — rounds, investor memos, SAFE generation, pipeline, and investor commitment flows.",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "license": "AGPL-3.0-only",
+  "homepage": "https://thesis.run",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thesis-run/thesis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thesis-run/thesis/issues"
+  },
+  "author": "syedos",
+  "keywords": [
+    "fundraising",
+    "startup",
+    "investors",
+    "safe",
+    "investor-memo",
+    "cap-table",
+    "react",
+    "supabase",
+    "open-source"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -98,7 +120,6 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
-    "lovable-tagger": "^1.1.11",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",

@@ -31,10 +31,12 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const { draftData, editMode, editPrompt, currentContent } = body;
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const AI_API_KEY = Deno.env.get('AI_API_KEY');
+    const AI_BASE_URL = Deno.env.get('AI_BASE_URL') ?? 'https://api.openai.com/v1';
+    const AI_MODEL = Deno.env.get('AI_MODEL') ?? 'gpt-4o-mini';
+
+    if (!AI_API_KEY) {
+      throw new Error('AI_API_KEY is not configured');
     }
 
     let systemPrompt: string;
@@ -140,16 +142,16 @@ ${draftData?.useOfFunds || 'The founder will provide use of funds.'}
 Generate a professional, compelling investor memo with all 15 sections. Use the specific details provided, and where information is not given, write compelling placeholder content that guides the founder on what to add.`;
     }
 
-    console.log('Calling Lovable AI...');
-    
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    console.log('Calling AI provider...');
+
+    const response = await fetch(`${AI_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${AI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: AI_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

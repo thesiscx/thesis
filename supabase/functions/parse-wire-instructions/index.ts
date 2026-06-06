@@ -30,20 +30,22 @@ serve(async (req) => {
     const pdfBuffer = await pdfResponse.arrayBuffer();
     const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
 
-    // Use Gemini to parse the wire instructions
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    // Use a vision-capable model to parse the wire instructions
+    const apiKey = Deno.env.get("AI_API_KEY");
+    const baseUrl = Deno.env.get("AI_BASE_URL") ?? "https://api.openai.com/v1";
+    const model = Deno.env.get("AI_MODEL") ?? "gpt-4o-mini";
     if (!apiKey) {
-      throw new Error("LOVABLE_API_KEY not configured");
+      throw new Error("AI_API_KEY not configured");
     }
 
-    const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages: [
           {
             role: "system",

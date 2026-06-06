@@ -6,7 +6,7 @@
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **State Management**: TanStack React Query (with localStorage persistence)
 - **Rich Text Editing**: TipTap
-- **Backend**: Lovable Cloud (Supabase)
+- **Backend**: Supabase (Postgres, Auth, Storage, Edge Functions)
 - **Authentication**: Supabase Auth with email/password
 - **Database**: PostgreSQL via Supabase
 - **Storage**: Supabase Storage (buckets: memo-images, company-logos, pitch-decks)
