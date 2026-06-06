@@ -21,7 +21,7 @@ export default function Terms() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">1. Acceptance of Terms</h2>
             <p className="text-sm leading-relaxed">
-              By accessing or using Circuit ("Service"), you agree to be bound by these Terms of Service. If you do not
+              By accessing or using Thesis ("Service"), you agree to be bound by these Terms of Service. If you do not
               agree to these terms, please do not use the Service.
             </p>
           </section>
@@ -29,7 +29,7 @@ export default function Terms() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">2. Description of Service</h2>
             <p className="text-sm leading-relaxed">
-              Circuit provides a platform for founders to manage their fundraising process, including creating
+              Thesis provides a platform for founders to manage their fundraising process, including creating
               investment memos, managing investor relationships, and executing investment agreements. The Service is
               provided "as is" and we reserve the right to modify or discontinue features at any time.
             </p>
@@ -47,7 +47,7 @@ export default function Terms() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">4. User Content</h2>
             <p className="text-sm leading-relaxed">
-              You retain ownership of all content you submit to the Service. By submitting content, you grant Circuit a
+              You retain ownership of all content you submit to the Service. By submitting content, you grant Thesis a
               non-exclusive, worldwide license to use, store, and process your content solely for the purpose of
               providing the Service. You are solely responsible for the accuracy and legality of all content you submit.
             </p>
@@ -65,7 +65,7 @@ export default function Terms() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">6. Investment Disclaimers</h2>
             <p className="text-sm leading-relaxed">
-              Circuit is not a registered broker-dealer, investment adviser, or funding portal. The Service facilitates
+              Thesis is not a registered broker-dealer, investment adviser, or funding portal. The Service facilitates
               document creation and communication but does not provide investment advice, recommendations, or
               endorsements. All investment decisions are made solely between founders and investors.
             </p>
@@ -74,7 +74,7 @@ export default function Terms() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">7. Limitation of Liability</h2>
             <p className="text-sm leading-relaxed">
-              To the maximum extent permitted by law, Circuit shall not be liable for any indirect, incidental, special,
+              To the maximum extent permitted by law, Thesis shall not be liable for any indirect, incidental, special,
               consequential, or punitive damages arising from your use of the Service. Our total liability shall not
               exceed the amount paid by you, if any, for accessing the Service.
             </p>
@@ -99,7 +99,7 @@ export default function Terms() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">10. Contact</h2>
             <p className="text-sm leading-relaxed">
-              For questions about these Terms, please contact us at contact@circuit.cx.
+              For questions about these Terms, please contact us at contact@thesis.cx.
             </p>
           </section>
         </div>

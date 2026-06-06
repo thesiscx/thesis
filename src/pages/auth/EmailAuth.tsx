@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import circuitLogo from "@/assets/circuit-logo.png";
+import thesisLogo from "@/assets/thesis-logo.png";
 import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 
 type AuthStep = "email" | "password" | "signup" | "profile" | "round";
@@ -294,7 +294,7 @@ export default function EmailAuth() {
           </div>
 
           <div className="h-10 flex items-center justify-center mb-8">
-            <img src={circuitLogo} alt="Circuit" className="h-8" />
+            <img src={thesisLogo} alt="Thesis" className="h-8" />
           </div>
 
           <div className="min-h-[280px] space-y-4">
@@ -482,7 +482,7 @@ export default function EmailAuth() {
 
       <footer className="py-6 text-center">
         <p className="text-xs text-muted-foreground">
-          © 2025 Circuit.{" "}
+          © 2025 Thesis.{" "}
           <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>.{" "}
           <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>.{" "}
           <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>.

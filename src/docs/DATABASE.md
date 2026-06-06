@@ -1,4 +1,4 @@
-# Circuit Database Schema
+# Thesis Database Schema
 
 ## Core Tables
 
@@ -237,7 +237,7 @@ User invitation codes (3 per new user).
 ### memo_versions
 Version history for memos.
 
-### circuit_chat_messages
+### thesis_chat_messages
 AI chat message history (legacy).
 
 ### action_messages

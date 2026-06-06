@@ -1,8 +1,8 @@
-# Circuit Design System
+# Thesis Design System
 
 ## Philosophy
 
-Circuit uses a **minimalist, document-focused aesthetic** inspired by professional financial tools like Carta. The interface should feel:
+Thesis uses a **minimalist, document-focused aesthetic** inspired by professional financial tools like Carta. The interface should feel:
 - Calm and professional
 - Transparent and cohesive
 - Intentional, not cluttered

@@ -104,7 +104,7 @@ export default function Privacy() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">11. Contact</h2>
             <p className="text-sm leading-relaxed">
-              For questions about this Privacy Policy, please contact us at contact@circuit.cx.
+              For questions about this Privacy Policy, please contact us at contact@thesis.cx.
             </p>
           </section>
         </div>

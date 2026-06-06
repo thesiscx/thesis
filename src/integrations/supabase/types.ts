@@ -244,7 +244,7 @@ export type Database = {
           },
         ]
       }
-      circuit_chat_messages: {
+      thesis_chat_messages: {
         Row: {
           content: string
           created_at: string
@@ -274,7 +274,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "circuit_chat_messages_round_id_fkey"
+            foreignKeyName: "thesis_chat_messages_round_id_fkey"
             columns: ["round_id"]
             isOneToOne: false
             referencedRelation: "rounds"

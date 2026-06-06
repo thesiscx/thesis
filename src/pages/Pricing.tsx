@@ -47,7 +47,7 @@ export default function Pricing() {
           </ul>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-12">Questions? Reach out at contact@circuit.cx</p>
+        <p className="text-center text-sm text-muted-foreground mt-12">Questions? Reach out at contact@thesis.cx</p>
       </div>
     </div>
   );

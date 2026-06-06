@@ -14,12 +14,12 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Pricing from "./pages/Pricing";
 import About from "./pages/About";
-import CircuitMemo from "./pages/circuit/CircuitMemo";
-import CircuitDocket from "./pages/circuit/CircuitDocket";
-import Pipeline from "./pages/circuit/Pipeline";
-import FounderSettings from "./pages/circuit/FounderSettings";
-import RoundsOverview from "./pages/circuit/settings/RoundsOverview";
-import CustomDomain from "./pages/circuit/settings/CustomDomain";
+import ThesisMemo from "./pages/thesis/ThesisMemo";
+import ThesisDocket from "./pages/thesis/ThesisDocket";
+import Pipeline from "./pages/thesis/Pipeline";
+import FounderSettings from "./pages/thesis/FounderSettings";
+import RoundsOverview from "./pages/thesis/settings/RoundsOverview";
+import CustomDomain from "./pages/thesis/settings/CustomDomain";
 import ProfileSettings from "./pages/ProfileSettings";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
@@ -29,8 +29,8 @@ import PublicMemoViewer from "./pages/public/PublicMemoViewer";
 
 import MemoPreview from "./pages/public/MemoPreview";
 import InvestorCommit from "./pages/public/InvestorCommit";
-import SmartRedirect from "./components/circuit/SmartRedirect";
-import Homepage from "./pages/circuit/Homepage";
+import SmartRedirect from "./components/thesis/SmartRedirect";
+import Homepage from "./pages/thesis/Homepage";
 import { FounderAuthProvider, useFounderAuth } from "./contexts/FounderAuthContext";
 import { InvestorAuthProvider } from "./contexts/InvestorAuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,7 +46,7 @@ const queryClient = new QueryClient({
 
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
-  key: 'circuit-query-cache',
+  key: 'thesis-query-cache',
 });
 
 // Route logger for debugging
@@ -178,10 +178,10 @@ const App = () => {
               {/* Tool pages - new clean URLs without /circuit prefix */}
               <Route path="/:roundSlug/pipeline" element={<><RouteLogger name="pipeline" /><ProtectedRoute routeName="pipeline"><Pipeline /></ProtectedRoute></>} />
               <Route path="/:roundSlug/pipeline/:variantSlug" element={<><RouteLogger name="pipeline:variant" /><ProtectedRoute routeName="pipeline"><Pipeline /></ProtectedRoute></>} />
-              <Route path="/:roundSlug/memo" element={<><RouteLogger name="memo" /><ProtectedRoute routeName="memo"><CircuitMemo /></ProtectedRoute></>} />
-              <Route path="/:roundSlug/memo/:variantSlug" element={<><RouteLogger name="memo:variant" /><ProtectedRoute routeName="memo"><CircuitMemo /></ProtectedRoute></>} />
-              <Route path="/:roundSlug/docket" element={<><RouteLogger name="docket" /><ProtectedRoute routeName="docket"><CircuitDocket /></ProtectedRoute></>} />
-              <Route path="/:roundSlug/docket/:variantSlug" element={<><RouteLogger name="docket:variant" /><ProtectedRoute routeName="docket"><CircuitDocket /></ProtectedRoute></>} />
+              <Route path="/:roundSlug/memo" element={<><RouteLogger name="memo" /><ProtectedRoute routeName="memo"><ThesisMemo /></ProtectedRoute></>} />
+              <Route path="/:roundSlug/memo/:variantSlug" element={<><RouteLogger name="memo:variant" /><ProtectedRoute routeName="memo"><ThesisMemo /></ProtectedRoute></>} />
+              <Route path="/:roundSlug/docket" element={<><RouteLogger name="docket" /><ProtectedRoute routeName="docket"><ThesisDocket /></ProtectedRoute></>} />
+              <Route path="/:roundSlug/docket/:variantSlug" element={<><RouteLogger name="docket:variant" /><ProtectedRoute routeName="docket"><ThesisDocket /></ProtectedRoute></>} />
             </Route>
             
             {/* Public Investor Routes - WITH /share/ PREFIX to avoid conflicts */}

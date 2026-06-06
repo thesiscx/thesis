@@ -1,4 +1,4 @@
-# Circuit User Flows
+# Thesis User Flows
 
 ## Founder Flows
 
@@ -128,7 +128,7 @@
 1. Navigate to docket link
 2. Enter access key (llzk-rxqh-ryya-epep format)
 3. System validates key (validate-access-key edge function)
-4. Circuit splash screen plays (~2.5 seconds)
+4. Thesis splash screen plays (~2.5 seconds)
 5. Docket status updates: Drafted → Viewed
 6. 8-step commitment flow begins:
 
@@ -322,7 +322,7 @@ Automatic Triggers:
    - Export All: ZIP with all dockets
    - Export Individual: Select specific docket
 3. System generates:
-   - cover-sheet.pdf (summary with Circuit branding)
+   - cover-sheet.pdf (summary with Thesis branding)
    - safe-agreement.pdf (executed agreement)
 4. Download ZIP/files
 ```

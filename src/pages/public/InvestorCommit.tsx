@@ -14,8 +14,8 @@ import SignAgreementStep from "@/components/public/steps/SignAgreementStep";
 import ExecuteStep from "@/components/public/steps/ExecuteStep";
 import WireStep from "@/components/public/steps/WireStep";
 import FinalizeStep from "@/components/public/steps/FinalizeStep";
-import { PoweredByCircuit } from "@/components/public/PoweredByCircuit";
-import { CircuitSplash } from "@/components/public/CircuitSplash";
+import { PoweredByThesis } from "@/components/public/PoweredByThesis";
+import { ThesisSplash } from "@/components/public/ThesisSplash";
 
 interface RoundTerms {
   valuation_cap: number | null;
@@ -651,7 +651,7 @@ export default function InvestorCommit() {
 
   // Show splash screen immediately - covers loading time
   if (showSplash) {
-    return <CircuitSplash onComplete={() => setShowSplash(false)} />;
+    return <ThesisSplash onComplete={() => setShowSplash(false)} />;
   }
 
   if (isAuthLoading || !investorSession || isLoading) {
@@ -691,7 +691,7 @@ export default function InvestorCommit() {
       {/* Centered Card Container - extends to bottom */}
       <div className="flex-1 flex items-stretch justify-center px-8 pb-0 overflow-hidden pt-8">
         <div className="bg-background rounded-t-xl shadow-sm border border-b-0 w-full max-w-5xl flex overflow-hidden mt-4">
-          {/* Sidebar - No border-r, PoweredByCircuit at absolute bottom */}
+          {/* Sidebar - No border-r, PoweredByThesis at absolute bottom */}
           <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 p-6 pr-0">
             <div className="flex-1">
               <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
@@ -700,9 +700,9 @@ export default function InvestorCommit() {
               <CommitmentSteps currentStep={currentStep} completedSteps={completedSteps} />
             </div>
             
-            {/* PoweredByCircuit at bottom of sidebar */}
+            {/* PoweredByThesis at bottom of sidebar */}
             <div className="pr-6 mt-12">
-              <PoweredByCircuit variant="inline" />
+              <PoweredByThesis variant="inline" />
             </div>
           </aside>
 

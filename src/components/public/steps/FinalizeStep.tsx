@@ -119,14 +119,14 @@ export default function FinalizeStep({
           <UserPlus className="w-6 h-6 text-primary" />
         </div>
         <h3 className="font-heading font-medium text-foreground mb-2">
-          Create Your Investor Account on Circuit
+          Create Your Investor Account on Thesis
         </h3>
         <p className="text-sm text-muted-foreground mb-4">
           Track your investment, access documents, and manage your portfolio in one place.
         </p>
         <Button 
           className="w-full"
-          onClick={() => window.location.href = 'https://circuit.cx/auth/invite'}
+          onClick={() => window.location.href = 'https://thesis.cx/auth/invite'}
         >
           Create Account
         </Button>

@@ -1,4 +1,4 @@
-# Circuit Edge Functions
+# Thesis Edge Functions
 
 All edge functions are located in `supabase/functions/` and deploy automatically.
 
@@ -110,7 +110,7 @@ Generates or edits memo content using Lovable AI (Gemini).
 
 **AI Model:** Uses google/gemini-2.5-flash via Lovable AI.
 
-### circuit-chat
+### thesis-chat
 AI assistant for fundraising advice (legacy, being replaced by tab cards).
 
 **Request:**
@@ -126,7 +126,7 @@ AI assistant for fundraising advice (legacy, being replaced by tab cards).
 }
 ```
 
-### circuit-action
+### thesis-action
 Processes action card commands (legacy).
 
 ## Document Generation

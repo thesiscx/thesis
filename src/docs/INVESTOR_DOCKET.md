@@ -99,7 +99,7 @@ Generated via `generate_docket_id()` PostgreSQL trigger:
 1. Investor receives link: `/share/robomart/seed/docket/ali-ahmed`
 2. Enters access key: `llzk-rxqh-ryya-epep`
 3. System validates via `validate-access-key` edge function
-4. Circuit splash screen plays (~2.5 seconds)
+4. Thesis splash screen plays (~2.5 seconds)
 5. Docket status updates: Drafted → Viewed
 
 ### 8-Step Flow
@@ -201,7 +201,7 @@ Generated via `generate_docket_id()` PostgreSQL trigger:
 │                                         │
 │           [Sign Agreement →]            │
 │                                         │
-│ 🔒 Secured by Circuit                   │
+│ 🔒 Secured by Thesis                   │
 │    E-Sign Act & UETA compliant          │
 └─────────────────────────────────────────┘
 ```
@@ -288,7 +288,7 @@ Generated via `generate_docket_id()` PostgreSQL trigger:
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  Share Link                                                 │
-│  circuit.cx/share/robomart/seed/docket/ali-ahmed  [📋][↗]  │
+│  thesis.cx/share/robomart/seed/docket/ali-ahmed  [📋][↗]  │
 │                                                             │
 │  Access Key                                                 │
 │  llzk-rxqh-ryya-epep                              [📋]     │
@@ -404,7 +404,7 @@ Logs investor actions (investor_signed, deal_executed) using service role to byp
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | InvestorCommit | `pages/public/InvestorCommit.tsx` | Main commitment flow |
-| InvestorDocket | `components/circuit/docket/InvestorDocket.tsx` | Founder docket view |
+| InvestorDocket | `components/thesis/docket/InvestorDocket.tsx` | Founder docket view |
 | ReviewTermsStep | `components/public/steps/ReviewTermsStep.tsx` | Step 1 |
 | InvestorDetailsStep | `components/public/steps/InvestorDetailsStep.tsx` | Step 2 |
 | InvestmentAmountStep | `components/public/steps/InvestmentAmountStep.tsx` | Step 3 |
@@ -413,8 +413,8 @@ Logs investor actions (investor_signed, deal_executed) using service role to byp
 | ExecuteStep | `components/public/steps/ExecuteStep.tsx` | Step 6 |
 | WireStep | `components/public/steps/WireStep.tsx` | Step 7 |
 | FinalizeStep | `components/public/steps/FinalizeStep.tsx` | Step 8 |
-| CircuitSplash | `components/public/CircuitSplash.tsx` | Splash screen |
-| PoweredByCircuit | `components/public/PoweredByCircuit.tsx` | Trust badges |
-| DocketStatusCard | `components/circuit/tabs/DocketStatusCard.tsx` | Status sidebar |
-| CreateDocketCard | `components/circuit/tabs/CreateDocketCard.tsx` | Create docket |
-| ExportDocketCard | `components/circuit/tabs/ExportDocketCard.tsx` | Export documents |
+| ThesisSplash | `components/public/ThesisSplash.tsx` | Splash screen |
+| PoweredByThesis | `components/public/PoweredByThesis.tsx` | Trust badges |
+| DocketStatusCard | `components/thesis/tabs/DocketStatusCard.tsx` | Status sidebar |
+| CreateDocketCard | `components/thesis/tabs/CreateDocketCard.tsx` | Create docket |
+| ExportDocketCard | `components/thesis/tabs/ExportDocketCard.tsx` | Export documents |

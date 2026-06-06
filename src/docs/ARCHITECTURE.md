@@ -1,4 +1,4 @@
-# Circuit Architecture Overview
+# Thesis Architecture Overview
 
 ## Technology Stack
 
@@ -18,7 +18,7 @@
 src/
 ├── assets/              # Static images, logos, GIFs
 ├── components/
-│   ├── circuit/         # Main app components
+│   ├── thesis/         # Main app components
 │   │   ├── editor/      # TipTap editor extensions
 │   │   ├── tabs/        # Sidebar tab card components
 │   │   ├── docket/      # Docket-specific components
@@ -34,7 +34,7 @@ src/
 ├── lib/                 # Utility functions
 ├── pages/
 │   ├── auth/            # Authentication pages
-│   ├── circuit/         # Founder dashboard pages
+│   ├── thesis/         # Founder dashboard pages
 │   │   └── settings/    # Settings subpages
 │   └── public/          # Investor-accessible pages
 └── index.css            # Design system tokens
@@ -46,7 +46,7 @@ supabase/
 ## Core Concepts
 
 ### Workspaces
-A workspace represents a company using Circuit. The workspace_id is the user's auth.uid(), meaning each user owns one workspace (their company).
+A workspace represents a company using Thesis. The workspace_id is the user's auth.uid(), meaning each user owns one workspace (their company).
 
 ### Rounds
 A fundraising round (Pre-Seed, Seed, Series A, etc.). Only one round can be "open" at a time. Rounds have states: `draft`, `open`, `closed`.

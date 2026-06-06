@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Download, FileSignature, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
-import { PoweredByCircuit } from "@/components/public/PoweredByCircuit";
+import { PoweredByThesis } from "@/components/public/PoweredByThesis";
 
 interface SignAgreementStepProps {
   documentHtml: string;
@@ -210,7 +210,7 @@ export default function SignAgreementStep({
 
         {/* Trust Badge */}
         <div className="flex justify-end">
-          <PoweredByCircuit variant="badge" />
+          <PoweredByThesis variant="badge" />
         </div>
       </div>
 

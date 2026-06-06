@@ -1,15 +1,15 @@
-# Circuit Component Reference
+# Thesis Component Reference
 
 ## Layout Components
 
-### CircuitLayout
+### ThesisLayout
 Main layout wrapper for authenticated pages. Provides:
 - Header with navigation breadcrumbs
 - Round selector dropdown
 - Right sidebar for action tabs
 - Responsive container
 
-### CircuitHeader
+### ThesisHeader
 Top navigation bar with:
 - Company logo/name (left) - navigates to homepage
 - Tool name with icon - navigates to tool
@@ -26,27 +26,27 @@ Right sidebar container for tab-based action cards. Each page has its own tabs:
 
 ## Page Components
 
-### Homepage (`pages/circuit/Homepage.tsx`)
+### Homepage (`pages/thesis/Homepage.tsx`)
 Landing page after login showing:
 - Welcome message with user name
 - Round statistics (dockets, signed, raised)
 - Navigation cards to Pipeline, Memo, Docket
 - Activity feed in sidebar
 
-### Pipeline (`pages/circuit/Pipeline.tsx`)
+### Pipeline (`pages/thesis/Pipeline.tsx`)
 Investor roster table with:
 - Sortable columns: Name, Entity, Email, Last Contact, Status
 - Status filtering (default excludes won/lost)
 - Click row to navigate to investor subpage
 
-### CircuitMemo (`pages/circuit/CircuitMemo.tsx`)
+### ThesisMemo (`pages/thesis/ThesisMemo.tsx`)
 Memo editor/viewer with:
 - TipTap rich text editor
 - Table of contents sidebar
 - View/Edit mode toggle
 - Investor-specific subpages
 
-### CircuitDocket (`pages/circuit/CircuitDocket.tsx`)
+### ThesisDocket (`pages/thesis/ThesisDocket.tsx`)
 Docket management table with:
 - Docket ID, Investor, Amount, Status columns
 - Status filtering
@@ -188,7 +188,7 @@ The core investor-facing commitment flow. A single dynamic component that loads 
 - Centered card layout with fixed height (appears cut off at bottom)
 - Left sidebar shows step navigation with rounded-l-md indicators
 - "Close Terms" button (X icon) top-left
-- "Powered by Circuit" branding in sidebar footer
+- "Powered by Thesis" branding in sidebar footer
 - Internal scrolling within card (no page scroll)
 
 ### CommitmentSteps (`components/public/steps/`)
@@ -205,12 +205,12 @@ Individual step components:
 | `WireStep` | Wire fields with copy buttons, 72-hour disclaimer, realtime `wire_received` subscription |
 | `FinalizeStep` | Success message, download button, account creation CTA |
 
-### CircuitSplash (`components/public/CircuitSplash.tsx`)
-Animated splash screen with Circuit logo GIF. Plays once (not looped), fades out after ~2.5 seconds. Establishes premium brand perception before commitment flow.
+### ThesisSplash (`components/public/ThesisSplash.tsx`)
+Animated splash screen with Thesis logo GIF. Plays once (not looped), fades out after ~2.5 seconds. Establishes premium brand perception before commitment flow.
 
-### PoweredByCircuit (`components/public/PoweredByCircuit.tsx`)
+### PoweredByThesis (`components/public/PoweredByThesis.tsx`)
 Footer branding for investor pages:
-- "Powered by Circuit" text
+- "Powered by Thesis" text
 - "E-Sign Act & UETA compliant" trust badge
 - Appears near e-signature section for legitimacy
 

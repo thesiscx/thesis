@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import TipTapRenderer from "@/components/circuit/TipTapRenderer";
+import TipTapRenderer from "@/components/thesis/TipTapRenderer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle } from "lucide-react";

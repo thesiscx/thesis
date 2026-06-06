@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Thesis** (repo `thesiscx/thesis`) is a Carta-style **fundraising infrastructure platform** for startup founders: manage rounds, write investor memos, generate SAFE agreements, run an investor pipeline, and let investors view memos / sign / commit through shareable links.
 
-> **Naming gotcha:** The product was renamed `circuit` → `thesis`, but the codebase is still named "circuit" everywhere internally — `src/components/circuit/`, `src/pages/circuit/`, the React Query cache key `circuit-query-cache`, the `circuit-*` edge functions. Treat "circuit" as the internal/legacy name for *this* app. This is **NOT** the same product as `~/.superset/projects/circuit` (circuit.cx, the AI relationship-intelligence tool) — do not cross-reference them.
+> **Naming:** This product was formerly called `circuit` and has been fully renamed to `thesis` throughout the codebase (directories, components, cache keys, edge functions, the DB chat table). Two intentional `circuit` references remain: (1) the **legacy `/circuit/*` redirect routes** in `src/App.tsx`, kept so old pre-rename shared links still resolve; (2) the **historical migration** `supabase/migrations/20251209100124_*.sql`, left immutable as applied history — the rename lives in a later migration. Don't reintroduce "circuit" elsewhere. Note: `~/.superset/projects/circuit` (circuit.cx, the AI relationship-intelligence tool) is a **different product** — do not cross-reference them.
 
 This is a **Lovable** project (Vite + React + shadcn) backed by **Lovable Cloud = Supabase**. Edits made in Lovable auto-commit to this repo, and pushes to the repo reflect back into Lovable.
 
@@ -49,11 +49,11 @@ There is **no test framework** configured — no test runner, no `test` script.
 - Founder routes are wrapped in `<FounderAuthLayout>` + `<ProtectedRoute>`: `/:roundSlug/{pipeline,memo,docket}[/:variantSlug]`, `/settings/*`, `/admin`.
 - Public investor routes are under `/share/:companySlug/:roundCode/{memo,docket}/...` inside `<InvestorAuthLayout>`.
 - Token-based preview: `/preview/memo/:token`.
-- Legacy `/circuit/*` and `/thesis/*` paths redirect to the new clean URLs — preserve these redirects when touching routing.
+- Legacy `/circuit/*` and `/thesis/*` paths redirect to the new clean URLs — preserve these redirects when touching routing (they are the only intentional `circuit` strings left in code).
 
-**Data access**: components don't call Supabase directly for domain data — they go through hooks in `src/hooks/` (`useRounds`, `useInvestors`, `useMemo`) built on **TanStack React Query**, which is **persisted to localStorage** (cache key `circuit-query-cache`, cleared on logout). Mutations log to `activity_logs` via `logActivity()` (`src/lib/activityLogger.ts`) — keep the `ActivityActionType` union there in sync with any new auditable action.
+**Data access**: components don't call Supabase directly for domain data — they go through hooks in `src/hooks/` (`useRounds`, `useInvestors`, `useMemo`) built on **TanStack React Query**, which is **persisted to localStorage** (cache key `thesis-query-cache`, cleared on logout). Mutations log to `activity_logs` via `logActivity()` (`src/lib/activityLogger.ts`) — keep the `ActivityActionType` union there in sync with any new auditable action.
 
-**Backend** — Supabase Edge Functions (Deno) in `supabase/functions/`, deployed automatically. AI features (`draft-memo-ai`, `parse-wire-instructions`, `circuit-chat`) call **Lovable AI (Gemini)** via `LOVABLE_API_KEY`. Functions that act for unauthenticated investors (`log-investor-activity`, `update-investor-docket`, `validate-access-key`) use the service role to bypass RLS and return generic errors to prevent enumeration. DB schema lives in `supabase/migrations/`.
+**Backend** — Supabase Edge Functions (Deno) in `supabase/functions/`, deployed automatically. AI features (`draft-memo-ai`, `parse-wire-instructions`, `thesis-chat`) call **Lovable AI (Gemini)** via `LOVABLE_API_KEY`. Functions that act for unauthenticated investors (`log-investor-activity`, `update-investor-docket`, `validate-access-key`) use the service role to bypass RLS and return generic errors to prevent enumeration. DB schema lives in `supabase/migrations/`.
 
 ## Conventions & gotchas
 

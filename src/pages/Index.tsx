@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { FeatureStream } from "@/components/FeatureStream";
-import circuitLogo from "@/assets/circuit-logo.png";
+import thesisLogo from "@/assets/thesis-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -11,11 +11,11 @@ export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   const [logoLoaded, setLogoLoaded] = useState(false);
 
-  // Preload the Circuit logo
+  // Preload the Thesis logo
   useEffect(() => {
     const img = new Image();
     img.onload = () => setLogoLoaded(true);
-    img.src = circuitLogo;
+    img.src = thesisLogo;
   }, []);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function Index() {
           
           <div className="text-center space-y-2">
             {logoLoaded ? (
-              <img src={circuitLogo} alt="Circuit" className="h-8 mx-auto" />
+              <img src={thesisLogo} alt="Thesis" className="h-8 mx-auto" />
             ) : (
               <div className="h-8 w-24 bg-muted/50 rounded mx-auto animate-pulse" />
             )}
@@ -84,7 +84,7 @@ export default function Index() {
 
       <footer className="py-6 text-center">
         <p className="text-xs text-muted-foreground">
-          © 2025 Circuit.{" "}
+          © 2025 Thesis.{" "}
           <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>.{" "}
           <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>.{" "}
           <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>.{" "}

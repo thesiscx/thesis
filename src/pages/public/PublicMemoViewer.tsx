@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useInvestorAuth } from "@/contexts/InvestorAuthContext";
-import TipTapRenderer from "@/components/circuit/TipTapRenderer";
+import TipTapRenderer from "@/components/thesis/TipTapRenderer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogOut, Building2 } from "lucide-react";
