@@ -126,7 +126,7 @@ export default function FinalizeStep({
         </p>
         <Button 
           className="w-full"
-          onClick={() => window.location.href = 'https://thesis.cx/auth/invite'}
+          onClick={() => window.location.href = 'https://thesis.run/auth/invite'}
         >
           Create Account
         </Button>

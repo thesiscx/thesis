@@ -288,7 +288,7 @@ Generated via `generate_docket_id()` PostgreSQL trigger:
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  Share Link                                                 │
-│  thesis.cx/share/robomart/seed/docket/ali-ahmed  [📋][↗]  │
+│  thesis.run/share/robomart/seed/docket/ali-ahmed  [📋][↗]  │
 │                                                             │
 │  Access Key                                                 │
 │  llzk-rxqh-ryya-epep                              [📋]     │

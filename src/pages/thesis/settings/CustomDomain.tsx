@@ -60,7 +60,7 @@ export default function CustomDomain() {
             <CardContent>
               <div className="flex items-center gap-3">
                 <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-sm font-mono">
-                  thesis.cx/share/{companySlug || "your-company"}
+                  thesis.run/share/{companySlug || "your-company"}
                 </div>
                 <Badge variant="secondary">Active</Badge>
               </div>

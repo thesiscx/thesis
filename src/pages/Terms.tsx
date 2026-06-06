@@ -99,7 +99,7 @@ export default function Terms() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">10. Contact</h2>
             <p className="text-sm leading-relaxed">
-              For questions about these Terms, please contact us at contact@thesis.cx.
+              For questions about these Terms, please contact us at contact@thesis.run.
             </p>
           </section>
         </div>

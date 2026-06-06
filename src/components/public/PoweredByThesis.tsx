@@ -25,7 +25,7 @@ export function PoweredByThesis({ variant = 'footer' }: PoweredByThesisProps) {
         <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
         
         <a 
-          href="https://thesis.cx" 
+          href="https://thesis.run" 
           target="_blank" 
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
@@ -43,7 +43,7 @@ export function PoweredByThesis({ variant = 'footer' }: PoweredByThesisProps) {
       <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
       
       <a 
-        href="https://thesis.cx" 
+        href="https://thesis.run" 
         target="_blank" 
         rel="noopener noreferrer"
         className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"

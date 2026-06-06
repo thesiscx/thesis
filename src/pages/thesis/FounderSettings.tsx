@@ -384,7 +384,7 @@ export default function FounderSettings() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center flex-1 rounded-md border bg-muted/50">
                     <span className="px-3 text-sm text-muted-foreground whitespace-nowrap">
-                      thesis.cx/share/
+                      thesis.run/share/
                     </span>
                     <Input
                       id="companySlug"
@@ -419,7 +419,7 @@ export default function FounderSettings() {
               {companySlug && (
                 <div className="rounded-md border bg-secondary/30 p-3">
                   <p className="text-xs text-muted-foreground mb-1">Your public URLs will look like:</p>
-                  <p className="text-sm font-mono">thesis.cx/share/{companySlug}/s/memo</p>
+                  <p className="text-sm font-mono">thesis.run/share/{companySlug}/s/memo</p>
                 </div>
               )}
             </CardContent>

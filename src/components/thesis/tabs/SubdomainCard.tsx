@@ -13,7 +13,7 @@ export function SubdomainCard() {
   const [copied, setCopied] = useState(false);
   
   const companySlug = profile?.company_slug;
-  const currentSubdomain = companySlug ? `${companySlug}.thesis.cx` : null;
+  const currentSubdomain = companySlug ? `${companySlug}.thesis.run` : null;
 
   const handleCopy = async () => {
     if (!currentSubdomain) return;

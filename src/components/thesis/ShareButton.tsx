@@ -67,7 +67,7 @@ export default function ShareButton({
   
   // Generate the shareable link (uses /share/ prefix for public routes)
   const shareLink = companySlug 
-    ? `https://thesis.cx/share/${companySlug}/${roundCode}/${tool}${investorSlug ? `/${investorSlug}` : ""}`
+    ? `https://thesis.run/share/${companySlug}/${roundCode}/${tool}${investorSlug ? `/${investorSlug}` : ""}`
     : null;
 
   const copyLink = async () => {
