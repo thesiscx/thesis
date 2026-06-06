@@ -202,7 +202,7 @@ export default function ThesisThesis() {
   const filteredInvestors = useMemo(() => {
     if (!investors) return [];
     
-    let processed = investors
+    const processed = investors
       .filter((inv) =>
         inv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         inv.email?.toLowerCase().includes(searchQuery.toLowerCase())

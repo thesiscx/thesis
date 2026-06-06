@@ -158,7 +158,7 @@ export default function AIChatPanel({ roundId }: AIChatPanelProps) {
     const decoder = new TextDecoder();
     let textBuffer = "";
     let assistantContent = "";
-    let toolCalls: ToolCall[] = [];
+    const toolCalls: ToolCall[] = [];
     let currentToolCall: { id?: string; name?: string; arguments?: string } = {};
 
     while (true) {

@@ -244,7 +244,7 @@ serve(async (req) => {
     if (response.body) {
       // Create a transform stream with proper SSE line buffering
       let assistantContent = "";
-      let toolCalls: any[] = [];
+      const toolCalls: any[] = [];
       let currentToolCall: { id?: string; name?: string; arguments?: string } = {};
       let sseBuffer = ""; // Buffer for incomplete SSE lines across chunks
       
